@@ -1,3 +1,5 @@
+// Minimal JSON client used by HTTP services. Add auth headers, CSRF tokens, or
+// error-code mapping here once the Spring Boot backend introduces them.
 export async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...init,
@@ -13,4 +15,3 @@ export async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
 
   return (await response.json()) as T;
 }
-

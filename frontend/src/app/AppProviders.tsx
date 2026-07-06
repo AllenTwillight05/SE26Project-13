@@ -9,9 +9,9 @@ export function AppProviders({ children }: PropsWithChildren) {
   return (
     <ConfigProvider locale={zhCN} theme={appTheme}>
       <AntApp>
+        {/* Inject all services once so pages never import mock/http implementations directly. */}
         <AppServicesProvider services={appServices}>{children}</AppServicesProvider>
       </AntApp>
     </ConfigProvider>
   );
 }
-

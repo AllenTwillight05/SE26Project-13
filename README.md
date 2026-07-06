@@ -13,6 +13,7 @@
 
 ## 前端基础框架
 
+- 前端工程位于 `frontend/` 目录，后续 Spring Boot 后端建议放在 `backend/` 目录。
 - 基于 Vite + React + TypeScript 搭建前端工程。
 - 使用 Ant Design 作为基础组件库，并通过主题 token 与自定义样式统一视觉风格。
 - 已完成路由拆分、布局解耦、服务层抽象、mock 数据和 HTTP 接口预留。
@@ -41,10 +42,22 @@
 ## 交付文档
 
 - 前端交付说明：[docs/frontend-handoff.md](/home/hp/dev/project/english-learning-copilot/english-learning-copilot/docs/frontend-handoff.md)
+- 接口契约说明：[docs/api-contracts.md](/home/hp/dev/project/english-learning-copilot/english-learning-copilot/docs/api-contracts.md)
+
+## 推荐仓库结构
+
+```text
+english-learning-copilot/
+├── frontend/   # React + Vite 前端
+├── backend/    # 预留 Spring Boot 后端
+├── docs/       # 交付与接口文档
+└── README.md
+```
 
 ## 启动方式
 
 ```bash
+cd frontend
 npm install
 npm run dev
 ```

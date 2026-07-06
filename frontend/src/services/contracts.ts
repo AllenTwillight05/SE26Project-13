@@ -1,3 +1,10 @@
+/**
+ * Frontend/backend data contracts.
+ *
+ * Keep page components dependent on these interfaces instead of concrete mock
+ * data or raw fetch responses. When Spring Boot APIs are ready, make their JSON
+ * responses match these shapes, then switch VITE_API_MODE to "http".
+ */
 export interface QuickStat {
   label: string;
   value: string;
@@ -16,6 +23,7 @@ export interface DashboardOverview {
   suggestedDuration: string;
 }
 
+/** One speaking scenario card shown on the speaking page. */
 export interface Scenario {
   id: string;
   title: string;
@@ -26,6 +34,7 @@ export interface Scenario {
   tone: "blue" | "gold" | "mint";
 }
 
+/** Payload for the speaking module. Extend this when adding recording sessions. */
 export interface SpeakingCatalog {
   modes: string[];
   scriptPreviewTitle: string;
@@ -60,6 +69,7 @@ export interface VocabularySnapshot {
   cards: VocabularyCard[];
 }
 
+/** Grammar page payload. Examples should be ready to render directly. */
 export interface GrammarTopic {
   id: string;
   title: string;
@@ -104,6 +114,11 @@ export interface ProfileSnapshot {
   dailyPlan: DailyPlan;
 }
 
+/**
+ * Service boundary consumed by pages.
+ * Each member can own one service area and replace the mock implementation with
+ * HTTP-backed behavior without changing page imports.
+ */
 export interface DashboardService {
   getOverview(): Promise<DashboardOverview>;
 }

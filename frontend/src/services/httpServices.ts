@@ -6,6 +6,8 @@ function withBaseUrl(baseUrl: string, path: string) {
   return `${baseUrl}${path}`;
 }
 
+// HTTP implementation of AppServices. The object shape mirrors mockServices so
+// pages can switch data sources through environment variables only.
 export function createHttpServices(baseUrl = ""): AppServices {
   return {
     dashboard: {

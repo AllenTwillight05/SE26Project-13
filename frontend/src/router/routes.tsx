@@ -17,6 +17,7 @@ export const appRoutes: RouteObject[] = [
       { path: "vocabulary", element: <VocabularyPage /> },
       { path: "grammar", element: <GrammarPage /> },
       { path: "profile", element: <ProfilePage /> },
+      // Legacy redirects keep old links usable after renaming pages to product terms.
       { path: "practice", element: <Navigate to="/speaking" replace /> },
       { path: "feedback", element: <Navigate to="/profile" replace /> },
       { path: "plan", element: <Navigate to="/profile" replace /> }

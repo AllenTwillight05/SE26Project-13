@@ -15,6 +15,8 @@ function simulateLatency<T>(value: T, delay = 120): Promise<T> {
   });
 }
 
+// Mock implementation used by default. Keep mock payloads close to contracts so
+// frontend members can develop pages before backend endpoints are ready.
 export function createMockServices(): AppServices {
   return {
     dashboard: {
