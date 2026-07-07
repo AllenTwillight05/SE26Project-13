@@ -6,4 +6,4 @@ export const API_ENDPOINTS = {
   vocabularySnapshot: "/api/vocabulary/snapshot",
   grammarSnapshot: "/api/grammar/snapshot",
   profileSnapshot: "/api/profile/snapshot"
-} as const;
+};

@@ -1,14 +1,4 @@
-import type {
-  DailyPlan,
-  DashboardOverview,
-  FeedbackSummary,
-  GrammarSnapshot,
-  ProfileSnapshot,
-  SpeakingCatalog,
-  VocabularySnapshot
-} from "./contracts";
-
-export const dashboardOverviewMock: DashboardOverview = {
+export const dashboardOverviewMock = {
   productTag: "A6 口语学习助手",
   stackTag: "Spring Boot + React",
   headline: "更像私人教练，而不是练习题仓库。",
@@ -25,7 +15,7 @@ export const dashboardOverviewMock: DashboardOverview = {
   suggestedDuration: "32 分钟"
 };
 
-export const speakingCatalogMock: SpeakingCatalog = {
+export const speakingCatalogMock = {
   modes: ["专注训练", "自由对话", "复盘模式"],
   scriptPreviewTitle: "商务会议开场脚本预览",
   scriptPreviewLines: [
@@ -64,7 +54,7 @@ export const speakingCatalogMock: SpeakingCatalog = {
   ]
 };
 
-export const feedbackSummaryMock: FeedbackSummary = {
+export const feedbackSummaryMock = {
   statusLabel: "实时采样中",
   playbackActionLabel: "语音回放",
   metrics: [
@@ -79,7 +69,7 @@ export const feedbackSummaryMock: FeedbackSummary = {
   ]
 };
 
-export const vocabularySnapshotMock: VocabularySnapshot = {
+export const vocabularySnapshotMock = {
   dailyGoal: "今日目标 12 词",
   retentionHint: "预计留存率 83%",
   cards: [
@@ -107,7 +97,7 @@ export const vocabularySnapshotMock: VocabularySnapshot = {
   ]
 };
 
-export const grammarSnapshotMock: GrammarSnapshot = {
+export const grammarSnapshotMock = {
   focus: "本周重点：时态、从句与口语连接词",
   topics: [
     {
@@ -146,7 +136,7 @@ export const grammarSnapshotMock: GrammarSnapshot = {
   ]
 };
 
-export const dailyPlanMock: DailyPlan = {
+export const dailyPlanMock = {
   autoPilotEnabled: true,
   weeklyImprovement: "已提升 14%",
   items: [
@@ -161,7 +151,7 @@ export const dailyPlanMock: DailyPlan = {
   ]
 };
 
-export const profileSnapshotMock: ProfileSnapshot = {
+export const profileSnapshotMock = {
   learnerName: "English Learner",
   level: "B1 -> B2",
   streak: "12 days",

@@ -5,16 +5,8 @@ import {
   ReadOutlined,
   UserOutlined
 } from "@ant-design/icons";
-import type { ReactNode } from "react";
 
-export interface NavigationItem {
-  key: string;
-  label: string;
-  path: string;
-  icon: ReactNode;
-}
-
-export const navigationItems: NavigationItem[] = [
+export const navigationItems = [
   { key: "home", label: "首页", path: "/", icon: <HomeOutlined /> },
   { key: "speaking", label: "口语", path: "/speaking", icon: <AudioOutlined /> },
   { key: "vocabulary", label: "词汇", path: "/vocabulary", icon: <BookOutlined /> },

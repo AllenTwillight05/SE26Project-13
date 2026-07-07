@@ -1,4 +1,3 @@
-import type { RouteObject } from "react-router-dom";
 import { Navigate } from "react-router-dom";
 import { AppLayout } from "../layouts/AppLayout";
 import { DashboardPage } from "../pages/DashboardPage";
@@ -7,7 +6,7 @@ import { ProfilePage } from "../pages/ProfilePage";
 import { SpeakingPage } from "../pages/SpeakingPage";
 import { VocabularyPage } from "../pages/VocabularyPage";
 
-export const appRoutes: RouteObject[] = [
+export const appRoutes = [
   {
     path: "/",
     element: <AppLayout />,
@@ -16,14 +15,11 @@ export const appRoutes: RouteObject[] = [
       { path: "speaking", element: <SpeakingPage /> },
       { path: "vocabulary", element: <VocabularyPage /> },
       { path: "grammar", element: <GrammarPage /> },
-      { path: "profile", element: <ProfilePage /> },
-      // Legacy redirects keep old links usable after renaming pages to product terms.
-      { path: "practice", element: <Navigate to="/speaking" replace /> },
-      { path: "feedback", element: <Navigate to="/profile" replace /> },
-      { path: "plan", element: <Navigate to="/profile" replace /> }
+      { path: "profile", element: <ProfilePage /> }
     ]
   },
   {
+    // 未匹配到的地址统一回首页，避免出现空白页。
     path: "*",
     element: <Navigate to="/" replace />
   }

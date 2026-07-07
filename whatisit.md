@@ -1,3 +1,0 @@
-lalalalala
-yahooooooooooooooooooooooooooooooooooooooooo
-q(≧▽≦q)

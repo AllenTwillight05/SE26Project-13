@@ -1,4 +1,3 @@
-import type { AppServices } from "./contracts";
 import {
   dashboardOverviewMock,
   grammarSnapshotMock,
@@ -7,7 +6,7 @@ import {
   vocabularySnapshotMock
 } from "./mockData";
 
-function simulateLatency<T>(value: T, delay = 120): Promise<T> {
+function simulateLatency(value, delay = 120) {
   return new Promise((resolve) => {
     window.setTimeout(() => {
       resolve(structuredClone(value));
@@ -17,7 +16,7 @@ function simulateLatency<T>(value: T, delay = 120): Promise<T> {
 
 // Mock implementation used by default. Keep mock payloads close to contracts so
 // frontend members can develop pages before backend endpoints are ready.
-export function createMockServices(): AppServices {
+export function createMockServices() {
   return {
     dashboard: {
       getOverview: () => simulateLatency(dashboardOverviewMock)

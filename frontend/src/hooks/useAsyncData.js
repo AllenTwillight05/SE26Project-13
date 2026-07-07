@@ -1,16 +1,7 @@
-import { type DependencyList, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-interface AsyncState<T> {
-  data: T | null;
-  loading: boolean;
-  error: Error | null;
-}
-
-export function useAsyncData<T>(
-  loader: () => Promise<T>,
-  deps: DependencyList
-): AsyncState<T> {
-  const [state, setState] = useState<AsyncState<T>>({
+export function useAsyncData(loader, deps) {
+  const [state, setState] = useState({
     data: null,
     loading: true,
     error: null
@@ -19,6 +10,7 @@ export function useAsyncData<T>(
   useEffect(() => {
     let active = true;
 
+    // 保留旧数据，只刷新 loading，避免页面切换时先闪成空白。
     setState((current) => ({
       data: current.data,
       loading: true,
@@ -37,7 +29,7 @@ export function useAsyncData<T>(
           error: null
         });
       })
-      .catch((error: Error) => {
+      .catch((error) => {
         if (!active) {
           return;
         }
@@ -50,10 +42,10 @@ export function useAsyncData<T>(
       });
 
     return () => {
+      // 组件卸载后阻止过期请求回写状态，避免 React 警告。
       active = false;
     };
   }, deps);
 
   return state;
 }
-

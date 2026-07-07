@@ -7,16 +7,17 @@
 ## 技术栈
 
 - 后端：Spring Boot
-- 前端：React
+- 前端：React + JavaScript + Vite
 - UI 组件库：Ant Design
 - 设计风格：Apple 风格、轻拟物质感、高级感仪表盘界面
 
 ## 前端基础框架
 
 - 前端工程位于 `frontend/` 目录，后续 Spring Boot 后端建议放在 `backend/` 目录。
-- 基于 Vite + React + TypeScript 搭建前端工程。
+- 基于 Vite + React + JavaScript 搭建前端工程。
 - 使用 Ant Design 作为基础组件库，并通过主题 token 与自定义样式统一视觉风格。
 - 已完成路由拆分、布局解耦、服务层抽象、mock 数据和 HTTP 接口预留。
+- 页面独有组件放在 `frontend/src/components/<PageName>/`，公共组件放在 `frontend/src/components/common/`。
 - 当前首页只保留基础入口面板，覆盖：
   - 顶部导航
   - 项目简介
@@ -31,8 +32,6 @@
 - `/vocabulary`：词汇页
 - `/grammar`：语法页
 - `/profile`：个人页
-
-旧路由 `/practice`、`/feedback`、`/plan` 会自动重定向到新的产品页，避免已有链接失效。
 
 ## 接口切换
 

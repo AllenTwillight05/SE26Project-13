@@ -1,11 +1,10 @@
 import { useCallback } from "react";
-import { Button, Flex, Progress, Tag, Typography } from "antd";
+import { Tag } from "antd";
+import { VocabularyDeckGrid } from "../components/Vocabulary/VocabularyDeckGrid";
 import { AsyncPage } from "../components/common/AsyncPage";
 import { PageSectionHeader } from "../components/common/PageSectionHeader";
 import { useAsyncData } from "../hooks/useAsyncData";
 import { useAppServices } from "../services/ServiceContext";
-
-const { Title, Paragraph, Text } = Typography;
 
 export function VocabularyPage() {
   const { vocabulary } = useAppServices();
@@ -29,28 +28,9 @@ export function VocabularyPage() {
             />
           </section>
 
-          <section className="feature-grid">
-            {data.cards.map((item) => (
-              <article className="deck-card" key={item.id}>
-                <Flex justify="space-between" align="center">
-                  <Title level={4}>{item.word}</Title>
-                  <Tag bordered={false} className="soft-tag">
-                    {item.tag}
-                  </Tag>
-                </Flex>
-                <Paragraph>{item.usage}</Paragraph>
-                <Progress percent={item.progress} showInfo={false} strokeLinecap="round" />
-                <Flex justify="space-between" align="center">
-                  <Text type="secondary">掌握度</Text>
-                  <Text>{item.progress}%</Text>
-                </Flex>
-                <Button>加入复习队列</Button>
-              </article>
-            ))}
-          </section>
+          <VocabularyDeckGrid cards={data.cards} />
         </div>
       ) : null}
     </AsyncPage>
   );
 }
-

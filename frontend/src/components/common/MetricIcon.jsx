@@ -5,9 +5,8 @@ import {
   RiseOutlined,
   SoundOutlined
 } from "@ant-design/icons";
-import type { QuickStat } from "../../services/contracts";
 
-const iconMap: Record<QuickStat["icon"], React.ReactNode> = {
+const iconMap = {
   microphone: <AudioOutlined />,
   waveform: <SoundOutlined />,
   streak: <FireOutlined />,
@@ -15,7 +14,6 @@ const iconMap: Record<QuickStat["icon"], React.ReactNode> = {
   clock: <ClockCircleOutlined />
 };
 
-export function MetricIcon({ icon }: Pick<QuickStat, "icon">) {
+export function MetricIcon({ icon }) {
   return <>{iconMap[icon]}</>;
 }
-

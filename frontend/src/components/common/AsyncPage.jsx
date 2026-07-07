@@ -1,13 +1,6 @@
-import type { ReactNode } from "react";
 import { Result, Skeleton } from "antd";
 
-interface AsyncPageProps {
-  loading: boolean;
-  error: Error | null;
-  children: ReactNode;
-}
-
-export function AsyncPage({ loading, error, children }: AsyncPageProps) {
+export function AsyncPage({ loading, error, children }) {
   if (loading) {
     return (
       <div className="page-stack">
@@ -32,4 +25,3 @@ export function AsyncPage({ loading, error, children }: AsyncPageProps) {
 
   return <>{children}</>;
 }
-

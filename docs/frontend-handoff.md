@@ -4,7 +4,7 @@
 
 当前仓库已经具备可并行开发的前端基础框架：
 
-- React + TypeScript + Vite 工程已搭建。
+- React + JavaScript + Vite 工程已搭建。
 - Ant Design 已接入，并统一了基础主题。
 - 页面已按产品入口拆分为：首页、口语、词汇、语法、个人。
 - 每个页面都有独立路由和独立页面文件。
@@ -39,42 +39,50 @@ npm run build
 
 | 页面 | 路由 | 文件 | 适合负责的成员 |
 | --- | --- | --- | --- |
-| 首页 | `/` | `frontend/src/pages/DashboardPage.tsx` | 框架/集成负责人 |
-| 口语 | `/speaking` | `frontend/src/pages/SpeakingPage.tsx` | 口语练习负责人 |
-| 词汇 | `/vocabulary` | `frontend/src/pages/VocabularyPage.tsx` | 词汇练习负责人 |
-| 语法 | `/grammar` | `frontend/src/pages/GrammarPage.tsx` | 语法练习负责人 |
-| 个人 | `/profile` | `frontend/src/pages/ProfilePage.tsx` | 个人中心/学习计划负责人 |
-
-兼容旧路由：
-
-- `/practice` 会重定向到 `/speaking`
-- `/feedback` 会重定向到 `/profile`
-- `/plan` 会重定向到 `/profile`
+| 首页 | `/` | `frontend/src/pages/DashboardPage.jsx` | 框架/集成负责人 |
+| 口语 | `/speaking` | `frontend/src/pages/SpeakingPage.jsx` | 口语练习负责人 |
+| 词汇 | `/vocabulary` | `frontend/src/pages/VocabularyPage.jsx` | 词汇练习负责人 |
+| 语法 | `/grammar` | `frontend/src/pages/GrammarPage.jsx` | 语法练习负责人 |
+| 个人 | `/profile` | `frontend/src/pages/ProfilePage.jsx` | 个人中心/学习计划负责人 |
 
 ## 4. 目录结构
 
 ```text
 frontend/src
 ├── app                  # 应用入口、Provider、Ant Design 主题
-├── components           # 公共组件和导航组件
+├── components           # 公共组件、导航组件、页面私有组件
+│   ├── Dashboard        # 首页私有组件
+│   ├── Speaking         # 口语页私有组件
+│   ├── Vocabulary       # 词汇页私有组件
+│   ├── Grammar          # 语法页私有组件
+│   ├── Profile          # 个人页私有组件
+│   ├── common           # 跨页面公共组件
+│   └── navigation       # 导航组件
 ├── hooks                # 通用 Hook
 ├── layouts              # 全局布局
 ├── pages                # 五个产品页面
 ├── router               # 路由配置和导航配置
-├── services             # 接口类型、mock 服务、HTTP 服务
+├── services             # 接口形状说明、mock 服务、HTTP 服务
 └── styles.css           # 全局布局和业务视觉样式
 ```
 
 重点文件：
 
-- `frontend/src/router/routes.tsx`：页面路由。
-- `frontend/src/router/navigation.tsx`：顶部导航。
-- `frontend/src/services/contracts.ts`：前后端数据契约。
-- `frontend/src/services/mockData.ts`：前端开发用 mock 数据。
-- `frontend/src/services/httpServices.ts`：真实 HTTP 接口实现。
-- `frontend/src/services/endpoints.ts`：后端接口路径。
-- `frontend/src/app/theme.ts`：Ant Design 主题 token。
+- `frontend/src/router/routes.jsx`：页面路由。
+- `frontend/src/router/navigation.jsx`：顶部导航。
+- `frontend/src/services/contracts.js`：前后端数据形状说明。
+- `frontend/src/services/mockData.js`：前端开发用 mock 数据。
+- `frontend/src/services/httpServices.js`：真实 HTTP 接口实现。
+- `frontend/src/services/endpoints.js`：后端接口路径。
+- `frontend/src/app/theme.js`：Ant Design 主题 token。
 - `frontend/src/styles.css`：页面布局、卡片、响应式和 Apple 风格视觉。
+
+组件放置约定：
+
+- 页面文件只负责取数、组合页面和连接路由入口。
+- 某个页面独有的组件放在 `frontend/src/components/<PageName>/`，例如口语页放 `frontend/src/components/Speaking/`。
+- 多个页面都会复用的组件放在 `frontend/src/components/common/`。
+- 导航相关组件放在 `frontend/src/components/navigation/`。
 
 ## 5. 服务接口边界
 
@@ -88,11 +96,11 @@ frontend/src
 - `grammar.getSnapshot()`：语法主题、例句、掌握度。
 - `profile.getSnapshot()`：个人信息、学习计划、能力进度、最近反馈。
 
-成员开发页面时，优先改自己负责的页面和对应 service contract，不要把其他模块逻辑塞进首页。
+成员开发页面时，优先改自己负责的页面、页面私有组件目录和对应 service 数据形状，不要把其他模块逻辑塞进首页。
 
 ## 6. 后端接口预留
 
-接口路径集中在 `frontend/src/services/endpoints.ts`：
+接口路径集中在 `frontend/src/services/endpoints.js`：
 
 ```text
 /api/dashboard/overview
@@ -102,7 +110,7 @@ frontend/src
 /api/profile/snapshot
 ```
 
-接 Spring Boot 时，后端返回 JSON 结构需要对齐 `frontend/src/services/contracts.ts`。
+接 Spring Boot 时，后端返回 JSON 结构需要对齐 `frontend/src/services/contracts.js` 中记录的数据形状。
 
 切换真实接口：
 
@@ -121,33 +129,37 @@ VITE_API_BASE_URL=http://localhost:8080
 
 口语负责人：
 
-- 页面：`frontend/src/pages/SpeakingPage.tsx`
+- 页面：`frontend/src/pages/SpeakingPage.jsx`
+- 私有组件：`frontend/src/components/Speaking/`
 - 数据：`speaking.getCatalog()`
 - 后续接口：场景列表、会话创建、录音上传、口语评分。
 
 词汇负责人：
 
-- 页面：`frontend/src/pages/VocabularyPage.tsx`
+- 页面：`frontend/src/pages/VocabularyPage.jsx`
+- 私有组件：`frontend/src/components/Vocabulary/`
 - 数据：`vocabulary.getSnapshot()`
 - 后续接口：词卡列表、复习队列、掌握度更新。
 
 语法负责人：
 
-- 页面：`frontend/src/pages/GrammarPage.tsx`
+- 页面：`frontend/src/pages/GrammarPage.jsx`
+- 私有组件：`frontend/src/components/Grammar/`
 - 数据：`grammar.getSnapshot()`
 - 后续接口：语法主题、例句、题目、练习结果。
 
 个人负责人：
 
-- 页面：`frontend/src/pages/ProfilePage.tsx`
+- 页面：`frontend/src/pages/ProfilePage.jsx`
+- 私有组件：`frontend/src/components/Profile/`
 - 数据：`profile.getSnapshot()`
 - 后续接口：学习计划、进度统计、最近反馈、用户资料。
 
 框架负责人：
 
-- 路由：`frontend/src/router/routes.tsx`
-- 导航：`frontend/src/router/navigation.tsx`
-- 主题：`frontend/src/app/theme.ts`
+- 路由：`frontend/src/router/routes.jsx`
+- 导航：`frontend/src/router/navigation.jsx`
+- 主题：`frontend/src/app/theme.js`
 - 全局样式：`frontend/src/styles.css`
 
 ## 8. 交付检查清单
@@ -160,7 +172,7 @@ VITE_API_BASE_URL=http://localhost:8080
 - 首页只作为基础入口，不承载复杂业务。
 - 五个页面路由都能打开。
 - mock 数据能支持成员独立开发。
-- 接口契约集中在 `contracts.ts`，后续便于和 Spring Boot 对齐。
+- 接口形状集中在 `contracts.js`，后续便于和 Spring Boot 对齐。
 
 ## 9. 后续建议
 

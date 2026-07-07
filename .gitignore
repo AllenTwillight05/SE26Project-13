@@ -9,3 +9,5 @@ frontend/.env
 frontend/.env.local
 .env.*.local
 frontend/.env.*.local
+
+myreference.md

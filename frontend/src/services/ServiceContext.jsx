@@ -1,17 +1,11 @@
-import type { PropsWithChildren } from "react";
 import { createContext, useContext } from "react";
-import type { AppServices } from "./contracts";
 
-const AppServicesContext = createContext<AppServices | null>(null);
-
-interface AppServicesProviderProps extends PropsWithChildren {
-  services: AppServices;
-}
+const AppServicesContext = createContext(null);
 
 export function AppServicesProvider({
   services,
   children
-}: AppServicesProviderProps) {
+}) {
   return (
     <AppServicesContext.Provider value={services}>
       {children}
@@ -20,6 +14,7 @@ export function AppServicesProvider({
 }
 
 export function useAppServices() {
+  // 页面统一从 context 取服务，避免各页面自己决定走 mock 还是 http。
   const services = useContext(AppServicesContext);
 
   if (!services) {
@@ -28,4 +23,3 @@ export function useAppServices() {
 
   return services;
 }
-

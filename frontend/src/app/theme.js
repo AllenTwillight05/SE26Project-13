@@ -36,5 +36,4 @@ export const appTheme = {
       remainingColor: "rgba(17, 17, 17, 0.08)"
     }
   }
-} as const;
-
+};

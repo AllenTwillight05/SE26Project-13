@@ -1,6 +1,6 @@
 # API Contracts
 
-本文件说明前端已经预留的 Spring Boot 接口。后端返回 JSON 需要对齐 `frontend/src/services/contracts.ts`。
+本文件说明前端已经预留的 Spring Boot 接口。后端返回 JSON 需要对齐 `frontend/src/services/contracts.js` 中记录的数据形状。
 
 默认前端使用 mock 数据。接入真实接口时，创建 `.env`：
 
@@ -17,17 +17,17 @@ VITE_API_BASE_URL=http://localhost:8080
 
 核心结构：
 
-```ts
-interface DashboardOverview {
-  productTag: string;
-  stackTag: string;
-  headline: string;
-  description: string;
-  primaryActionLabel: string;
-  secondaryActionLabel: string;
-  quickStats: QuickStat[];
-  focusIntensity: string;
-  suggestedDuration: string;
+```js
+{
+  productTag: "string",
+  stackTag: "string",
+  headline: "string",
+  description: "string",
+  primaryActionLabel: "string",
+  secondaryActionLabel: "string",
+  quickStats: [{ label: "string", value: "string", icon: "microphone" }],
+  focusIntensity: "string",
+  suggestedDuration: "string"
 }
 ```
 
@@ -39,12 +39,22 @@ interface DashboardOverview {
 
 核心结构：
 
-```ts
-interface SpeakingCatalog {
-  modes: string[];
-  scriptPreviewTitle: string;
-  scriptPreviewLines: string[];
-  scenarios: Scenario[];
+```js
+{
+  modes: ["string"],
+  scriptPreviewTitle: "string",
+  scriptPreviewLines: ["string"],
+  scenarios: [
+    {
+      id: "string",
+      title: "string",
+      level: "string",
+      accent: "string",
+      duration: "string",
+      summary: "string",
+      tone: "blue"
+    }
+  ]
 }
 ```
 
@@ -62,11 +72,11 @@ interface SpeakingCatalog {
 
 核心结构：
 
-```ts
-interface VocabularySnapshot {
-  dailyGoal: string;
-  retentionHint: string;
-  cards: VocabularyCard[];
+```js
+{
+  dailyGoal: "string",
+  retentionHint: "string",
+  cards: [{ id: "string", word: "string", usage: "string", progress: 0, tag: "string" }]
 }
 ```
 
@@ -83,10 +93,19 @@ interface VocabularySnapshot {
 
 核心结构：
 
-```ts
-interface GrammarSnapshot {
-  focus: string;
-  topics: GrammarTopic[];
+```js
+{
+  focus: "string",
+  topics: [
+    {
+      id: "string",
+      title: "string",
+      summary: "string",
+      examples: ["string"],
+      progress: 0,
+      tag: "string"
+    }
+  ]
 }
 ```
 
@@ -103,13 +122,23 @@ interface GrammarSnapshot {
 
 核心结构：
 
-```ts
-interface ProfileSnapshot {
-  learnerName: string;
-  level: string;
-  streak: string;
-  feedback: FeedbackSummary;
-  dailyPlan: DailyPlan;
+```js
+{
+  learnerName: "string",
+  level: "string",
+  streak: "string",
+  feedback: {
+    statusLabel: "string",
+    playbackActionLabel: "string",
+    metrics: [{ key: "string", label: "string", value: "string" }],
+    notes: ["string"]
+  },
+  dailyPlan: {
+    autoPilotEnabled: true,
+    weeklyImprovement: "string",
+    items: [{ id: "string", time: "string", task: "string", meta: "string", done: false }],
+    progress: [{ id: "string", label: "string", value: 0, tone: "default" }]
+  }
 }
 ```
 
@@ -122,7 +151,7 @@ interface ProfileSnapshot {
 ## 6. 对接约定
 
 - 前端页面只通过 `useAppServices()` 访问数据。
-- 新增接口时，先更新 `contracts.ts`，再更新 `mockData.ts` 和 `httpServices.ts`。
-- 后端字段命名建议使用 camelCase，与 TypeScript 契约保持一致。
-- 错误处理后续集中放在 `frontend/src/services/httpClient.ts`。
-- 鉴权、token、CSRF 等请求头也集中放在 `frontend/src/services/httpClient.ts`。
+- 新增接口时，先更新 `contracts.js`，再更新 `mockData.js` 和 `httpServices.js`。
+- 后端字段命名建议使用 camelCase，与前端数据形状保持一致。
+- 错误处理后续集中放在 `frontend/src/services/httpClient.js`。
+- 鉴权、token、CSRF 等请求头也集中放在 `frontend/src/services/httpClient.js`。
