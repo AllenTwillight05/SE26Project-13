@@ -14,8 +14,7 @@ function simulateLatency(value, delay = 120) {
   });
 }
 
-// Mock implementation used by default. Keep mock payloads close to contracts so
-// frontend members can develop pages before backend endpoints are ready.
+// 默认使用的 mock 服务。mock 数据尽量贴近 contracts.js，方便后端接口未完成时并行开发。
 export function createMockServices() {
   return {
     dashboard: {

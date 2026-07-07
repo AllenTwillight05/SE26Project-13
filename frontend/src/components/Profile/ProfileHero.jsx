@@ -2,6 +2,7 @@ import { Avatar, Flex, Space, Statistic, Typography } from "antd";
 
 const { Title, Text } = Typography;
 
+// 个人页顶部概览只展示用户摘要信息，不在这里处理登录或资料编辑。
 export function ProfileHero({ profile }) {
   return (
     <section className="profile-hero glass-panel">

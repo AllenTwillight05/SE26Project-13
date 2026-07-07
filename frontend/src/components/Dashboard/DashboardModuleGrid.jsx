@@ -8,6 +8,7 @@ import { Typography } from "antd";
 
 const { Text } = Typography;
 
+// 首页模块入口卡片，只负责导航展示，具体页面内容由各自模块维护。
 const moduleCards = [
   {
     title: "口语",
