@@ -4,6 +4,7 @@ import { PageSectionHeader } from "../common/PageSectionHeader";
 
 const { Text } = Typography;
 
+// 学习计划面板只展示今日任务列表，计划生成和更新交给 profile 服务。
 export function LearningPlanPanel({ plan }) {
   return (
     <section className="glass-panel">

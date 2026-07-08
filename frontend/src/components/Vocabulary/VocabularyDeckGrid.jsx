@@ -2,6 +2,7 @@ import { Button, Flex, Progress, Tag, Typography } from "antd";
 
 const { Title, Paragraph, Text } = Typography;
 
+// 词汇卡组只负责词卡展示，加入复习队列的真实行为后续接 service。
 export function VocabularyDeckGrid({ cards }) {
   return (
     <section className="feature-grid">

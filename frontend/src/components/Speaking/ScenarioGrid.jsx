@@ -3,6 +3,7 @@ import { Button, Flex, Space, Tag, Typography } from "antd";
 
 const { Title, Text, Paragraph } = Typography;
 
+// 口语场景列表只负责渲染练习卡片，不处理数据请求和模式状态。
 export function ScenarioGrid({ scenarios, selectedMode }) {
   return (
     <section className="feature-grid">
