@@ -4,6 +4,8 @@ import {
   profileSnapshotMock,
   speakingCatalogMock,
   vocabularyMemoryMock,
+  vocabularyPracticeProgressMock,
+  vocabularyPracticeWordsMock,
   vocabularySnapshotMock
 } from "./mockData";
 
@@ -26,7 +28,9 @@ export function createMockServices() {
     },
     vocabulary: {
       getSnapshot: () => simulateLatency(vocabularySnapshotMock),
-      getVocabularyMemory: () => simulateLatency(vocabularyMemoryMock)
+      getVocabularyMemory: () => simulateLatency(vocabularyMemoryMock),
+      getVocabularyPracticeProgress: () => simulateLatency(vocabularyPracticeProgressMock),
+      getVocabularyPracticeWords: () => simulateLatency(vocabularyPracticeWordsMock)
     },
     grammar: {
       getSnapshot: () => simulateLatency(grammarSnapshotMock)

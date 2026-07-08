@@ -42,6 +42,30 @@ export const contractShapes = {
     retentionRate: 0,
     stats: [{ value: "string", label: "string" }]
   },
+  vocabularyPracticeProgress: {
+    completed: 0,
+    total: 0
+  },
+  vocabularyPracticeWords: [
+    {
+      id: "string",
+      word: "string",
+      phonetic: "string",
+      definition: "string",
+      briefTranslation: "string",
+      translation: "string",
+      collins: "string",
+      oxford: "string",
+      tag: "string",
+      bnc: "string",
+      frq: "string",
+      exchange: "string",
+      uk_audio: "string",
+      us_audio: "string",
+      chineseOptions: ["string"],
+      englishOptions: ["string"]
+    }
+  ],
   grammarSnapshot: {
     focus: "string",
     topics: [

@@ -16,7 +16,11 @@ export function createHttpServices(baseUrl = "") {
     },
     vocabulary: {
       getSnapshot: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.vocabularySnapshot)),
-      getVocabularyMemory: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.vocabularyMemory))
+      getVocabularyMemory: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.vocabularyMemory)),
+      getVocabularyPracticeProgress: () =>
+        getJson(withBaseUrl(baseUrl, API_ENDPOINTS.vocabularyPracticeProgress)),
+      getVocabularyPracticeWords: () =>
+        getJson(withBaseUrl(baseUrl, API_ENDPOINTS.vocabularyPracticeWords))
     },
     grammar: {
       getSnapshot: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarSnapshot))

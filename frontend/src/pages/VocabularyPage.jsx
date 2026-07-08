@@ -1,7 +1,9 @@
 import { useCallback } from "react";
 import { BookOutlined, FireOutlined, RocketOutlined, StarOutlined } from "@ant-design/icons";
 import { Space, Tag, Typography } from "antd";
+import { useNavigate } from "react-router-dom";
 import { MemoryRetentionPanel } from "../components/Vocabulary/MemoryRetentionPanel";
+import { PracticeProgressRing } from "../components/Vocabulary/PracticeProgressRing";
 import { VocabularyLevelCard } from "../components/Vocabulary/VocabularyLevelCard";
 import { VocabularyWordbookButton } from "../components/Vocabulary/VocabularyWordbookButton";
 import { AsyncPage } from "../components/common/AsyncPage";
@@ -42,8 +44,16 @@ const practiceLevels = [
 ];
 
 export function VocabularyPage() {
+  const navigate = useNavigate();
   const { vocabulary } = useAppServices();
-  const loader = useCallback(() => vocabulary.getVocabularyMemory(), [vocabulary]);
+  const loader = useCallback(async () => {
+    const [memory, practiceProgress] = await Promise.all([
+      vocabulary.getVocabularyMemory(),
+      vocabulary.getVocabularyPracticeProgress()
+    ]);
+
+    return { memory, practiceProgress };
+  }, [vocabulary]);
   const { data, loading, error } = useAsyncData(loader, [loader]);
 
   return (
@@ -63,7 +73,12 @@ export function VocabularyPage() {
               </Paragraph>
             </div>
 
-            <MemoryRetentionPanel overview={data} />
+            <PracticeProgressRing
+              completed={data.practiceProgress.completed}
+              total={data.practiceProgress.total}
+            />
+
+            <MemoryRetentionPanel overview={data.memory} />
           </section>
 
           <section className="vocabulary-action-grid">
@@ -72,6 +87,7 @@ export function VocabularyPage() {
                 description={level.description}
                 icon={level.icon}
                 key={level.key}
+                onClick={() => navigate(`/vocabulary/practice/${level.key}`)}
                 tag={level.tag}
                 title={level.title}
               />

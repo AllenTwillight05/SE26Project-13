@@ -506,7 +506,7 @@ a {
 
 .vocabulary-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.74fr);
+  grid-template-columns: minmax(320px, 0.82fr) minmax(190px, 0.42fr) minmax(430px, 0.9fr);
   gap: 24px;
   align-items: stretch;
 }
@@ -527,6 +527,33 @@ a {
 .vocabulary-hero__copy p.ant-typography {
   max-width: 58ch;
   color: var(--text-soft);
+}
+
+.practice-progress-ring {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 16px;
+  min-height: 280px;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.28)),
+    rgba(17, 17, 17, 0.035);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.practice-progress-ring h4.ant-typography {
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
+.practice-progress-ring__value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111111;
 }
 
 .memory-panel {
@@ -551,12 +578,12 @@ a {
 .memory-stat-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .memory-stat {
   min-height: 112px;
-  padding: 16px;
+  padding: 14px;
   border: 1px solid rgba(255, 255, 255, 0.58);
   border-radius: 18px;
   background:
@@ -638,6 +665,205 @@ a {
   gap: 10px;
   font-size: 18px;
   font-weight: 600;
+}
+
+.practice-shell {
+  display: grid;
+  gap: 22px;
+}
+
+.practice-shell h2.ant-typography {
+  margin-top: 14px;
+  margin-bottom: 0;
+}
+
+.practice-question {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.28)),
+    rgba(17, 17, 17, 0.035);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.practice-question h2.ant-typography,
+.practice-question h3.ant-typography {
+  margin: 0;
+}
+
+.answer-option.ant-btn {
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 16px;
+  text-align: left;
+  white-space: normal;
+}
+
+.audio-prompt-button.ant-btn {
+  width: fit-content;
+  min-height: 54px;
+  padding-inline: 20px;
+}
+
+.answer-feedback {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.28)),
+    rgba(17, 17, 17, 0.035);
+}
+
+.answer-feedback--correct {
+  color: #0f766e;
+}
+
+.answer-feedback--wrong {
+  color: #b42318;
+}
+
+.vocabulary-word-card {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.66);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.44)),
+    var(--surface-solid);
+  box-shadow: var(--shadow), var(--inner-glow);
+  backdrop-filter: blur(28px) saturate(1.18);
+}
+
+.vocabulary-word-card h3.ant-typography {
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+
+.word-audio-actions {
+  margin-top: 10px;
+}
+
+.word-card-section {
+  display: grid;
+  gap: 6px;
+}
+
+.word-multiline.ant-typography {
+  margin-bottom: 0;
+  white-space: pre-line;
+}
+
+.word-definition.ant-typography {
+  color: var(--text-soft);
+}
+
+.word-meta .ant-descriptions-item-label {
+  color: var(--text-soft);
+}
+
+.word-exchange.ant-typography {
+  margin-bottom: 0;
+  color: var(--text-soft);
+  font-family: "SF Mono", "Consolas", monospace;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.word-example.ant-typography {
+  color: var(--text-soft);
+  font-family: "SF Mono", "Consolas", monospace;
+}
+
+.favorite-button.ant-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: rgba(17, 17, 17, 0.42);
+}
+
+.favorite-button--active.ant-btn,
+.favorite-button--active.ant-btn:hover {
+  color: #c08a1d !important;
+  border-color: rgba(192, 138, 29, 0.32) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 237, 174, 0.9), rgba(255, 255, 255, 0.46)),
+    rgba(192, 138, 29, 0.1) !important;
+}
+
+.rating-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.rating-button.ant-btn {
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  height: auto;
+  min-height: 56px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: normal;
+}
+
+.rating-button__shortcut.ant-typography {
+  color: rgba(17, 17, 17, 0.54);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.rating-button--again.ant-btn {
+  border-color: rgba(180, 35, 24, 0.22);
+  color: #8f1f17;
+  background:
+    linear-gradient(145deg, rgba(255, 228, 225, 0.9), rgba(255, 255, 255, 0.42)),
+    rgba(180, 35, 24, 0.08);
+}
+
+.rating-button--hard.ant-btn {
+  border-color: rgba(194, 95, 0, 0.24);
+  color: #9a5b00;
+  background:
+    linear-gradient(145deg, rgba(255, 235, 204, 0.94), rgba(255, 255, 255, 0.42)),
+    rgba(194, 95, 0, 0.08);
+}
+
+.rating-button--good.ant-btn {
+  border-color: rgba(15, 118, 110, 0.24);
+  color: #0f766e;
+  background:
+    linear-gradient(145deg, rgba(214, 250, 239, 0.94), rgba(255, 255, 255, 0.42)),
+    rgba(15, 118, 110, 0.08);
+}
+
+.rating-button--easy.ant-btn {
+  border-color: rgba(35, 86, 196, 0.24);
+  color: #2356c4;
+  background:
+    linear-gradient(145deg, rgba(219, 234, 254, 0.94), rgba(255, 255, 255, 0.42)),
+    rgba(35, 86, 196, 0.08);
+}
+
+.rating-button--selected.ant-btn {
+  border-color: rgba(17, 17, 17, 0.32);
+  box-shadow:
+    inset 0 0 0 2px rgba(17, 17, 17, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 16px 34px rgba(63, 81, 181, 0.14);
+  transform: translateY(-1px);
 }
 
 .scenario-card__body--spacious {
@@ -772,5 +998,13 @@ a {
 
   .memory-stat-grid {
     grid-template-columns: 1fr;
+  }
+
+  .audio-prompt-button.ant-btn {
+    width: 100%;
+  }
+
+  .rating-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

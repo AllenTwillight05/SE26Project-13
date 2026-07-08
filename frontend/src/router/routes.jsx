@@ -5,6 +5,7 @@ import { GrammarPage } from "../pages/GrammarPage";
 import { ProfilePage } from "../pages/ProfilePage";
 import { SpeakingPage } from "../pages/SpeakingPage";
 import { VocabularyPage } from "../pages/VocabularyPage";
+import { VocabularyPracticePage } from "../pages/VocabularyPracticePage";
 
 export const appRoutes = [
   {
@@ -14,6 +15,7 @@ export const appRoutes = [
       { index: true, element: <DashboardPage /> },
       { path: "speaking", element: <SpeakingPage /> },
       { path: "vocabulary", element: <VocabularyPage /> },
+      { path: "vocabulary/practice/:level", element: <VocabularyPracticePage /> },
       { path: "grammar", element: <GrammarPage /> },
       { path: "profile", element: <ProfilePage /> }
     ]

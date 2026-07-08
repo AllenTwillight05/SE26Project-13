@@ -2,9 +2,9 @@ import { Button, Flex, Tag, Typography } from "antd";
 
 const { Text } = Typography;
 
-export function VocabularyLevelCard({ title, description, icon, tag }) {
+export function VocabularyLevelCard({ title, description, icon, tag, onClick }) {
   return (
-    <Button className="practice-level-button" htmlType="button">
+    <Button className="practice-level-button" htmlType="button" onClick={onClick}>
       <span className="practice-level-button__icon">{icon}</span>
       <span className="practice-level-button__body">
         <Flex justify="space-between" align="center" gap={12}>
