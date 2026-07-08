@@ -35,6 +35,13 @@ const ratingShortcuts = {
   4: "简单"
 };
 
+const emptyRatingSummary = {
+  重来: 0,
+  困难: 0,
+  良好: 0,
+  简单: 0
+};
+
 function getCorrectAnswer(question, questionType) {
   if (questionType === "chineseToEnglish") {
     return question.word;
@@ -72,6 +79,7 @@ export function VocabularyPracticePage() {
   const [questionTypeIndex, setQuestionTypeIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [selectedRating, setSelectedRating] = useState(defaultRating);
+  const [answerRecords, setAnswerRecords] = useState([]);
 
   const currentQuestion = practiceWords?.[questionIndex];
   const questionType = questionTypes[questionTypeIndex];
@@ -84,6 +92,7 @@ export function VocabularyPracticePage() {
 
   useEffect(() => {
     setQuestionIndex(0);
+    setAnswerRecords([]);
     resetAnswerState();
   }, [level]);
 
@@ -114,8 +123,69 @@ export function VocabularyPracticePage() {
   }
 
   function handleNextQuestion() {
+    saveCurrentAnswer();
     setQuestionIndex((current) => (current + 1) % practiceWords.length);
     resetAnswerState();
+  }
+
+  function buildCurrentRecord() {
+    if (!answered || !currentQuestion) {
+      return null;
+    }
+
+    return {
+      correct: isCorrect,
+      questionType,
+      rating: selectedRating,
+      selectedAnswer,
+      wordId: currentQuestion.id,
+      word: currentQuestion.word
+    };
+  }
+
+  function saveCurrentAnswer() {
+    const record = buildCurrentRecord();
+
+    if (!record) {
+      return;
+    }
+
+    setAnswerRecords((current) => [...current, record]);
+  }
+
+  function buildSummary(records) {
+    return records.reduce(
+      (summary, record) => {
+        summary.total += 1;
+
+        if (record.correct) {
+          summary.correct += 1;
+        } else {
+          summary.wrong += 1;
+        }
+
+        summary.ratings[record.rating] = (summary.ratings[record.rating] ?? 0) + 1;
+        return summary;
+      },
+      {
+        total: 0,
+        correct: 0,
+        wrong: 0,
+        ratings: { ...emptyRatingSummary }
+      }
+    );
+  }
+
+  function handleFinishPractice() {
+    const currentRecord = buildCurrentRecord();
+    const finalRecords = currentRecord ? [...answerRecords, currentRecord] : answerRecords;
+
+    navigate("/vocabulary/result", {
+      state: {
+        level,
+        summary: buildSummary(finalRecords)
+      }
+    });
   }
 
   function handlePlayAudio() {
@@ -181,22 +251,32 @@ export function VocabularyPracticePage() {
             />
           ) : null}
 
-          <Flex justify="end">
+          <Flex justify="end" gap={12} wrap>
             {answered ? (
-              <Button
-                htmlType="button"
-                icon={<ArrowRightOutlined />}
-                onClick={handleNextQuestion}
-                size="large"
-                type="primary"
-              >
-                下一题
-              </Button>
+              <>
+                <Button
+                  htmlType="button"
+                  icon={<StopOutlined />}
+                  onClick={handleFinishPractice}
+                  size="large"
+                >
+                  结束练习
+                </Button>
+                <Button
+                  htmlType="button"
+                  icon={<ArrowRightOutlined />}
+                  onClick={handleNextQuestion}
+                  size="large"
+                  type="primary"
+                >
+                  下一题
+                </Button>
+              </>
             ) : (
               <Button
                 htmlType="button"
                 icon={<StopOutlined />}
-                onClick={() => navigate("/vocabulary")}
+                onClick={handleFinishPractice}
                 size="large"
               >
                 结束练习

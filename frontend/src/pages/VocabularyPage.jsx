@@ -92,7 +92,7 @@ export function VocabularyPage() {
                 title={level.title}
               />
             ))}
-            <VocabularyWordbookButton />
+            <VocabularyWordbookButton onClick={() => navigate("/vocabulary/wordbook")} />
           </section>
         </div>
       ) : null}

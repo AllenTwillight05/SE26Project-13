@@ -151,6 +151,39 @@ export const vocabularyPracticeWordsMock = [
   }
 ];
 
+export const vocabularyWordbookWordsMock = [
+  {
+    id: "purple",
+    word: "purple",
+    phonetic: "'pә:pl",
+    definition: "n. a purple color or pigment\nn. of imperial status",
+    briefTranslation: "紫色",
+    tag: "cet4 cet6 toefl",
+    us_audio: "https://dictionary.cambridge.org/media/english/us_pron/p/pur/purpl/purple.mp3",
+    favorited: true
+  },
+  {
+    id: "flagrant",
+    word: "flagrant",
+    phonetic: "'fleigrәnt",
+    definition: "s conspicuously and outrageously bad or reprehensible",
+    briefTranslation: "恶名昭著的",
+    tag: "gre",
+    us_audio: "https://dictionary.cambridge.org/media/english/us_pron/f/fla/flagr/flagrant.mp3",
+    favorited: false
+  },
+  {
+    id: "itinerary",
+    word: "itinerary",
+    phonetic: "ai'tinәrәri",
+    definition: "n. a proposed route of travel",
+    briefTranslation: "旅行计划",
+    tag: "cet6 toefl ielts",
+    us_audio: "",
+    favorited: true
+  }
+];
+
 export const grammarSnapshotMock = {
   focus: "本周重点：时态、从句与口语连接词",
   topics: [

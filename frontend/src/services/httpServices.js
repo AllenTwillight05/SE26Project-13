@@ -20,7 +20,9 @@ export function createHttpServices(baseUrl = "") {
       getVocabularyPracticeProgress: () =>
         getJson(withBaseUrl(baseUrl, API_ENDPOINTS.vocabularyPracticeProgress)),
       getVocabularyPracticeWords: () =>
-        getJson(withBaseUrl(baseUrl, API_ENDPOINTS.vocabularyPracticeWords))
+        getJson(withBaseUrl(baseUrl, API_ENDPOINTS.vocabularyPracticeWords)),
+      getVocabularyWordbookWords: () =>
+        getJson(withBaseUrl(baseUrl, API_ENDPOINTS.vocabularyWordbookWords))
     },
     grammar: {
       getSnapshot: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarSnapshot))

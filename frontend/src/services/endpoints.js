@@ -5,6 +5,7 @@ export const API_ENDPOINTS = {
   vocabularyMemory: "/api/vocabulary/memory",
   vocabularyPracticeProgress: "/api/vocabulary/practice-progress",
   vocabularyPracticeWords: "/api/vocabulary/practice-words",
+  vocabularyWordbookWords: "/api/vocabulary/wordbook-words",
   vocabularySnapshot: "/api/vocabulary/snapshot",
   grammarSnapshot: "/api/grammar/snapshot",
   profileSnapshot: "/api/profile/snapshot"

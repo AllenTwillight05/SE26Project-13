@@ -6,6 +6,8 @@ import { ProfilePage } from "../pages/ProfilePage";
 import { SpeakingPage } from "../pages/SpeakingPage";
 import { VocabularyPage } from "../pages/VocabularyPage";
 import { VocabularyPracticePage } from "../pages/VocabularyPracticePage";
+import { VocabularyResultPage } from "../pages/VocabularyResultPage";
+import { VocabularyWordbookPage } from "../pages/VocabularyWordbookPage";
 
 export const appRoutes = [
   {
@@ -16,6 +18,8 @@ export const appRoutes = [
       { path: "speaking", element: <SpeakingPage /> },
       { path: "vocabulary", element: <VocabularyPage /> },
       { path: "vocabulary/practice/:level", element: <VocabularyPracticePage /> },
+      { path: "vocabulary/result", element: <VocabularyResultPage /> },
+      { path: "vocabulary/wordbook", element: <VocabularyWordbookPage /> },
       { path: "grammar", element: <GrammarPage /> },
       { path: "profile", element: <ProfilePage /> }
     ]

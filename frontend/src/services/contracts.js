@@ -66,6 +66,18 @@ export const contractShapes = {
       englishOptions: ["string"]
     }
   ],
+  vocabularyWordbookWords: [
+    {
+      id: "string",
+      word: "string",
+      phonetic: "string",
+      definition: "string",
+      briefTranslation: "string",
+      tag: "string",
+      us_audio: "string",
+      favorited: true
+    }
+  ],
   grammarSnapshot: {
     focus: "string",
     topics: [
