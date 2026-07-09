@@ -23,7 +23,7 @@ export function GrammarTopicGrid({ topics }) {
           </div>
           <Progress percent={topic.progress} showInfo={false} />
           <Flex justify="space-between" align="center">
-            <Text type="secondary">掌握度</Text>
+            <Text type="secondary">正确率</Text>
             <Button>开始练习</Button>
           </Flex>
         </article>

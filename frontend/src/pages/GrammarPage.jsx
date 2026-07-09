@@ -57,7 +57,7 @@ export function GrammarPage() {
   return (
     <AsyncPage loading={loading} error={error}>
       {data ? (
-        <div className="page-stack">
+        <div className="page-stack grammar-page">
           <section className="vocabulary-hero glass-panel">
             <div className="vocabulary-hero__copy">
               <Space align="center" wrap>

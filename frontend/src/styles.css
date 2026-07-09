@@ -552,6 +552,14 @@ a {
   z-index: 1;
 }
 
+.grammar-page .feature-grid {
+  margin-top: 4px;
+}
+
+.grammar-page .deck-card {
+  margin-top: 0;
+}
+
 .vocabulary-hero {
   display: grid;
   grid-template-columns: minmax(320px, 0.82fr) minmax(190px, 0.42fr) minmax(430px, 0.9fr);
