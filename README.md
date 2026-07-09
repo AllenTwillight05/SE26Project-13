@@ -70,69 +70,7 @@ cd backend
 mvn spring-boot:run
 ```
 
-## 后端登录与权限
-
-后端已实现用户注册、登录、JWT Bearer token 鉴权、`USER` / `ADMIN` 角色权限和 admin 业务接口占位。
-
-### MySQL 配置
-
-默认连接本机 MySQL 的 `english_learning_copilot` 数据库，开发期使用 JPA 自动建表。
-
-可通过环境变量覆盖：
-
-```bash
-SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/english_learning_copilot?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true
-SPRING_DATASOURCE_USERNAME=root
-SPRING_DATASOURCE_PASSWORD=你的密码
-APP_JWT_SECRET=至少32字节的JWT密钥
-APP_JWT_EXPIRATION_MINUTES=120
-```
-
-### 初始管理员
-
-普通注册接口只会创建 `USER`。如需开发环境自动创建管理员，可设置：
-
-```bash
-APP_ADMIN_SEED_ENABLED=true
-APP_ADMIN_SEED_USERNAME=admin
-APP_ADMIN_SEED_EMAIL=admin@example.com
-APP_ADMIN_SEED_PASSWORD=Admin123456
-APP_ADMIN_SEED_DISPLAY_NAME=Administrator
-```
-
-### 认证接口
-
-- `POST /api/auth/register`：普通用户注册，返回 `token` 和 `user`
-- `POST /api/auth/login`：用户名或邮箱登录，返回 `token` 和 `user`
-- `GET /api/auth/me`：根据 `Authorization: Bearer <token>` 返回当前用户
-- `POST /api/auth/logout`：无状态登出占位，前端清理本地 token
-
-### 管理端接口
-
-`/api/admin/**` 仅允许 `ADMIN` 访问。
-
-用户管理：
-
-- `GET /api/admin/users`
-- `PATCH /api/admin/users/{id}/role`
-- `PATCH /api/admin/users/{id}/status`
-
-业务占位接口：
-
-- `/api/admin/question-types`
-- `/api/admin/question-banks`
-- `/api/admin/vocabulary-entries`
-
-这些接口已接入权限控制，目前返回 `501 NOT_IMPLEMENTED` 占位响应，后续题型、题库、词条负责人可直接替换业务实现。
-
-### 后端验证
-
-```bash
-cd backend
-mvn test
-```
-
-当前环境如果没有安装 Java 21 或未配置 `JAVA_HOME`，需要先配置 JDK 后再运行 Maven。
+后端认证、MySQL、JWT、管理员种子、接口与测试说明见：[backend/README.md](backend/README.md)
 
 ## 基本需求
 
