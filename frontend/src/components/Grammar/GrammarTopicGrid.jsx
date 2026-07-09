@@ -2,7 +2,6 @@ import { Button, Flex, Progress, Tag, Typography } from "antd";
 
 const { Title, Paragraph, Text } = Typography;
 
-// 语法主题网格只负责主题和例句展示，练习提交逻辑后续放到语法服务里。
 export function GrammarTopicGrid({ topics }) {
   return (
     <section className="feature-grid">
