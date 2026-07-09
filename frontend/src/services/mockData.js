@@ -16,23 +16,16 @@ export const dashboardOverviewMock = {
 };
 
 export const speakingCatalogMock = {
-  modes: ["专注训练", "自由对话", "复盘模式"],
-  scriptPreviewTitle: "商务会议开场脚本预览",
-  scriptPreviewLines: [
-    "A: Good morning, thanks for making time today.",
-    "B: Happy to be here. Shall we start with the project update?",
-    "A: Yes, I'd like to clarify the delivery timeline first."
-  ],
   scenarios: [
     {
       id: "business-opening",
-      title: "商务会议开场",
+      title: "商务会谈",
       level: "B2",
       accent: "美式表达",
       duration: "18 min",
-      summary: "适合训练礼貌开场、项目状态同步和 deadline 澄清。",
+      summary: "训练礼貌开场、项目进度同步等职场对话技能。",
       tone: "blue",
-      goal: "用自然、礼貌的方式开启会议，并主动确认议程与交付时间。",
+      goal: "掌握得体的会议开场白，并学会主动推进议程与确认交付时间。",
       keywords: ["agenda", "clarify", "timeline", "follow up"],
       prompts: [
         {
@@ -70,11 +63,11 @@ export const speakingCatalogMock = {
       id: "airport-checkin",
       title: "机场值机与改签",
       level: "A2",
-      accent: "旅行高频",
+      accent: "出行必备",
       duration: "12 min",
-      summary: "覆盖值机、座位偏好、航班延误和改签沟通。",
+      summary: "训练值机、改签沟通等旅行技能。",
       tone: "gold",
-      goal: "完成值机、座位偏好和改签请求的基础沟通。",
+      goal: "完成值机、座位选择和请求改签的基础沟通。",
       keywords: ["check in", "boarding pass", "aisle seat", "reschedule"],
       prompts: [
         {
@@ -112,9 +105,9 @@ export const speakingCatalogMock = {
       level: "B1",
       accent: "自然对话",
       duration: "15 min",
-      summary: "用于训练轻松话题切入、追问和自然回应。",
+      summary: "训练轻松破冰、自然接话和巧妙追问。",
       tone: "mint",
-      goal: "用轻松自然的问题打开话题，并通过追问延续交流。",
+      goal: "掌握轻松得体的开场白，并学会用追问保持对话的流畅度。",
       keywords: ["small talk", "recommend", "by the way", "sounds great"],
       prompts: [
         {
@@ -143,6 +136,126 @@ export const speakingCatalogMock = {
         suggestions: [
           "recommendations 的音节较多，可以放慢一点读。",
           "回答后加一句反问，会更像真实社交对话。"
+        ]
+      }
+    },
+    {
+      id: "clinic-visit",
+      title: "医院就诊沟通",
+      level: "B1",
+      accent: "医疗常用语",
+      duration: "16 min",
+      summary: "训练挂号、描述症状、取药等就医场景的英语沟通。",
+      tone: "rose",
+      goal: "能够清晰描述症状，理解医生的简单问诊并配合完成就诊流程。",
+      keywords: ["symptom", "prescription", "pharmacy", "appointment"],
+      prompts: [
+        {
+          role: "coach",
+          text: "Good morning. What seems to be the problem today?"
+        },
+        {
+          role: "learner",
+          text: "I've had a sore throat and a headache for the past three days."
+        },
+        {
+          role: "coach",
+          text: "Have you taken any medication for it so far?"
+        },
+        {
+          role: "learner",
+          text: "I took some painkillers yesterday, but the headache came back this morning."
+        }
+      ],
+      feedback: {
+        totalScore: 80,
+        pronunciation: 83,
+        fluency: 79,
+        speed: "118 WPM",
+        issueSentences: ["I've had a sore throat and a headache for the past three days."],
+        suggestions: [
+          "sore throat 的 /θ/ 音要咬舌，不要读成 /t/。",
+          "描述症状时长句可以拆短，先说主要不适再说持续时间。"
+        ]
+      }
+    },
+    {
+      id: "store-return",
+      title: "商场退换货",
+      level: "A2",
+      accent: "购物技能",
+      duration: "13 min",
+      summary: "训练退换货沟通、保修咨询等表达。",
+      tone: "violet",
+      goal: "掌握在商场进行退换货、询问保修政策和申请退款的基础对话。",
+      keywords: ["receipt", "refund", "exchange", "warranty"],
+      prompts: [
+        {
+          role: "coach",
+          text: "Welcome. How can I help you today?"
+        },
+        {
+          role: "learner",
+          text: "I'd like to return this jacket. It's too small for me."
+        },
+        {
+          role: "coach",
+          text: "Do you have the receipt with you?"
+        },
+        {
+          role: "learner",
+          text: "Yes, here it is. Can I exchange it for a larger size?"
+        }
+      ],
+      feedback: {
+        totalScore: 83,
+        pronunciation: 85,
+        fluency: 81,
+        speed: "124 WPM",
+        issueSentences: ["I'd like to return this jacket. It's too small for me."],
+        suggestions: [
+          "exchange 的 /ks/ 组合不要吞音，清晰发出两个辅音。",
+          "退换货时用 I'd like to 开头会让语气更礼貌。"
+        ]
+      }
+    },
+    {
+      id: "cafe-ordering",
+      title: "咖啡厅点单与社交",
+      level: "A2",
+      accent: "生活口语",
+      duration: "11 min",
+      summary: "训练咖啡厅点单时的简短社交。",
+      tone: "orange",
+      goal: "能够自信地在咖啡厅点单、提出个性化需求，并进行简单的熟人寒暄。",
+      keywords: ["order", "regular", "take away", "catch up"],
+      prompts: [
+        {
+          role: "coach",
+          text: "Hi there! What can I get for you today?"
+        },
+        {
+          role: "learner",
+          text: "Hi! Could I have a medium latte with oat milk, please?"
+        },
+        {
+          role: "coach",
+          text: "Sure. Is that for here or to go?"
+        },
+        {
+          role: "learner",
+          text: "To go, please. And could you add a little extra foam?"
+        }
+      ],
+      feedback: {
+        totalScore: 86,
+        pronunciation: 88,
+        fluency: 85,
+        speed: "132 WPM",
+        issueSentences: ["Could I have a medium latte with oat milk, please?"],
+        suggestions: [
+          "latte 的重音在第一个音节，不要读成 la-TTE。",
+          "点单时用 Could I have 比 I want 更自然礼貌。"
         ]
       }
     }
