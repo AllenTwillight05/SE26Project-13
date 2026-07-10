@@ -17,6 +17,18 @@ import { useAppServices } from "../services/ServiceContext";
 const { Text, Title, Paragraph } = Typography;
 const speakingHistoryKey = (scenarioId) => `speaking-history:${scenarioId}`;
 
+function isCompleteFeedback(feedback) {
+  return Boolean(
+    feedback &&
+      typeof feedback.totalScore === "number" &&
+      typeof feedback.pronunciation === "number" &&
+      typeof feedback.fluency === "number" &&
+      typeof feedback.speed === "string" &&
+      Array.isArray(feedback.issueSentences) &&
+      Array.isArray(feedback.suggestions)
+  );
+}
+
 function speakText(text, onEnd) {
   if (!window.speechSynthesis || !text) {
     onEnd();
@@ -46,21 +58,33 @@ export function SpeakingFeedbackPage() {
     () => data?.scenarios.find((item) => item.id === scenarioId),
     [data, scenarioId]
   );
+  const prompts = scenario?.prompts ?? [];
+  const hasPromptScript = prompts.length > 0;
+  const feedback = scenario?.feedback;
+  const hasFeedback = isCompleteFeedback(feedback);
 
-  const replayMessages = useMemo(() => {
+  const replayState = useMemo(() => {
     if (!scenario) {
-      return [];
+      return { messages: [], isCorrupted: false };
     }
     const savedReplay = window.localStorage.getItem(speakingHistoryKey(scenario.id));
     if (savedReplay) {
       try {
-        return JSON.parse(savedReplay).messages ?? scenario.prompts;
+        const parsedReplay = JSON.parse(savedReplay);
+        if (!Array.isArray(parsedReplay.messages)) {
+          return { messages: prompts, isCorrupted: true };
+        }
+        return {
+          messages: parsedReplay.messages,
+          isCorrupted: false
+        };
       } catch {
-        return scenario.prompts;
+        return { messages: prompts, isCorrupted: true };
       }
     }
-    return scenario.prompts;
-  }, [scenario]);
+    return { messages: prompts, isCorrupted: false };
+  }, [prompts, scenario]);
+  const replayMessages = replayState.messages;
 
   const replayTurns = useMemo(() => {
     const turns = [];
@@ -127,49 +151,69 @@ export function SpeakingFeedbackPage() {
               title="评分结果"
               description=""
             />
-            <div className="feedback-layout">
-              <div className="score-card">
-                <Statistic
-                  title={<Text className="panel-title">总分</Text>}
-                  value={scenario.feedback.totalScore}
-                  suffix="/ 100"
-                />
-                <CheckCircleOutlined className="score-card__icon" />
-              </div>
-              <div className="feedback-metrics">
-                <div className="metric-chip">
-                  <Text className="panel-title">发音准确性</Text>
-                  <Title level={4}>{scenario.feedback.pronunciation}%</Title>
+            {hasFeedback ? (
+              <>
+                <div className="feedback-layout">
+                  <div className="score-card">
+                    <Statistic
+                      title={<Text className="panel-title">总分</Text>}
+                      value={feedback.totalScore}
+                      suffix="/ 100"
+                    />
+                    <CheckCircleOutlined className="score-card__icon" />
+                  </div>
+                  <div className="feedback-metrics">
+                    <div className="metric-chip">
+                      <Text className="panel-title">发音准确性</Text>
+                      <Title level={4}>{feedback.pronunciation}%</Title>
+                    </div>
+                    <div className="metric-chip">
+                      <Text className="panel-title">流畅度</Text>
+                      <Title level={4}>{feedback.fluency}%</Title>
+                    </div>
+                    <div className="metric-chip">
+                      <Text className="panel-title">语速</Text>
+                      <Title level={4}>{feedback.speed}</Title>
+                    </div>
+                  </div>
                 </div>
-                <div className="metric-chip">
-                  <Text className="panel-title">流畅度</Text>
-                  <Title level={4}>{scenario.feedback.fluency}%</Title>
-                </div>
-                <div className="metric-chip">
-                  <Text className="panel-title">语速</Text>
-                  <Title level={4}>{scenario.feedback.speed}</Title>
-                </div>
-              </div>
-            </div>
 
-            <div className="feedback-detail-grid">
-              <div className="feedback-list">
-                <Text className="panel-title">问题句子合集</Text>
-                {scenario.feedback.issueSentences.map((sentence) => (
-                  <Paragraph key={sentence}>{sentence}</Paragraph>
-                ))}
+                <div className="feedback-detail-grid">
+                  <div className="feedback-list">
+                    <Text className="panel-title">问题句子合集</Text>
+                    {feedback.issueSentences.map((sentence) => (
+                      <Paragraph key={sentence}>{sentence}</Paragraph>
+                    ))}
+                  </div>
+                  <div className="feedback-list">
+                    <Text className="panel-title">改进建议</Text>
+                    {feedback.suggestions.map((suggestion) => (
+                      <Paragraph key={suggestion}>{suggestion}</Paragraph>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="speaking-alert" role="alert">
+                评分数据缺失，暂时无法展示本次练习结果。请返回会话页重新练习，或稍后重试。
               </div>
-              <div className="feedback-list">
-                <Text className="panel-title">改进建议</Text>
-                {scenario.feedback.suggestions.map((suggestion) => (
-                  <Paragraph key={suggestion}>{suggestion}</Paragraph>
-                ))}
+            )}
+            {replayState.isCorrupted ? (
+              <div className="speaking-alert" role="alert">
+                历史回放记录损坏，已改用当前情景脚本作为回放内容。
               </div>
-            </div>
+            ) : null}
 
             <Space wrap>
               <Button onClick={() => navigate("/speaking")}>退出</Button>
-              <Button icon={<SoundOutlined />} onClick={() => setIsReplayOpen(true)}>
+              <Button
+                icon={<SoundOutlined />}
+                disabled={!hasPromptScript && replayMessages.length === 0}
+                onClick={() => {
+                  setIsReplayOpen(true);
+                  playFromTurn(0);
+                }}
+              >
                 查看回放
               </Button>
               <Button
@@ -187,9 +231,7 @@ export function SpeakingFeedbackPage() {
             footer={null}
             width={760}
             afterOpenChange={(open) => {
-              if (open) {
-                playFromTurn(0);
-              } else {
+              if (!open) {
                 stopReplay();
               }
             }}
@@ -219,7 +261,7 @@ export function SpeakingFeedbackPage() {
                 >
                   {isPlaying ? "暂停" : "开始"}
                 </Button>
-                <div className="replay-segments" role="tablist" aria-label="回放进度">
+                <div className="replay-segments" role="group" aria-label="回放进度">
                   {replayTurns.map((_, index) => (
                     <button
                       className={index === activeTurn ? "replay-segment replay-segment--active" : "replay-segment"}

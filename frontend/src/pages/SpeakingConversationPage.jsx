@@ -42,19 +42,26 @@ export function SpeakingConversationPage() {
     () => data?.scenarios.find((item) => item.id === scenarioId),
     [data, scenarioId]
   );
+  const prompts = scenario?.prompts ?? [];
+  const hasPromptScript = prompts.length > 0;
 
   const learnerPromptIndexes = useMemo(
     () =>
-      scenario?.prompts.reduce((indexes, message, index) => {
+      prompts.reduce((indexes, message, index) => {
         if (message.role === "learner") {
           indexes.push(index);
         }
         return indexes;
-      }, []) ?? [],
-    [scenario]
+      }, []),
+    [prompts]
   );
+  const canRecord = hasPromptScript && learnerPromptIndexes.length > 0;
 
   const startRecording = useCallback(async () => {
+    if (!canRecord) {
+      return;
+    }
+
     setIsRecording(true);
     setRecordingCount((current) => current + 1);
     const promptIndex = learnerPromptIndexes[activeLearnerIndexRef.current % learnerPromptIndexes.length];
@@ -90,7 +97,7 @@ export function SpeakingConversationPage() {
       mediaRecorderRef.current = null;
       streamRef.current = null;
     }
-  }, [learnerPromptIndexes]);
+  }, [canRecord, learnerPromptIndexes]);
 
   const stopRecording = useCallback(() => {
     setIsRecording(false);
@@ -115,20 +122,26 @@ export function SpeakingConversationPage() {
   );
 
   const submitSession = useCallback(() => {
+    if (!scenario || !canRecord) {
+      return;
+    }
+
     const replay = {
       savedAt: new Date().toISOString(),
-      messages: scenario.prompts.map((message, index) => ({
+      messages: prompts.map((message, index) => ({
         ...message,
         audioUrl: message.audioUrl || recordedAudio[index] || ""
       }))
     };
     window.localStorage.setItem(speakingHistoryKey(scenario.id), JSON.stringify(replay));
     navigate(`/speaking/${scenario.id}/feedback`);
-  }, [navigate, recordedAudio, scenario]);
+  }, [canRecord, navigate, prompts, recordedAudio, scenario]);
 
-  const canSubmit = !isRecording && recordingCount >= 3;
+  const canSubmit = canRecord && !isRecording && recordingCount >= 3;
   const submitDisabledReason = isRecording
     ? "正在录音时不可交卷"
+    : !canRecord
+      ? "对话脚本数据缺失，暂时无法交卷"
     : "录音次数超过 3 次后才可交卷";
 
   return (
@@ -152,26 +165,32 @@ export function SpeakingConversationPage() {
               }
             />
 
-            <div className="chat-window chat-window--page">
-              {scenario.prompts.map((message, index) => (
-                <div
-                  className={`chat-bubble-row chat-bubble-row--${message.role}`}
-                  key={`${message.role}-${index}`}
-                >
-                  <div className={`chat-bubble chat-bubble--${message.role}`}>
-                    <span>{message.text}</span>
-                    <Button
-                      aria-label="播放此句音频"
-                      className="chat-audio-button"
-                      icon={<SoundOutlined />}
-                      shape="circle"
-                      size="small"
-                      onClick={() => playMessageAudio(message, index)}
-                    />
+            {canRecord ? (
+              <div className="chat-window chat-window--page">
+                {prompts.map((message, index) => (
+                  <div
+                    className={`chat-bubble-row chat-bubble-row--${message.role}`}
+                    key={`${message.role}-${index}`}
+                  >
+                    <div className={`chat-bubble chat-bubble--${message.role}`}>
+                      <span>{message.text}</span>
+                      <Button
+                        aria-label="播放此句音频"
+                        className="chat-audio-button"
+                        icon={<SoundOutlined />}
+                        shape="circle"
+                        size="small"
+                        onClick={() => playMessageAudio(message, index)}
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="speaking-alert" role="alert">
+                对话脚本数据缺失，当前会话无法开始录音或交卷。请返回情景详情页重新选择。
+              </div>
+            )}
 
             <div className={`recorder-strip ${isRecording ? "recorder-strip--recording" : ""}`}>
               <div className="recorder-strip__label">
@@ -195,7 +214,7 @@ export function SpeakingConversationPage() {
                   type="primary"
                   icon={<AudioOutlined />}
                   onClick={startRecording}
-                  disabled={isRecording}
+                  disabled={isRecording || !canRecord}
                 >
                   开始录音
                 </Button>

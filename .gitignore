@@ -11,3 +11,4 @@ frontend/.env.local
 frontend/.env.*.local
 
 myreference.md
+docs/AGENT.md

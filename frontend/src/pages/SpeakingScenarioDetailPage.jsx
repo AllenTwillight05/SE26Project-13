@@ -22,6 +22,9 @@ export function SpeakingScenarioDetailPage() {
     () => data?.scenarios.find((item) => item.id === scenarioId),
     [data, scenarioId]
   );
+  const prompts = scenario?.prompts ?? [];
+  const keywords = scenario?.keywords ?? [];
+  const hasPromptScript = prompts.length > 0;
   const hasHistory = useMemo(
     () => Boolean(scenario && window.localStorage.getItem(speakingHistoryKey(scenario.id))),
     [scenario]
@@ -48,11 +51,15 @@ export function SpeakingScenarioDetailPage() {
               }
             />
             <div className="speaking-keywords">
-              {scenario.keywords.map((keyword) => (
-                <Tag bordered={false} className="soft-tag" key={keyword}>
-                  {keyword}
-                </Tag>
-              ))}
+              {keywords.length > 0 ? (
+                keywords.map((keyword) => (
+                  <Tag bordered={false} className="soft-tag" key={keyword}>
+                    {keyword}
+                  </Tag>
+                ))
+              ) : (
+                <Text type="secondary">暂无关键词</Text>
+              )}
             </div>
             <div className="scenario-detail-grid">
               <div className="scenario-detail-block">
@@ -71,6 +78,8 @@ export function SpeakingScenarioDetailPage() {
               <Button
                 type="primary"
                 icon={<PlayCircleOutlined />}
+                disabled={!hasPromptScript}
+                title={hasPromptScript ? undefined : "对话脚本数据缺失，暂时无法进入会话"}
                 onClick={() => navigate(`/speaking/${scenario.id}/conversation`)}
               >
                 进入会话
@@ -91,7 +100,13 @@ export function SpeakingScenarioDetailPage() {
               title={`对话示例`}
               description="当前为前端 mock 脚本，后续可接入剧本详情接口。"
             />
-            <ScriptPreview lines={scenario.prompts.map((message) => message.text)} />
+            {hasPromptScript ? (
+              <ScriptPreview lines={prompts.map((message) => message.text)} />
+            ) : (
+              <div className="speaking-alert" role="alert">
+                对话脚本数据缺失，暂时无法进入会话练习。请返回口语页选择其他情景，或稍后重试。
+              </div>
+            )}
           </section>
         </div>
       ) : data ? (
