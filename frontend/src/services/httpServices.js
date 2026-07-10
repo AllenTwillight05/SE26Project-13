@@ -1,5 +1,5 @@
 import { API_ENDPOINTS } from "./endpoints";
-import { getJson } from "./httpClient";
+import { getJson, postJson } from "./httpClient";
 
 function withBaseUrl(baseUrl, path) {
   return `${baseUrl}${path}`;
@@ -8,6 +8,12 @@ function withBaseUrl(baseUrl, path) {
 // 真实接口服务实现，结构要和 mockServices 保持一致，页面才能只通过环境变量切换数据源。
 export function createHttpServices(baseUrl = "") {
   return {
+    auth: {
+      register: (payload) => postJson(withBaseUrl(baseUrl, API_ENDPOINTS.authRegister), payload),
+      login: (payload) => postJson(withBaseUrl(baseUrl, API_ENDPOINTS.authLogin), payload),
+      me: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.authMe)),
+      logout: () => postJson(withBaseUrl(baseUrl, API_ENDPOINTS.authLogout))
+    },
     dashboard: {
       getOverview: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.dashboardOverview))
     },

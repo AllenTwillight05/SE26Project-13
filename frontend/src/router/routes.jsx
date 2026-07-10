@@ -5,7 +5,9 @@ import { GrammarPage } from "../pages/GrammarPage";
 import { GrammarNotebookPage } from "../pages/GrammarNotebookPage";
 import { GrammarPracticePage } from "../pages/GrammarPracticePage";
 import { GrammarResultPage } from "../pages/GrammarResultPage";
+import { LoginPage } from "../pages/LoginPage";
 import { ProfilePage } from "../pages/ProfilePage";
+import { RegisterPage } from "../pages/RegisterPage";
 import { SpeakingConversationPage } from "../pages/SpeakingConversationPage";
 import { SpeakingFeedbackPage } from "../pages/SpeakingFeedbackPage";
 import { SpeakingPage } from "../pages/SpeakingPage";
@@ -33,7 +35,9 @@ export const appRoutes = [
       { path: "grammar/notebook", element: <GrammarNotebookPage /> },
       { path: "grammar/practice/:category", element: <GrammarPracticePage /> },
       { path: "grammar/result", element: <GrammarResultPage /> },
-      { path: "profile", element: <ProfilePage /> }
+      { path: "profile", element: <ProfilePage /> },
+      { path: "login", element: <LoginPage /> },
+      { path: "register", element: <RegisterPage /> }
     ]
   },
   {

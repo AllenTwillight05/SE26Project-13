@@ -1,6 +1,6 @@
 export const dashboardOverviewMock = {
-  productTag: "A6 口语学习助手",
-  stackTag: "Spring Boot + React",
+  productTag: "英语口语学习助手",
+  // stackTag: "An English-learning Copilot",
   headline: "更像私人教练，而不是练习题仓库。",
   description:
     "把情境训练、实时反馈、词汇巩固和个性化计划放进一个统一界面，让用户从“知道该学什么”直接走到“今天就能开口说”。",

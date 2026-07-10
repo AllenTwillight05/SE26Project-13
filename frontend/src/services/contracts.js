@@ -5,6 +5,30 @@
  * 记录每个接口应该返回哪些字段，方便前端 mock 和后端联调保持一致。
  */
 export const contractShapes = {
+  authResponse: {
+    token: "string",
+    user: {
+      id: 1,
+      username: "string",
+      email: "string",
+      displayName: "string",
+      role: "USER",
+      enabled: true,
+      createdAt: "2026-07-09T00:00:00Z",
+      updatedAt: "2026-07-09T00:00:00Z",
+      lastLoginAt: null
+    }
+  },
+  authLoginRequest: {
+    account: "string",
+    password: "string"
+  },
+  authRegisterRequest: {
+    username: "string",
+    email: "string",
+    password: "string",
+    displayName: "string"
+  },
   dashboardOverview: {
     productTag: "string",
     stackTag: "string",
