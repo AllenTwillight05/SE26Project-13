@@ -239,7 +239,7 @@ a {
 
 .dashboard-hero-card {
   display: grid;
-  grid-template-columns: minmax(0, 1.28fr) minmax(260px, 0.68fr) minmax(260px, 0.68fr);
+  grid-template-columns: minmax(0, 1.28fr) minmax(240px, 0.68fr) minmax(240px, 0.68fr);
   align-items: stretch;
   gap: 18px;
   overflow: hidden;
@@ -1351,6 +1351,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 16px;
 }
 
@@ -1768,8 +1769,7 @@ a {
   }
 
   .dashboard-weekly-grid {
-    grid-template-columns: repeat(5, minmax(112px, 1fr));
-    overflow-x: auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .speaking-workflow,
@@ -1802,6 +1802,7 @@ a {
   .dashboard-hero-card__title.ant-typography {
     max-width: 100%;
     font-size: clamp(1.7rem, 8vw, 2.35rem);
+    white-space: normal;
   }
 
   .dashboard-hero-card__actions,
@@ -1829,7 +1830,7 @@ a {
   }
 
   .dashboard-weekly-grid {
-    grid-template-columns: repeat(5, minmax(112px, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .chat-window {
