@@ -2,7 +2,21 @@
 
 本文件说明前端已经预留的 Spring Boot 接口。后端返回 JSON 需要对齐 `frontend/src/services/contracts.js` 中记录的数据形状。
 
-默认前端使用 mock 数据。接入真实接口时，创建 `.env`：
+默认前端使用 mock 数据。并行联调各自负责模块时，创建 `.env.local` 使用 mixed 模式：
+
+```bash
+VITE_API_MODE=mixed
+VITE_API_BASE_URL=http://localhost:8080
+VITE_AUTH_API_MODE=http
+VITE_SPEAKING_API_MODE=mock
+VITE_VOCABULARY_API_MODE=mock
+VITE_GRAMMAR_API_MODE=mock
+VITE_PROFILE_API_MODE=mock
+```
+
+某个模块后端接口完成后，只把对应 `VITE_<MODULE>_API_MODE` 改为 `http`。不要在其他模块未完成时直接使用全局 `VITE_API_MODE=http`。
+
+全量接入真实业务接口时，再切换为：
 
 ```bash
 VITE_API_MODE=http
@@ -11,7 +25,7 @@ VITE_API_BASE_URL=http://localhost:8080
 
 ## 0. 认证与权限
 
-后端已提供 Spring Security + JWT Bearer token 认证接口。前端登录功能尚未接入，后续需要在 `frontend/src/services/httpClient.js` 统一注入 token。
+后端已提供 Spring Security + JWT Bearer token 认证接口。前端已接入登录/注册页面、认证状态和 `frontend/src/services/httpClient.js` 的 Bearer token 注入。
 
 ### 0.1 注册
 
@@ -285,5 +299,5 @@ GET/POST/PUT/DELETE /api/admin/vocabulary-entries
 - 新增接口时，先更新 `contracts.js`，再更新 `mockData.js` 和 `httpServices.js`。
 - 后端字段命名建议使用 camelCase，与前端数据形状保持一致。
 - 错误处理后续集中放在 `frontend/src/services/httpClient.js`。
-- 登录成功后，前端应保存 `token` 和 `user`，后续 HTTP 请求统一在 `frontend/src/services/httpClient.js` 注入 `Authorization: Bearer <token>`。
+- 登录或注册成功后，前端会保存 `token` 和 `user`，后续 HTTP 请求统一在 `frontend/src/services/httpClient.js` 注入 `Authorization: Bearer <token>`。
 - 当前后端使用 JWT 无状态鉴权，不需要 CSRF token。
