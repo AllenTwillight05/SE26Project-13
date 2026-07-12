@@ -1,5 +1,9 @@
 import {
+  dashboardCommunityLearningTrendsMock,
   dashboardOverviewMock,
+  dashboardRecommendedTaskMock,
+  dashboardStudyPlanMock,
+  dashboardWeeklyOverviewMock,
   grammarNotebookQuestionsMock,
   grammarOverviewMock,
   grammarPracticeQuestionsMock,
@@ -115,7 +119,11 @@ export function createMockServices() {
       logout: () => simulateLatency({ message: "Logged out. Please remove the token on the client." })
     },
     dashboard: {
-      getOverview: () => simulateLatency(dashboardOverviewMock)
+      getOverview: () => simulateLatency(dashboardOverviewMock),
+      getRecommendedTask: () => simulateLatency(dashboardRecommendedTaskMock),
+      getStudyPlan: () => simulateLatency(dashboardStudyPlanMock),
+      getWeeklyOverview: () => simulateLatency(dashboardWeeklyOverviewMock),
+      getCommunityLearningTrends: () => simulateLatency(dashboardCommunityLearningTrendsMock)
     },
     speaking: {
       getCatalog: () => simulateLatency(speakingCatalogMock)
