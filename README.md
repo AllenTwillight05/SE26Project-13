@@ -31,17 +31,19 @@
 - `/speaking`：口语页
 - `/vocabulary`：词汇页
 - `/grammar`：语法页
-- `/profile`：个人页
+- `/profile`：个人页（未登录显示登录提示，登录后显示个人数据）
 
 ## 接口切换
 
 - 默认使用 mock 服务。
-- 后续接入 Spring Boot 时，可通过 `VITE_API_MODE=http` 和 `VITE_API_BASE_URL` 切换到真实接口实现。
+- 并行联调推荐使用 `VITE_API_MODE=mixed` 和 `VITE_API_BASE_URL=http://localhost:8080`：按模块决定走真实后端还是 mock，默认认证走真实后端，业务页面继续走 mock。
+- 等后端业务接口都实现后，再通过 `VITE_API_MODE=http` 切换到全量真实接口。
 
 ## 交付文档
 
 - 前端交付说明：[docs/frontend-handoff.md](docs/frontend-handoff.md)
 - 接口契约说明：[docs/api-contracts.md](docs/api-contracts.md)
+- 认证前端规约：[docs/auth-frontend-spec.md](docs/auth-frontend-spec.md)
 
 ## 推荐仓库结构
 

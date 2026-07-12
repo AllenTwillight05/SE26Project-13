@@ -114,5 +114,5 @@ mvn test
 
 ## 说明
 
-- 前端登录尚未接入；后端已经提供接口，但 React 侧还需要登录/注册页面、token 存储和 Bearer 请求头注入。
+- 前端认证闭环已接入，包含登录/注册页面、token 存储和 Bearer 请求头注入；具体前端规约见 `docs/auth-frontend-spec.md`。
 - 本地开发可以临时使用 MySQL `root` 账号，但日常协作更推荐为本项目创建单独数据库用户。

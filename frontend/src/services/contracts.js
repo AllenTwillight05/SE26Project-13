@@ -5,16 +5,68 @@
  * 记录每个接口应该返回哪些字段，方便前端 mock 和后端联调保持一致。
  */
 export const contractShapes = {
+  authResponse: {
+    token: "string",
+    user: {
+      id: 1,
+      username: "string",
+      email: "string",
+      displayName: "string",
+      role: "USER",
+      enabled: true,
+      createdAt: "2026-07-09T00:00:00Z",
+      updatedAt: "2026-07-09T00:00:00Z",
+      lastLoginAt: null
+    }
+  },
+  authLoginRequest: {
+    account: "string",
+    password: "string"
+  },
+  authRegisterRequest: {
+    username: "string",
+    email: "string",
+    password: "string",
+    displayName: "string"
+  },
   dashboardOverview: {
-    productTag: "string",
-    stackTag: "string",
-    headline: "string",
-    description: "string",
     primaryActionLabel: "string",
     secondaryActionLabel: "string",
     quickStats: [{ label: "string", value: "string", icon: "microphone" }],
     focusIntensity: "string",
     suggestedDuration: "string"
+  },
+  dashboardRecommendedTask: {
+    topic: "string",
+    suggestedDuration: "string",
+    intensity: "string"
+  },
+  dashboardStudyPlan: {
+    speaking: {
+      completed: 0,
+      total: 0
+    },
+    vocabulary: {
+      completed: 0,
+      total: 0
+    },
+    grammar: {
+      completed: 0,
+      total: 0
+    },
+    streakDays: 0
+  },
+  dashboardWeeklyOverview: {
+    speakingDuration: "string",
+    pronunciationAccuracy: "string",
+    learningDays: "string",
+    vocabularyLearned: "string",
+    grammarPracticed: "string"
+  },
+  dashboardCommunityLearningTrends: {
+    speaking: [{ topic: "string", description: "string" }],
+    vocabulary: [{ word: "string", briefTranslation: "string" }],
+    grammar: [{ topic: "string" }]
   },
   speakingCatalog: {
     modes: ["string"],
