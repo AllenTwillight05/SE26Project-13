@@ -7,6 +7,12 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 4173
   },
+  test: {
+    environment: "jsdom",
+    setupFiles: "./test/speaking/setup.js",
+    globals: true,
+    include: ["test/speaking/unit/**/*.{test,spec}.{js,jsx}"]
+  },
   build: {
     rollupOptions: {
       output: {
