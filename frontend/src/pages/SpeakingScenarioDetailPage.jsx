@@ -1,0 +1,126 @@
+import { useCallback, useMemo } from "react";
+import { ArrowLeftOutlined, HistoryOutlined, PlayCircleOutlined } from "@ant-design/icons";
+import { Button, Space, Tag, Typography } from "antd";
+import { useNavigate, useParams } from "react-router-dom";
+import { ScriptPreview } from "../components/Speaking/ScriptPreview";
+import { AsyncPage } from "../components/common/AsyncPage";
+import { PageSectionHeader } from "../components/common/PageSectionHeader";
+import { useAsyncData } from "../hooks/useAsyncData";
+import { useAppServices } from "../services/ServiceContext";
+
+const { Text, Title, Paragraph } = Typography;
+const speakingHistoryKey = (scenarioId) => `speaking-history:${scenarioId}`;
+
+export function SpeakingScenarioDetailPage() {
+  const navigate = useNavigate();
+  const { scenarioId } = useParams();
+  const { speaking } = useAppServices();
+  const loader = useCallback(() => speaking.getCatalog(), [speaking]);
+  const { data, loading, error } = useAsyncData(loader, [loader]);
+
+  const scenario = useMemo(
+    () => data?.scenarios.find((item) => item.id === scenarioId),
+    [data, scenarioId]
+  );
+  const prompts = scenario?.prompts ?? [];
+  const keywords = scenario?.keywords ?? [];
+  const hasPromptScript = prompts.length > 0;
+  const hasHistory = useMemo(
+    () => Boolean(scenario && window.localStorage.getItem(speakingHistoryKey(scenario.id))),
+    [scenario]
+  );
+
+  return (
+    <AsyncPage loading={loading} error={error}>
+      {scenario ? (
+        <div className="page-stack">
+          <section className="glass-panel speaking-detail-hero">
+            <PageSectionHeader
+              eyebrow=""
+              title={scenario.title}
+              description={scenario.summary}
+              extra={
+                <Space wrap>
+                  <Tag bordered={false} className="soft-tag soft-tag--dark">
+                    {scenario.level}
+                  </Tag>
+                  <Tag bordered={false} className="soft-tag">
+                    {scenario.duration}
+                  </Tag>
+                </Space>
+              }
+            />
+            <div className="speaking-keywords">
+              {keywords.length > 0 ? (
+                keywords.map((keyword) => (
+                  <Tag bordered={false} className="soft-tag" key={keyword}>
+                    {keyword}
+                  </Tag>
+                ))
+              ) : (
+                <Text type="secondary">暂无关键词</Text>
+              )}
+            </div>
+            <div className="scenario-detail-grid">
+              <div className="scenario-detail-block">
+                <Text className="panel-title">练习目标</Text>
+                <Title level={4}>{scenario.goal}</Title>
+              </div>
+              <div className="scenario-detail-block">
+                <Text className="panel-title">发音与表达</Text>
+                <Title level={4}>{scenario.accent}</Title>
+              </div>
+            </div>
+            <Space wrap>
+              <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/speaking")}>
+                返回
+              </Button>
+              <Button
+                type="primary"
+                icon={<PlayCircleOutlined />}
+                disabled={!hasPromptScript}
+                title={hasPromptScript ? undefined : "对话脚本数据缺失，暂时无法进入会话"}
+                onClick={() => navigate(`/speaking/${scenario.id}/conversation`)}
+              >
+                进入会话
+              </Button>
+              <Button
+                icon={<HistoryOutlined />}
+                disabled={!hasHistory}
+                onClick={() => navigate(`/speaking/${scenario.id}/feedback`)}
+              >
+                历史记录
+              </Button>
+            </Space>
+          </section>
+
+          <section className="glass-panel">
+            <PageSectionHeader
+              eyebrow=""
+              title={`对话示例`}
+              description="当前为前端 mock 脚本，后续可接入剧本详情接口。"
+            />
+            {hasPromptScript ? (
+              <ScriptPreview lines={prompts.map((message) => message.text)} />
+            ) : (
+              <div className="speaking-alert" role="alert">
+                对话脚本数据缺失，暂时无法进入会话练习。请返回口语页选择其他情景，或稍后重试。
+              </div>
+            )}
+          </section>
+        </div>
+      ) : data ? (
+        <section className="glass-panel">
+          <PageSectionHeader
+            eyebrow="Scenario Missing"
+            title="没有找到这个情景"
+            description="请返回口语页重新选择一个情景模块。"
+          />
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate("/speaking")}>
+            返回
+          </Button>
+        </section>
+      ) : null}
+    </AsyncPage>
+  );
+}

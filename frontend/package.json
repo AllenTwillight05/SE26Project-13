@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:e2e": "playwright test -c test/speaking/playwright.config.js"
   },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",
@@ -16,10 +19,14 @@
     "react-router-dom": "^6.30.4"
   },
   "devDependencies": {
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.61.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@vitejs/plugin-react": "^6.0.3",
-    "typescript": "^5.6.3",
-    "vite": "^8.1.3"
+    "jsdom": "^29.1.1",
+    "vite": "^8.1.3",
+    "vitest": "^4.1.10"
   }
 }
