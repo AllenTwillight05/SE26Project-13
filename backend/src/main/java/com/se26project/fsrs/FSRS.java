@@ -1,18 +1,16 @@
-// FSRS-5 纯 Java 实现（FSRS-Kotlin 移植 + 清理 Android 依赖）
+// FSRS-6 纯 Java 实现
 // 来源：https://github.com/open-spaced-repetition/FSRS-Kotlin
-// 适配 Spring Boot，纯 JVM，无第三方依赖
+// 适配 Spring Boot，纯 JVM，零外部依赖
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Random;
 
 /**
- * FSRS-5 间隔复习调度器。
+ * FSRS-6 间隔复习调度器。
  *
- * 使用方法：
- *   FSRS fsrs = new FSRS(0.9, FSRS.defaultParams());      // 默认参数，目标保留率 90%
- *   CardState newState = fsrs.review(oldState, rating);     // 每次答题后调用
+ * 使用：
+ *   FSRS fsrs = new FSRS(0.9, FSRS.defaultParams());
+ *   CardState newState = fsrs.review(oldState, Rating.Good);
  */
 public class FSRS {
 
@@ -23,7 +21,7 @@ public class FSRS {
     private final boolean enableFuzz;
 
     public FSRS(double requestRetention, double[] params) {
-        if (params.length < 21) throw new IllegalArgumentException("FSRS-5 需要 21 个参数");
+        if (params.length < 21) throw new IllegalArgumentException("FSRS-6 需要 21 个参数");
         this.requestRetention = requestRetention;
         this.w = params;
         this.decay = -params[20];
@@ -31,36 +29,47 @@ public class FSRS {
         this.enableFuzz = true;
     }
 
-    /** FSRS-5 默认参数（从论文基准数据） */
+    /** FSRS-6 默认参数 */
     public static double[] defaultParams() {
         return new double[] {
-            0.40255, 1.18385, 3.173, 15.69105, 7.1949, 0.5345, 1.4604,
-            0.0046, 1.54575, 0.1192, 1.01925, 1.9395, 0.11, 0.29605,
-            2.2698, 0.2315, 2.9898, 0.51655, 0.6621, 0.0, 1.0
+            0.212, 1.2931, 2.3065, 8.2956,    // w[0..3] 初始稳定性
+            6.4133, 0.8334,                     // w[4..5] 初始难度
+            3.0194, 0.001,                      // w[6..7] 难度更新
+            1.8722, 0.1666, 0.796,              // w[8..10] 稳定性更新
+            1.4835, 0.0614, 0.2629, 1.6483,     // w[11..14] 遗忘后稳定性
+            0.6014, 0.8729,                     // w[15..16] Hard/Easy 系数
+            0.5425, 0.0912, 0.0658,             // w[17..19] 同日复习
+            0.1542                               // w[20] 遗忘曲线衰减
         };
     }
 
     // ============ 核心入口 ============
 
-    /** 答题后调用。返回新的 CardState。 */
+    /** 答题后调用。返回更新后的 CardState。 */
     public CardState review(CardState card, Rating rating) {
         Instant now = Instant.now();
         double nextD, nextS;
 
-        if (card.state == CardState.State.New || card.due.isAfter(now)) {
-            // 第一次见 → 走 initState
+        if (card.state == CardState.State.New) {
+            // 第一次见 → 初始化
             nextD = initDifficulty(rating);
             nextS = initStability(rating);
             card.reps = 1;
+        } else if (isSameDay(card, now)) {
+            // 同日反复复习 → 用短时公式
+            double elapsed = Math.max(0, card.getElapsedDays(now));
+            double R = elapsed > 0 ? forgettingCurve(elapsed, card.stability) : 1.0;
+            nextD = nextDifficulty(card.difficulty, rating);
+            nextS = nextShortTermStability(card.stability, rating);
         } else if (rating == Rating.Again) {
-            // 忘了 → 走遗忘公式
+            // 答错 → 遗忘公式
             double elapsed = Math.max(1, card.getElapsedDays(now));
             double R = forgettingCurve(elapsed, card.stability);
             nextD = nextDifficulty(card.difficulty, rating);
             nextS = nextForgetStability(card.difficulty, card.stability, R);
             card.lapses++;
         } else {
-            // 答对了 → 走正常复习公式
+            // 答对，跨天 → 正常复习
             double elapsed = Math.max(1, card.getElapsedDays(now));
             double R = forgettingCurve(elapsed, card.stability);
             nextD = nextDifficulty(card.difficulty, rating);
@@ -78,6 +87,12 @@ public class FSRS {
         return card;
     }
 
+    /** 判断是否同日复习：距上次复习不足 1 天 */
+    private boolean isSameDay(CardState card, Instant now) {
+        long ms = now.toEpochMilli() - card.lastReview.toEpochMilli();
+        return card.state == CardState.State.Review && ms < 86400000;
+    }
+
     // ============ 初始化 ============
 
     private double initDifficulty(Rating r) {
@@ -89,7 +104,7 @@ public class FSRS {
         return Math.max(w[r.value - 1], 0.1);
     }
 
-    // ============ 遗忘曲线 ============
+    // ============ 遗忘曲线：R(t, S) ============
 
     private double forgettingCurve(double elapsedDays, double stability) {
         return Math.pow(1 + factor * elapsedDays / stability, decay);
@@ -113,18 +128,28 @@ public class FSRS {
         return w[7] * initD + (1 - w[7]) * nextD;
     }
 
-    // ============ 稳定性更新（答对） ============
+    // ============ 稳定性更新（答对，跨天） ============
 
     private double nextRecallStability(double d, double s, double r, Rating rating) {
         double hardPenalty = (rating == Rating.Hard) ? w[15] : 1.0;
         double easyBonus = (rating == Rating.Easy) ? w[16] : 1.0;
-        double factor = Math.exp(w[8])
+        double stabilityFactor = Math.exp(w[8])
                 * (11 - d)
                 * Math.pow(s, -w[9])
                 * (Math.exp((1 - r) * w[10]) - 1)
                 * hardPenalty
                 * easyBonus;
-        return s * (1 + factor);
+        return s * (1 + stabilityFactor);
+    }
+
+    // ============ 稳定性更新（同日复习） ============
+
+    private double nextShortTermStability(double s, Rating rating) {
+        double sinc = Math.exp(w[17] * (rating.value - 3 + w[18])) * Math.pow(s, -w[19]);
+        if (rating.value >= 3) {
+            sinc = Math.max(sinc, 1.0);
+        }
+        return s * sinc;
     }
 
     // ============ 稳定性更新（遗忘） ============
@@ -146,6 +171,7 @@ public class FSRS {
         return (int) clamp(Math.round(fuzzed), 1, 36500);
     }
 
+    /** 给间隔 ±5% 的随机抖动，防止一批题总在同一天出现 */
     private double applyFuzz(double interval, int scheduledDays) {
         if (!enableFuzz || interval < 2.5) return interval;
         int ivl = (int) Math.round(interval);
@@ -161,7 +187,8 @@ public class FSRS {
 }
 
 
-/** 评分 */
+// ============ 评分枚举 ============
+
 enum Rating {
     Again(1), Hard(2), Good(3), Easy(4);
     final int value;
@@ -173,22 +200,23 @@ enum Rating {
 }
 
 
-/** 每道题 × 每个用户 的记忆状态 */
+// ============ 记忆状态 ============
+
 class CardState {
     enum State { New, Review }
 
-    double difficulty = 2.5;     // D，范围 [1, 10]
-    double stability = 2.5;      // S，记忆稳定性（天）
-    int interval = 0;            // 距下次复习的天数
+    double difficulty = 2.5;     // D，[1, 10]
+    double stability = 2.5;      // S，天数
+    int interval = 0;            // 本次安排的复习间隔
     int reps = 0;                // 总复习次数
-    int lapses = 0;              // 遗忘次数
+    int lapses = 0;              // 总遗忘次数
     State state = State.New;
     Instant due = Instant.now();
     Instant lastReview = Instant.now();
 
-    /** 距上次复习过了几天 */
+    /** 距上次复习过了几天（最少返回 0） */
     long getElapsedDays(Instant now) {
         long ms = now.toEpochMilli() - lastReview.toEpochMilli();
-        return Math.max(1, ms / 86400000);
+        return Math.max(0, ms / 86400000);
     }
 }
