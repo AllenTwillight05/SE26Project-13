@@ -194,6 +194,21 @@ export const contractShapes = {
       favorited: true
     }
   ],
+  grammarPracticeResultRequest: {
+    grammarQuestionId: 0,
+    incorrect: true
+  },
+  grammarRatingRequest: {
+    grammarQuestionId: 0,
+    score: 1
+  },
+  grammarFavoriteRequest: {
+    grammarQuestionId: 0
+  },
+  grammarFavoriteResponse: {
+    grammarQuestionId: 0,
+    favorited: true
+  },
   grammarPracticeQuestions: [
     {
       id: 0,
