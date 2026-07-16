@@ -148,16 +148,6 @@ export function VocabularyPracticePage() {
     };
   }
 
-  function saveCurrentAnswer(rating) {
-    const record = buildCurrentRecord(rating);
-
-    if (!record) {
-      return;
-    }
-
-    setAnswerRecords((current) => [...current, record]);
-  }
-
   function submitCurrentRating(rating) {
     if (!currentQuestion) {
       return;
@@ -178,8 +168,21 @@ export function VocabularyPracticePage() {
   function handleRateCurrentQuestion(rating) {
     setSelectedRating(rating);
     submitCurrentRating(rating);
-    saveCurrentAnswer(rating);
-    setQuestionIndex((current) => (current + 1) % practiceWords.length);
+    const record = buildCurrentRecord(rating);
+
+    if (!record) {
+      return;
+    }
+
+    const finalRecords = [...answerRecords, record];
+
+    if (questionIndex === practiceWords.length - 1) {
+      navigateToResult(finalRecords);
+      return;
+    }
+
+    setAnswerRecords(finalRecords);
+    setQuestionIndex((current) => current + 1);
     resetAnswerState();
   }
 
@@ -209,16 +212,19 @@ export function VocabularyPracticePage() {
     );
   }
 
-  function handleFinishPractice() {
-    const currentRecord = buildCurrentRecord();
-    const finalRecords = currentRecord ? [...answerRecords, currentRecord] : answerRecords;
-
+  function navigateToResult(records) {
     navigate("/vocabulary/result", {
       state: {
         level,
-        summary: buildSummary(finalRecords)
+        summary: buildSummary(records)
       }
     });
+  }
+
+  function handleFinishPractice() {
+    const currentRecord = buildCurrentRecord();
+    const finalRecords = currentRecord ? [...answerRecords, currentRecord] : answerRecords;
+    navigateToResult(finalRecords);
   }
 
   function handlePlayAudio() {

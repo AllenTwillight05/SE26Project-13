@@ -4,9 +4,7 @@ import {
   dashboardRecommendedTaskMock,
   dashboardStudyPlanMock,
   dashboardWeeklyOverviewMock,
-  grammarNotebookQuestionsMock,
   grammarOverviewMock,
-  grammarPracticeQuestionsMock,
   grammarProgressMock,
   grammarSnapshotMock,
   grammarTopicsMock,
@@ -143,16 +141,14 @@ export function createMockServices() {
       toggleVocabularyFavorite: (payload) => httpServices.vocabulary.toggleVocabularyFavorite(payload)
     },
     grammar: {
-      getNotebookQuestions: () => simulateLatency(grammarNotebookQuestionsMock),
+      getNotebookQuestions: () => httpServices.grammar.getNotebookQuestions(),
+      submitGrammarPracticeResult: (payload) =>
+        httpServices.grammar.submitGrammarPracticeResult(payload),
+      submitGrammarRating: (payload) => httpServices.grammar.submitGrammarRating(payload),
+      toggleGrammarFavorite: (payload) => httpServices.grammar.toggleGrammarFavorite(payload),
       getOverview: () => simulateLatency(grammarOverviewMock),
       getReviewGrammar: () => simulateLatency(reviewGrammarMock),
-      getPracticeQuestions: ({ category } = {}) => {
-        const questions = category
-          ? grammarPracticeQuestionsMock.filter((question) => question.grammar_category === category)
-          : grammarPracticeQuestionsMock;
-
-        return simulateLatency(questions);
-      },
+      getPracticeQuestions: (options) => httpServices.grammar.getPracticeQuestions(options),
       getProgress: () => simulateLatency(grammarProgressMock),
       getTopics: () => simulateLatency(grammarTopicsMock),
       getSnapshot: () => simulateLatency(grammarSnapshotMock)

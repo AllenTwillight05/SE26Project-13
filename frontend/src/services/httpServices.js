@@ -47,6 +47,12 @@ export function createHttpServices(baseUrl = "") {
     grammar: {
       getNotebookQuestions: () =>
         getJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarNotebookQuestions)),
+      submitGrammarPracticeResult: (payload) =>
+        postJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarPracticeResults), payload),
+      submitGrammarRating: (payload) =>
+        postJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarPracticeRatings), payload),
+      toggleGrammarFavorite: (payload) =>
+        postJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarNotebookFavorites), payload),
       getOverview: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarOverview)),
       getReviewGrammar: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.reviewGrammar)),
       getPracticeQuestions: ({ category } = {}) => {
