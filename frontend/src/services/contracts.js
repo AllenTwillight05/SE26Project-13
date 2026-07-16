@@ -64,7 +64,15 @@ export const contractShapes = {
     grammarPracticed: "string"
   },
   dashboardCommunityLearningTrends: {
-    speaking: [{ topic: "string", description: "string" }],
+    speaking: [
+      {
+        rank: 1,
+        scenarioId: "string",
+        topic: "string",
+        description: "string",
+        learnerCount: 0
+      }
+    ],
     vocabulary: [
       {
         rank: 1,
