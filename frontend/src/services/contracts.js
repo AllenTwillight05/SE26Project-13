@@ -82,6 +82,7 @@ export const contractShapes = {
       goal: "string",
       keywords: ["string"],
       openingMessage: "string",
+      sampleDialogue: "Coach: string\nLearner: string",
       targetTurns: 6,
       scoringRubric: "string",
       prompts: [{ role: "coach", text: "string" }],
@@ -95,6 +96,26 @@ export const contractShapes = {
       }
     }
   ],
+  speakingSession: {
+    id: 1,
+    userId: 1,
+    scenario: { id: "string", title: "string" },
+    status: "ACTIVE",
+    startedAt: "2026-07-09T00:00:00Z",
+    completedAt: null,
+    currentTurn: 0,
+    targetTurns: 6,
+    messages: [
+      {
+        id: 1,
+        sender: "AGENT",
+        content: "string",
+        instantTip: null,
+        turnIndex: 0,
+        createdAt: "2026-07-09T00:00:00Z"
+      }
+    ]
+  },
   vocabularySnapshot: {
     dailyGoal: "string",
     retentionHint: "string",

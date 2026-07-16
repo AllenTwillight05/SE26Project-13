@@ -16,7 +16,7 @@ describe("SpeakingPage", () => {
       expect(await screen.findByRole("button", { name: new RegExp(scenario.title) })).toBeInTheDocument();
     }
 
-    await userEvent.click(screen.getByRole("button", { name: /商务会谈/ }));
+    await userEvent.click(screen.getByRole("button", { name: new RegExp(speakingScenariosMock[0].title) }));
     expect(await screen.findByText("详情页占位")).toBeInTheDocument();
   });
 });

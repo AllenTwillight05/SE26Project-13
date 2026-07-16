@@ -1,15 +1,26 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ArrowLeftOutlined, HistoryOutlined, PlayCircleOutlined } from "@ant-design/icons";
-import { Button, Space, Tag, Typography } from "antd";
+import { Button, Modal, Space, Tag, Typography } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
 import { ScriptPreview } from "../components/Speaking/ScriptPreview";
 import { AsyncPage } from "../components/common/AsyncPage";
 import { PageSectionHeader } from "../components/common/PageSectionHeader";
 import { useAsyncData } from "../hooks/useAsyncData";
+import { getStoredAuth } from "../services/authStorage";
 import { useAppServices } from "../services/ServiceContext";
 
 const { Text, Title, Paragraph } = Typography;
-const speakingHistoryKey = (scenarioId) => `speaking-history:${scenarioId}`;
+
+function toSampleDialogueLines(scenario) {
+  if (scenario?.sampleDialogue?.trim()) {
+    return scenario.sampleDialogue
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
+  return (scenario?.prompts ?? []).map((message) => message.text);
+}
 
 export function SpeakingScenarioDetailPage() {
   const navigate = useNavigate();
@@ -17,16 +28,64 @@ export function SpeakingScenarioDetailPage() {
   const { speaking } = useAppServices();
   const loader = useCallback(() => speaking.getScenario(scenarioId), [speaking, scenarioId]);
   const { data, loading, error } = useAsyncData(loader, [loader]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const isMissingScenario = error?.status === 404 || error?.message === "Speaking scenario was not found.";
 
   const scenario = data;
-  const prompts = scenario?.prompts ?? [];
+  const sampleDialogueLines = useMemo(() => toSampleDialogueLines(scenario), [scenario]);
   const keywords = scenario?.keywords ?? [];
-  const hasPromptScript = prompts.length > 0;
-  const hasHistory = useMemo(
-    () => Boolean(scenario && window.localStorage.getItem(speakingHistoryKey(scenario.id))),
-    [scenario]
-  );
+  const hasSampleDialogue = sampleDialogueLines.length > 0;
+  const enterConversation = useCallback(() => {
+    const { token, user } = getStoredAuth();
+    if (!token || !user) {
+      Modal.warning({
+        title: "用户未登录",
+        content: "请先登录后再进入口语会话。",
+        okText: "知道了"
+      });
+      return;
+    }
+
+    navigate(`/speaking/${scenario.id}/conversation`);
+  }, [navigate, scenario]);
+  const openLatestHistory = useCallback(async () => {
+    const { token, user } = getStoredAuth();
+    if (!token || !user) {
+      Modal.warning({
+        title: "用户未登录",
+        content: "请先登录后再查看历史记录。",
+        okText: "知道了"
+      });
+      return;
+    }
+    if (!scenario) {
+      return;
+    }
+
+    setIsHistoryLoading(true);
+    try {
+      const history = await speaking.listHistory();
+      const latestSession = history.find((session) => session.scenario?.id === scenario.id);
+      if (!latestSession) {
+        Modal.info({
+          title: "暂无历史记录",
+          content: "当前情景还没有可回放的练习记录。",
+          okText: "知道了"
+        });
+        return;
+      }
+
+      navigate(`/speaking/${scenario.id}/feedback?sessionId=${encodeURIComponent(latestSession.id)}`);
+    } catch (error) {
+      Modal.error({
+        title: "历史记录读取失败",
+        content: error.message || "请稍后重试。",
+        okText: "知道了"
+      });
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  }, [navigate, scenario, speaking]);
 
   return (
     <AsyncPage loading={loading} error={isMissingScenario ? null : error}>
@@ -76,16 +135,14 @@ export function SpeakingScenarioDetailPage() {
               <Button
                 type="primary"
                 icon={<PlayCircleOutlined />}
-                disabled={!hasPromptScript}
-                title={hasPromptScript ? undefined : "对话脚本数据缺失，暂时无法进入会话"}
-                onClick={() => navigate(`/speaking/${scenario.id}/conversation`)}
+                onClick={enterConversation}
               >
                 进入会话
               </Button>
               <Button
                 icon={<HistoryOutlined />}
-                disabled={!hasHistory}
-                onClick={() => navigate(`/speaking/${scenario.id}/feedback`)}
+                loading={isHistoryLoading}
+                onClick={openLatestHistory}
               >
                 历史记录
               </Button>
@@ -96,13 +153,13 @@ export function SpeakingScenarioDetailPage() {
             <PageSectionHeader
               eyebrow=""
               title={`对话示例`}
-              description="当前为前端 mock 脚本，后续可接入剧本详情接口。"
+              description="当前为前端 mock 脚本；真实 HTTP 会话会由后端 session 消息驱动。"
             />
-            {hasPromptScript ? (
-              <ScriptPreview lines={prompts.map((message) => message.text)} />
+            {hasSampleDialogue ? (
+              <ScriptPreview lines={sampleDialogueLines} />
             ) : (
               <div className="speaking-alert" role="alert">
-                对话脚本数据缺失，暂时无法进入会话练习。请返回口语页选择其他情景，或稍后重试。
+                暂无对话示例。你仍然可以进入会话，由后端开场白开始练习。
               </div>
             )}
           </section>

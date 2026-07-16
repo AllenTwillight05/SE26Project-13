@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 import { SpeakingConversationPage } from "../../../src/pages/SpeakingConversationPage";
 import { SpeakingFeedbackPage } from "../../../src/pages/SpeakingFeedbackPage";
 import { SpeakingScenarioDetailPage } from "../../../src/pages/SpeakingScenarioDetailPage";
+import { speakingScenariosMock } from "../../../src/services/mockData";
 import { renderWithProviders } from "../utils/renderWithProviders";
+
+const defaultScenario = speakingScenariosMock[0];
 
 const incompleteScenarios = [
   {
@@ -20,6 +23,8 @@ const incompleteScenarios = [
 ];
 
 function createScenarioServices(scenarios) {
+  let nextMessageId = 1;
+
   return {
     speaking: {
       listScenarios: () => Promise.resolve(structuredClone(scenarios)),
@@ -28,7 +33,36 @@ function createScenarioServices(scenarios) {
         return scenario
           ? Promise.resolve(structuredClone(scenario))
           : Promise.reject(new Error("Speaking scenario was not found."));
-      }
+      },
+      createSession: (scenarioId) => {
+        const scenario = scenarios.find((item) => item.id === scenarioId);
+        if (!scenario) {
+          return Promise.reject(new Error("Speaking scenario was not found."));
+        }
+        return Promise.resolve({
+          id: 1,
+          userId: 1,
+          scenario: structuredClone(scenario),
+          status: "ACTIVE",
+          startedAt: new Date().toISOString(),
+          completedAt: null,
+          currentTurn: 0,
+          targetTurns: scenario.targetTurns ?? 6,
+          messages: [
+            {
+              id: nextMessageId++,
+              sender: "AGENT",
+              content: scenario.openingMessage ?? "Let's start.",
+              instantTip: null,
+              turnIndex: 0,
+              createdAt: new Date().toISOString()
+            }
+          ]
+        });
+      },
+      getSession: () => Promise.reject(new Error("Speaking session was not found.")),
+      listHistory: () => Promise.resolve([]),
+      addMessage: () => Promise.reject(new Error("Not implemented in this test."))
     }
   };
 }
@@ -42,20 +76,17 @@ describe("speaking exceptional states", () => {
     expect(await screen.findByText("没有找到这个情景")).toBeInTheDocument();
   });
 
-  it("shows a visible warning and falls back to prompts when localStorage replay JSON is malformed", async () => {
-    window.localStorage.setItem("speaking-history:business-opening", "{bad json");
-
+  it("shows a visible notice when no backend replay session exists", async () => {
     renderWithProviders(<SpeakingFeedbackPage />, {
       path: "/speaking/:scenarioId/feedback",
-      route: "/speaking/business-opening/feedback"
+      route: `/speaking/${defaultScenario.id}/feedback`
     });
 
     expect(await screen.findByText("评分结果")).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent("历史回放记录损坏");
-    expect(screen.getByText("Could we confirm whether Friday is still realistic for delivery?")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("暂无历史会话记录");
   });
 
-  it("degrades optional fields but blocks conversation when prompts are missing", async () => {
+  it("degrades optional fields but still allows backend session entry when prompts are missing", async () => {
     const services = {
       ...createScenarioServices(incompleteScenarios)
     };
@@ -67,11 +98,30 @@ describe("speaking exceptional states", () => {
     expect(await screen.findByText("缺字段场景")).toBeInTheDocument();
     expect(screen.getByText("暂无关键词")).toBeInTheDocument();
     expect(screen.getByText("对话示例")).toBeInTheDocument();
-    expect(screen.getByText("对话脚本数据缺失，暂时无法进入会话练习。请返回口语页选择其他情景，或稍后重试。")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /进入会话/ })).toBeDisabled();
+    expect(screen.getByText("暂无对话示例。你仍然可以进入会话，由后端开场白开始练习。")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /进入会话/ })).toBeEnabled();
   });
 
-  it("shows an explicit error state and disables dependent actions when prompts are missing", async () => {
+  it("renders backend sample dialogue when prompts are missing", async () => {
+    const services = {
+      ...createScenarioServices([
+        {
+          ...incompleteScenarios[0],
+          sampleDialogue: "Coach: Welcome to the practice.\nLearner: I am ready to begin."
+        }
+      ])
+    };
+
+    renderWithProviders(<SpeakingScenarioDetailPage />, {
+      route: "/speaking/incomplete",
+      services
+    });
+
+    expect(await screen.findByText("Coach: Welcome to the practice.")).toBeInTheDocument();
+    expect(screen.getByText("Learner: I am ready to begin.")).toBeInTheDocument();
+  });
+
+  it("starts a session even when prompt scripts are missing", async () => {
     const services = {
       ...createScenarioServices(incompleteScenarios)
     };
@@ -81,12 +131,12 @@ describe("speaking exceptional states", () => {
       route: "/speaking/incomplete/conversation",
       services
     });
-    expect(await screen.findByText("对话脚本数据缺失，当前会话无法开始录音或交卷。请返回情景详情页重新选择。")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /开始录音/ })).toBeDisabled();
+    expect(await screen.findByText("Let's start.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /开始录音/ })).toBeEnabled();
     expect(screen.getByRole("button", { name: /交卷/ })).toBeDisabled();
 
     await userEvent.click(screen.getByRole("button", { name: /开始录音/ }));
-    expect(screen.getByText("当前为第 0 轮")).toBeInTheDocument();
+    expect(screen.getByText("正在录音")).toBeInTheDocument();
     expect(window.localStorage.getItem("speaking-history:incomplete")).toBeNull();
   });
 
@@ -101,7 +151,7 @@ describe("speaking exceptional states", () => {
       services
     });
     expect(await screen.findByText("评分结果")).toBeInTheDocument();
-    expect(screen.getByText("评分数据缺失，暂时无法展示本次练习结果。请返回会话页重新练习，或稍后重试。")).toBeInTheDocument();
+    expect(screen.getByText("暂无历史会话记录。请先进入会话完成一次文本练习。")).toBeInTheDocument();
     expect(screen.queryByText("N/A")).not.toBeInTheDocument();
   });
 });

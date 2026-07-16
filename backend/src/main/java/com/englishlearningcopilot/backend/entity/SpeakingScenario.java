@@ -56,6 +56,9 @@ public class SpeakingScenario {
     @Column(nullable = false, name = "opening_message", length = 1000)
     private String openingMessage;
 
+    @Column(name = "sample_dialogue", length = 4000)
+    private String sampleDialogue;
+
     @Column(nullable = false, name = "target_turns")
     private int targetTurns;
 

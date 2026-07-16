@@ -27,6 +27,12 @@ public class SpeakingScenarioSeedConfig {
                             "agenda,clarify,timeline,follow up",
                             "You are a professional meeting partner. Keep the conversation realistic, concise, and focused on agenda, risks, timeline, and follow-up actions.",
                             "Good morning. Could you briefly introduce today's agenda?",
+                            """
+                                    Coach: Good morning. Could you briefly introduce today's agenda?
+                                    Learner: Sure. Today I'd like to start with the project update, then discuss the delivery timeline.
+                                    Coach: Great. How would you clarify a delayed deadline politely?
+                                    Learner: I would say: Could we confirm whether Friday is still realistic for delivery?
+                                    """,
                             6,
                             "Score fluency, grammar, vocabulary range, relevance, and business appropriateness."
                     ),
@@ -43,6 +49,12 @@ public class SpeakingScenarioSeedConfig {
                             "check in,boarding pass,aisle seat,reschedule",
                             "You are an airport check-in staff member. Ask practical travel questions and guide the learner through the check-in flow.",
                             "Hello. May I see your passport and booking reference?",
+                            """
+                                    Coach: Hello. May I see your passport and booking reference?
+                                    Learner: Of course. Here is my passport, and this is my booking reference.
+                                    Coach: Would you prefer a window seat or an aisle seat?
+                                    Learner: I'd prefer an aisle seat if one is available.
+                                    """,
                             5,
                             "Score clarity, task completion, grammar, vocabulary, and politeness."
                     ),
@@ -59,6 +71,12 @@ public class SpeakingScenarioSeedConfig {
                             "small talk,recommend,by the way,sounds great",
                             "You are a friendly dinner companion. Keep the dialogue casual and encourage the learner to ask follow-up questions.",
                             "This restaurant is popular. Have you been here before?",
+                            """
+                                    Coach: This restaurant is popular. Have you been here before?
+                                    Learner: No, it's my first time here. Do you have any recommendations?
+                                    Coach: The pasta is great. What kind of food do you usually enjoy?
+                                    Learner: I usually enjoy simple food with fresh ingredients.
+                                    """,
                             6,
                             "Score fluency, interaction, grammar, vocabulary, and naturalness."
                     ),
@@ -75,13 +93,26 @@ public class SpeakingScenarioSeedConfig {
                             "symptom,prescription,pharmacy,appointment",
                             "You are a clinic doctor. Ask careful but simple questions about symptoms, timeline, medicine, and allergies.",
                             "Hello. What brings you in today?",
+                            """
+                                    Coach: Hello. What brings you in today?
+                                    Learner: I've had a sore throat and a headache for the past three days.
+                                    Coach: Have you taken any medication for it so far?
+                                    Learner: I took some painkillers yesterday, but the headache came back this morning.
+                                    """,
                             6,
                             "Score clarity, symptom description, grammar, vocabulary, and relevance."
                     )
             );
 
             for (SpeakingScenario scenario : scenarios) {
-                if (!scenarioRepository.existsById(scenario.getId())) {
+                if (scenarioRepository.existsById(scenario.getId())) {
+                    scenarioRepository.findById(scenario.getId())
+                            .filter(existing -> existing.getSampleDialogue() == null || existing.getSampleDialogue().isBlank())
+                            .ifPresent(existing -> {
+                                existing.setSampleDialogue(scenario.getSampleDialogue());
+                                scenarioRepository.save(existing);
+                            });
+                } else {
                     scenarioRepository.save(scenario);
                 }
             }
@@ -101,6 +132,7 @@ public class SpeakingScenarioSeedConfig {
             String keywords,
             String rolePrompt,
             String openingMessage,
+            String sampleDialogue,
             int targetTurns,
             String scoringRubric
     ) {
@@ -117,6 +149,7 @@ public class SpeakingScenarioSeedConfig {
         scenario.setKeywords(keywords);
         scenario.setRolePrompt(rolePrompt);
         scenario.setOpeningMessage(openingMessage);
+        scenario.setSampleDialogue(sampleDialogue.strip());
         scenario.setTargetTurns(targetTurns);
         scenario.setScoringRubric(scoringRubric);
         scenario.setActive(true);

@@ -17,6 +17,7 @@ public record SpeakingScenarioResponse(
         String goal,
         List<String> keywords,
         String openingMessage,
+        String sampleDialogue,
         int targetTurns,
         String scoringRubric
 ) {
@@ -35,6 +36,7 @@ public record SpeakingScenarioResponse(
                 scenario.getGoal(),
                 splitKeywords(scenario.getKeywords()),
                 scenario.getOpeningMessage(),
+                scenario.getSampleDialogue(),
                 scenario.getTargetTurns(),
                 scenario.getScoringRubric()
         );
