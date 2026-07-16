@@ -39,6 +39,10 @@ const emptyRatingSummary = {
   简单: 0
 };
 
+const ratingScores = Object.fromEntries(
+  Object.entries(ratingShortcuts).map(([score, label]) => [label, Number(score)])
+);
+
 function getCorrectAnswer(question, questionType) {
   if (questionType === "chineseToEnglish") {
     return question.word;
@@ -70,7 +74,14 @@ export function VocabularyPracticePage() {
   const navigate = useNavigate();
   const { level = "starter" } = useParams();
   const { vocabulary } = useAppServices();
-  const loader = useCallback(() => vocabulary.getVocabularyPracticeWords({ level }), [level, vocabulary]);
+  const isReview = level === "review";
+  const loader = useCallback(
+    () =>
+      isReview
+        ? vocabulary.getReviewVocabulary()
+        : vocabulary.getVocabularyPracticeWords({ level }),
+    [isReview, level, vocabulary]
+  );
   const { data: practiceWords, loading, error } = useAsyncData(loader, [loader]);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [questionTypeIndex, setQuestionTypeIndex] = useState(0);
@@ -137,20 +148,41 @@ export function VocabularyPracticePage() {
     };
   }
 
-  function saveCurrentAnswer(rating) {
+  function submitCurrentRating(rating) {
+    if (!currentQuestion) {
+      return;
+    }
+
+    vocabulary.submitVocabularyRating({
+      vocabularyId: currentQuestion.id,
+      score: ratingScores[rating]
+    }).catch((error) => {
+      console.error("Failed to submit vocabulary rating.", error);
+    });
+  }
+
+  function handleToggleFavorite(vocabularyId) {
+    return vocabulary.toggleVocabularyFavorite({ vocabularyId });
+  }
+
+  function handleRateCurrentQuestion(rating) {
+    setSelectedRating(rating);
+    submitCurrentRating(rating);
     const record = buildCurrentRecord(rating);
 
     if (!record) {
       return;
     }
 
-    setAnswerRecords((current) => [...current, record]);
-  }
+    const finalRecords = [...answerRecords, record];
 
-  function handleRateCurrentQuestion(rating) {
-    setSelectedRating(rating);
-    saveCurrentAnswer(rating);
-    setQuestionIndex((current) => (current + 1) % practiceWords.length);
+    if (questionIndex === practiceWords.length - 1) {
+      navigateToResult(finalRecords);
+      return;
+    }
+
+    setAnswerRecords(finalRecords);
+    setQuestionIndex((current) => current + 1);
     resetAnswerState();
   }
 
@@ -180,16 +212,19 @@ export function VocabularyPracticePage() {
     );
   }
 
-  function handleFinishPractice() {
-    const currentRecord = buildCurrentRecord();
-    const finalRecords = currentRecord ? [...answerRecords, currentRecord] : answerRecords;
-
+  function navigateToResult(records) {
     navigate("/vocabulary/result", {
       state: {
         level,
-        summary: buildSummary(finalRecords)
+        summary: buildSummary(records)
       }
     });
+  }
+
+  function handleFinishPractice() {
+    const currentRecord = buildCurrentRecord();
+    const finalRecords = currentRecord ? [...answerRecords, currentRecord] : answerRecords;
+    navigateToResult(finalRecords);
   }
 
   function handlePlayAudio() {
@@ -217,13 +252,13 @@ export function VocabularyPracticePage() {
               <div>
                 <Space align="center" wrap>
                   <Tag bordered={false} className="soft-tag soft-tag--dark">
-                    {level}
+                    {isReview ? "Review" : level}
                   </Tag>
                   <Tag bordered={false} className="soft-tag">
                     {questionIndex + 1} / {practiceWords.length}
                   </Tag>
                 </Space>
-                <Title level={2}>词汇练习</Title>
+                <Title level={2}>{isReview ? "词汇复习" : "词汇练习"}</Title>
               </div>
               <Button htmlType="button" icon={<SwapOutlined />} onClick={handleSwitchQuestionType}>
                 {questionTypeLabels[questionType]}
@@ -249,6 +284,7 @@ export function VocabularyPracticePage() {
 
           {answered ? (
             <VocabularyWordCard
+              onToggleFavorite={handleToggleFavorite}
               onRate={handleRateCurrentQuestion}
               selectedRating={selectedRating}
               word={currentQuestion}

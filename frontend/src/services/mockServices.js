@@ -1,24 +1,24 @@
 import {
-  dashboardCommunityLearningTrendsMock,
   dashboardOverviewMock,
   dashboardRecommendedTaskMock,
   dashboardStudyPlanMock,
   dashboardWeeklyOverviewMock,
-  grammarNotebookQuestionsMock,
   grammarOverviewMock,
-  grammarPracticeQuestionsMock,
   grammarProgressMock,
   grammarSnapshotMock,
   grammarTopicsMock,
   profileSnapshotMock,
+  reviewGrammarMock,
+  reviewVocabularyMock,
   speakingScenariosMock,
   vocabularyMemoryMock,
   vocabularyPracticeProgressMock,
-  vocabularyPracticeWordsMock,
-  vocabularySnapshotMock,
-  vocabularyWordbookWordsMock
+  vocabularySnapshotMock
 } from "./mockData";
 import { getStoredAuth } from "./authStorage";
+import { createHttpServices } from "./httpServices";
+
+const httpServices = createHttpServices(import.meta.env.VITE_API_BASE_URL ?? "");
 
 const mockUsers = [
   {
@@ -152,7 +152,7 @@ export function createMockServices() {
       getRecommendedTask: () => simulateLatency(dashboardRecommendedTaskMock),
       getStudyPlan: () => simulateLatency(dashboardStudyPlanMock),
       getWeeklyOverview: () => simulateLatency(dashboardWeeklyOverviewMock),
-      getCommunityLearningTrends: () => simulateLatency(dashboardCommunityLearningTrendsMock)
+      getCommunityLearningTrends: () => httpServices.dashboard.getCommunityLearningTrends()
     },
     speaking: {
       listScenarios: () => simulateLatency(speakingScenariosMock),
@@ -231,19 +231,22 @@ export function createMockServices() {
       getSnapshot: () => simulateLatency(vocabularySnapshotMock),
       getVocabularyMemory: () => simulateLatency(vocabularyMemoryMock),
       getVocabularyPracticeProgress: () => simulateLatency(vocabularyPracticeProgressMock),
-      getVocabularyPracticeWords: () => simulateLatency(vocabularyPracticeWordsMock),
-      getVocabularyWordbookWords: () => simulateLatency(vocabularyWordbookWordsMock)
+      getVocabularyPracticeWords: (options) =>
+        httpServices.vocabulary.getVocabularyPracticeWords(options),
+      submitVocabularyRating: (payload) => httpServices.vocabulary.submitVocabularyRating(payload),
+      getReviewVocabulary: () => simulateLatency(reviewVocabularyMock),
+      getVocabularyWordbookWords: () => httpServices.vocabulary.getVocabularyWordbookWords(),
+      toggleVocabularyFavorite: (payload) => httpServices.vocabulary.toggleVocabularyFavorite(payload)
     },
     grammar: {
-      getNotebookQuestions: () => simulateLatency(grammarNotebookQuestionsMock),
+      getNotebookQuestions: () => httpServices.grammar.getNotebookQuestions(),
+      submitGrammarPracticeResult: (payload) =>
+        httpServices.grammar.submitGrammarPracticeResult(payload),
+      submitGrammarRating: (payload) => httpServices.grammar.submitGrammarRating(payload),
+      toggleGrammarFavorite: (payload) => httpServices.grammar.toggleGrammarFavorite(payload),
       getOverview: () => simulateLatency(grammarOverviewMock),
-      getPracticeQuestions: ({ category } = {}) => {
-        const questions = category
-          ? grammarPracticeQuestionsMock.filter((question) => question.grammar_category === category)
-          : grammarPracticeQuestionsMock;
-
-        return simulateLatency(questions);
-      },
+      getReviewGrammar: () => simulateLatency(reviewGrammarMock),
+      getPracticeQuestions: (options) => httpServices.grammar.getPracticeQuestions(options),
       getProgress: () => simulateLatency(grammarProgressMock),
       getTopics: () => simulateLatency(grammarTopicsMock),
       getSnapshot: () => simulateLatency(grammarSnapshotMock)

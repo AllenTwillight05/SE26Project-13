@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircleOutlined, CloseCircleOutlined, StopOutlined } from "@ant-design/icons";
 import { Button, Flex, Space, Tag, Typography } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
@@ -24,6 +24,10 @@ const emptyRatingSummary = {
   简单: 0
 };
 
+const ratingScores = Object.fromEntries(
+  Object.entries(ratingShortcuts).map(([score, label]) => [label, Number(score)])
+);
+
 function getAnswerText(question) {
   const answerIndex = question.answer.charCodeAt(0) - "A".charCodeAt(0);
   return question.options[answerIndex] ?? "";
@@ -33,15 +37,20 @@ export function GrammarPracticePage() {
   const navigate = useNavigate();
   const { category = "" } = useParams();
   const decodedCategory = decodeURIComponent(category);
+  const isReview = decodedCategory === "review";
   const { grammar } = useAppServices();
   const loader = useCallback(
-    () => grammar.getPracticeQuestions({ category: decodedCategory }),
-    [decodedCategory, grammar]
+    () =>
+      isReview
+        ? grammar.getReviewGrammar()
+        : grammar.getPracticeQuestions({ category: decodedCategory }),
+    [decodedCategory, grammar, isReview]
   );
   const { data: questions, loading, error } = useAsyncData(loader, [loader]);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [answerRecords, setAnswerRecords] = useState([]);
+  const practiceResultSubmissionRef = useRef(Promise.resolve());
 
   const currentQuestion = questions?.[questionIndex];
   const answered = selectedAnswer !== null;
@@ -83,6 +92,28 @@ export function GrammarPracticePage() {
     setSelectedAnswer(null);
   }
 
+  function handleAnswer(answer) {
+    if (!currentQuestion) {
+      return;
+    }
+
+    setSelectedAnswer(answer);
+    const submission = grammar.submitGrammarPracticeResult({
+      grammarQuestionId: currentQuestion.id,
+      incorrect: answer !== currentQuestion.answer
+    });
+    practiceResultSubmissionRef.current = submission;
+    submission.catch((error) => {
+      console.error("Failed to submit grammar practice result.", error);
+    });
+  }
+
+  function handleToggleFavorite(grammarQuestionId) {
+    return practiceResultSubmissionRef.current.then(() =>
+      grammar.toggleGrammarFavorite({ grammarQuestionId })
+    );
+  }
+
   function buildCurrentRecord(rating = null) {
     if (!answered || !currentQuestion) {
       return null;
@@ -98,13 +129,30 @@ export function GrammarPracticePage() {
   }
 
   function handleRateCurrentQuestion(rating) {
-    const record = buildCurrentRecord(rating);
-
-    if (record) {
-      setAnswerRecords((current) => [...current, record]);
+    if (currentQuestion) {
+      grammar.submitGrammarRating({
+        grammarQuestionId: currentQuestion.id,
+        score: ratingScores[rating]
+      }).catch((error) => {
+        console.error("Failed to submit grammar rating.", error);
+      });
     }
 
-    setQuestionIndex((current) => (current + 1) % questions.length);
+    const record = buildCurrentRecord(rating);
+
+    if (!record) {
+      return;
+    }
+
+    const finalRecords = [...answerRecords, record];
+
+    if (questionIndex === questions.length - 1) {
+      navigateToResult(finalRecords);
+      return;
+    }
+
+    setAnswerRecords(finalRecords);
+    setQuestionIndex((current) => current + 1);
     resetAnswerState();
   }
 
@@ -134,16 +182,19 @@ export function GrammarPracticePage() {
     );
   }
 
-  function handleFinishPractice() {
-    const currentRecord = buildCurrentRecord();
-    const finalRecords = currentRecord ? [...answerRecords, currentRecord] : answerRecords;
-
+  function navigateToResult(records) {
     navigate("/grammar/result", {
       state: {
         category: decodedCategory,
-        summary: buildSummary(finalRecords)
+        summary: buildSummary(records)
       }
     });
+  }
+
+  function handleFinishPractice() {
+    const currentRecord = buildCurrentRecord();
+    const finalRecords = currentRecord ? [...answerRecords, currentRecord] : answerRecords;
+    navigateToResult(finalRecords);
   }
 
   return (
@@ -155,19 +206,19 @@ export function GrammarPracticePage() {
               <div>
                 <Space align="center" wrap>
                   <Tag bordered={false} className="soft-tag soft-tag--dark">
-                    {decodedCategory}
+                    {isReview ? "Review" : decodedCategory}
                   </Tag>
                   <Tag bordered={false} className="soft-tag">
                     {questionIndex + 1} / {questions.length}
                   </Tag>
                 </Space>
-                <Title level={2}>语法练习</Title>
+                <Title level={2}>{isReview ? "语法复习" : "语法练习"}</Title>
               </div>
             </Flex>
 
             <GrammarQuestionCard
               answered={answered}
-              onAnswer={setSelectedAnswer}
+              onAnswer={handleAnswer}
               question={currentQuestion}
               selectedAnswer={selectedAnswer}
             />
@@ -186,8 +237,11 @@ export function GrammarPracticePage() {
             <GrammarExplanationCard
               correctAnswer={correctAnswer}
               explanation={currentQuestion.explanation}
+              favorited={currentQuestion.favorited}
               isCorrect={isCorrect}
               onRate={handleRateCurrentQuestion}
+              onToggleFavorite={handleToggleFavorite}
+              questionId={currentQuestion.id}
             />
           ) : null}
 

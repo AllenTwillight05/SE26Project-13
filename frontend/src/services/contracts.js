@@ -65,8 +65,22 @@ export const contractShapes = {
   },
   dashboardCommunityLearningTrends: {
     speaking: [{ topic: "string", description: "string" }],
-    vocabulary: [{ word: "string", briefTranslation: "string" }],
-    grammar: [{ topic: "string" }]
+    vocabulary: [
+      {
+        rank: 1,
+        vocabularyId: 1,
+        word: "string",
+        briefTranslation: "string",
+        learnerCount: 0
+      }
+    ],
+    grammar: [
+      {
+        rank: 1,
+        grammarCategory: "string",
+        learnerCount: 0
+      }
+    ]
   },
   speakingScenarios: [
     {
@@ -145,6 +159,27 @@ export const contractShapes = {
       exchange: "string",
       uk_audio: "string",
       us_audio: "string",
+      favorited: false,
+      chineseOptions: ["string"],
+      englishOptions: ["string"]
+    }
+  ],
+  reviewVocabulary: [
+    {
+      id: "string",
+      word: "string",
+      phonetic: "string",
+      definition: "string",
+      briefTranslation: "string",
+      translation: "string",
+      collins: "string",
+      oxford: "string",
+      tag: "string",
+      bnc: "string",
+      frq: "string",
+      exchange: "string",
+      uk_audio: "string",
+      us_audio: "string",
       chineseOptions: ["string"],
       englishOptions: ["string"]
     }
@@ -161,6 +196,10 @@ export const contractShapes = {
       favorited: true
     }
   ],
+  vocabularyFavoriteResponse: {
+    vocabularyId: 0,
+    favorited: true
+  },
   grammarSnapshot: {
     focus: "string",
     topics: [
@@ -190,7 +229,32 @@ export const contractShapes = {
       favorited: true
     }
   ],
+  grammarPracticeResultRequest: {
+    grammarQuestionId: 0,
+    incorrect: true
+  },
+  grammarRatingRequest: {
+    grammarQuestionId: 0,
+    score: 1
+  },
+  grammarFavoriteRequest: {
+    grammarQuestionId: 0
+  },
+  grammarFavoriteResponse: {
+    grammarQuestionId: 0,
+    favorited: true
+  },
   grammarPracticeQuestions: [
+    {
+      id: 0,
+      question_text: "string",
+      options: ["string"],
+      answer: "A",
+      grammar_category: "string",
+      explanation: "string"
+    }
+  ],
+  reviewGrammar: [
     {
       id: 0,
       question_text: "string",
