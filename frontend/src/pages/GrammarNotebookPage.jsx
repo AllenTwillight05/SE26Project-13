@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeftOutlined } from "@ant-design/icons";
-import { Button, Empty, Flex, Typography } from "antd";
-import { useNavigate } from "react-router-dom";
+import { ArrowLeftOutlined, LoginOutlined, ReadOutlined } from "@ant-design/icons";
+import { App, Button, Empty, Flex, Result, Typography } from "antd";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import { GrammarNotebookItem } from "../components/Grammar/GrammarNotebookItem";
 import { GrammarNotebookTabs } from "../components/Grammar/GrammarNotebookTabs";
 import { AsyncPage } from "../components/common/AsyncPage";
@@ -11,9 +12,18 @@ import { useAppServices } from "../services/ServiceContext";
 const { Title, Text } = Typography;
 
 export function GrammarNotebookPage() {
+  const { message } = App.useApp();
+  const auth = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
   const { grammar } = useAppServices();
-  const loader = useCallback(() => grammar.getNotebookQuestions(), [grammar]);
+  const loader = useCallback(() => {
+    if (auth.loading || !auth.isAuthenticated) {
+      return Promise.resolve(null);
+    }
+
+    return grammar.getNotebookQuestions();
+  }, [auth.isAuthenticated, auth.loading, grammar]);
   const { data, loading, error } = useAsyncData(loader, [loader]);
   const [activeTab, setActiveTab] = useState("wrong");
   const [questions, setQuestions] = useState([]);
@@ -36,13 +46,71 @@ export function GrammarNotebookPage() {
     ? questions.filter((question) => question.favorited)
     : questions.filter((question) => question.wrong);
 
-  function handleToggleFavorite(questionId) {
+  async function handleToggleFavorite(questionId) {
+    const currentQuestion = questions.find((question) => question.id === questionId);
+
+    if (!currentQuestion) {
+      return;
+    }
+
+    const previousFavorited = currentQuestion.favorited;
+    const nextFavorited = !previousFavorited;
+
     setQuestions((current) =>
       current.map((question) =>
         question.id === questionId
-          ? { ...question, favorited: !question.favorited }
+          ? { ...question, favorited: nextFavorited }
           : question
       )
+    );
+
+    try {
+      const result = await grammar.toggleGrammarFavorite({ grammarQuestionId: questionId });
+      const updatedFavorited = result?.favorited ?? nextFavorited;
+      setQuestions((current) =>
+        current.map((question) =>
+          question.id === questionId
+            ? { ...question, favorited: updatedFavorited }
+            : question
+        )
+      );
+      message.success(updatedFavorited ? "已收藏语法题" : "已取消收藏");
+    } catch (error) {
+      setQuestions((current) =>
+        current.map((question) =>
+          question.id === questionId
+            ? { ...question, favorited: previousFavorited }
+            : question
+        )
+      );
+      message.error(error?.status === 401 ? "请先登录后收藏语法题" : "收藏状态更新失败");
+    }
+  }
+
+  if (auth.loading) {
+    return <AsyncPage loading error={null} />;
+  }
+
+  if (!auth.isAuthenticated) {
+    return (
+      <div className="page-stack">
+        <section className="glass-panel profile-empty-state">
+          <Result
+            icon={<ReadOutlined />}
+            title="语法练习本需要登录"
+            subTitle="登录后可以查看你的语法错题和收藏题目。"
+            extra={
+              <Button
+                type="primary"
+                icon={<LoginOutlined />}
+                onClick={() => navigate("/login", { state: { from: location } })}
+              >
+                请先登录
+              </Button>
+            }
+          />
+        </section>
+      </div>
     );
   }
 

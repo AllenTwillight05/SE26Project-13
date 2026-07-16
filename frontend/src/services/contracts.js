@@ -65,33 +65,68 @@ export const contractShapes = {
   },
   dashboardCommunityLearningTrends: {
     speaking: [{ topic: "string", description: "string" }],
-    vocabulary: [{ word: "string", briefTranslation: "string" }],
-    grammar: [{ topic: "string" }]
-  },
-  speakingCatalog: {
-    modes: ["string"],
-    scriptPreviewTitle: "string",
-    scriptPreviewLines: ["string"],
-    scenarios: [
+    vocabulary: [
       {
-        id: "string",
-        title: "string",
-        level: "string",
-        accent: "string",
-        duration: "string",
-        summary: "string",
-        tone: "blue",
-        goal: "string",
-        keywords: ["string"],
-        prompts: [{ role: "coach", text: "string" }],
-        feedback: {
-          totalScore: 0,
-          pronunciation: 0,
-          fluency: 0,
-          speed: "string",
-          issueSentences: ["string"],
-          suggestions: ["string"]
-        }
+        rank: 1,
+        vocabularyId: 1,
+        word: "string",
+        briefTranslation: "string",
+        learnerCount: 0
+      }
+    ],
+    grammar: [
+      {
+        rank: 1,
+        grammarCategory: "string",
+        learnerCount: 0
+      }
+    ]
+  },
+  speakingScenarios: [
+    {
+      id: "string",
+      title: "string",
+      description: "string",
+      difficulty: "B2",
+      level: "B2",
+      accent: "string",
+      duration: "string",
+      summary: "string",
+      tone: "blue",
+      goal: "string",
+      keywords: ["string"],
+      openingMessage: "string",
+      sampleDialogue: "Coach: string\nLearner: string",
+      targetTurns: 6,
+      scoringRubric: "string",
+      prompts: [{ role: "coach", text: "string" }],
+      feedback: {
+        totalScore: 0,
+        pronunciation: 0,
+        fluency: 0,
+        speed: "string",
+        issueSentences: ["string"],
+        suggestions: ["string"]
+      }
+    }
+  ],
+  speakingSession: {
+    id: 1,
+    userId: 1,
+    scenario: { id: "string", title: "string" },
+    status: "ACTIVE",
+    startedAt: "2026-07-09T00:00:00Z",
+    completedAt: null,
+    currentTurn: 0,
+    targetTurns: 6,
+    messages: [
+      {
+        id: 1,
+        sender: "AGENT",
+        content: "string",
+        instantTip: null,
+        turnIndex: 0,
+        createdAt: "2026-07-09T00:00:00Z"
       }
     ]
   },
@@ -194,6 +229,21 @@ export const contractShapes = {
       favorited: true
     }
   ],
+  grammarPracticeResultRequest: {
+    grammarQuestionId: 0,
+    incorrect: true
+  },
+  grammarRatingRequest: {
+    grammarQuestionId: 0,
+    score: 1
+  },
+  grammarFavoriteRequest: {
+    grammarQuestionId: 0
+  },
+  grammarFavoriteResponse: {
+    grammarQuestionId: 0,
+    favorited: true
+  },
   grammarPracticeQuestions: [
     {
       id: 0,
