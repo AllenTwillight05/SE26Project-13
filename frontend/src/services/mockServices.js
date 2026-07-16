@@ -1,5 +1,4 @@
 import {
-  dashboardCommunityLearningTrendsMock,
   dashboardOverviewMock,
   dashboardRecommendedTaskMock,
   dashboardStudyPlanMock,
@@ -124,7 +123,7 @@ export function createMockServices() {
       getRecommendedTask: () => simulateLatency(dashboardRecommendedTaskMock),
       getStudyPlan: () => simulateLatency(dashboardStudyPlanMock),
       getWeeklyOverview: () => simulateLatency(dashboardWeeklyOverviewMock),
-      getCommunityLearningTrends: () => simulateLatency(dashboardCommunityLearningTrendsMock)
+      getCommunityLearningTrends: () => httpServices.dashboard.getCommunityLearningTrends()
     },
     speaking: {
       getCatalog: () => simulateLatency(speakingCatalogMock)
