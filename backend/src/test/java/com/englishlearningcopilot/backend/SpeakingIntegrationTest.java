@@ -96,6 +96,18 @@ class SpeakingIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(sessionId))
                 .andExpect(jsonPath("$[0].messages.length()").value(3));
+
+        // Verify feedback endpoint returns expected structure
+        mockMvc.perform(get("/api/speaking/sessions/" + sessionId + "/feedback")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalScore").isNumber())
+                .andExpect(jsonPath("$.pronunciation").isNumber())
+                .andExpect(jsonPath("$.fluency").isNumber())
+                .andExpect(jsonPath("$.speed").isString())
+                .andExpect(jsonPath("$.issueSentences").isArray())
+                .andExpect(jsonPath("$.suggestions").isArray())
+                .andExpect(jsonPath("$.suggestions.length()").value(3));
     }
 
     @Test
@@ -110,6 +122,9 @@ class SpeakingIntegrationTest {
                 .andExpect(status().isUnauthorized());
 
         mockMvc.perform(get("/api/speaking/history"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/speaking/sessions/1/feedback"))
                 .andExpect(status().isUnauthorized());
     }
 

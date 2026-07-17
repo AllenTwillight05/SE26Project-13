@@ -4,7 +4,8 @@ import {
   PauseCircleOutlined,
   PlayCircleOutlined,
   ReloadOutlined,
-  SoundOutlined
+  SoundOutlined,
+  TrophyOutlined
 } from "@ant-design/icons";
 import { Button, Modal, Space, Typography } from "antd";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -13,7 +14,7 @@ import { PageSectionHeader } from "../components/common/PageSectionHeader";
 import { useAsyncData } from "../hooks/useAsyncData";
 import { useAppServices } from "../services/ServiceContext";
 
-const { Text, Paragraph } = Typography;
+const { Text, Paragraph, Title } = Typography;
 
 function speakText(text, onEnd) {
   if (!window.speechSynthesis || !text) {
@@ -50,16 +51,24 @@ export function SpeakingFeedbackPage() {
   const sessionId = searchParams.get("sessionId");
   const loader = useCallback(async () => {
     const scenario = await speaking.getScenario(scenarioId);
+    let session;
     if (sessionId) {
-      const session = await speaking.getSession(sessionId);
-      return { scenario, session };
+      session = await speaking.getSession(sessionId);
+    } else {
+      const history = await speaking.listHistory();
+      session = findLatestScenarioSession(history, scenarioId);
     }
 
-    const history = await speaking.listHistory();
-    return {
-      scenario,
-      session: findLatestScenarioSession(history, scenarioId)
-    };
+    let feedback = null;
+    if (session?.id) {
+      try {
+        feedback = await speaking.getFeedback(session.id);
+      } catch {
+        // feedback may not be available yet for this session
+      }
+    }
+
+    return { scenario, session, feedback };
   }, [scenarioId, sessionId, speaking]);
   const { data, loading, error } = useAsyncData(loader, [loader]);
   const [isReplayOpen, setIsReplayOpen] = useState(false);
@@ -68,21 +77,15 @@ export function SpeakingFeedbackPage() {
   const currentAudioRef = useRef(null);
   const stopReplayRef = useRef(false);
   const replayRunRef = useRef(0);
+  const chatWindowRef = useRef(null);
 
   const scenario = data?.scenario;
   const session = data?.session;
+  const feedback = data?.feedback;
   const replayMessages = useMemo(
     () => (session?.messages ?? []).map(toReplayMessage),
     [session]
   );
-
-  const replayTurns = useMemo(() => {
-    const turns = [];
-    for (let index = 0; index < replayMessages.length; index += 2) {
-      turns.push(replayMessages.slice(index, index + 2));
-    }
-    return turns;
-  }, [replayMessages]);
 
   const stopReplay = useCallback(() => {
     stopReplayRef.current = true;
@@ -131,22 +134,103 @@ export function SpeakingFeedbackPage() {
 
   useEffect(() => () => stopReplay(), [stopReplay]);
 
+  const hasFeedback = feedback && typeof feedback.totalScore === "number";
+
   return (
     <AsyncPage loading={loading} error={error}>
       {scenario ? (
         <div className="page-stack">
+          {/* ---- Scoring section ---- */}
           <section className="glass-panel">
             <PageSectionHeader
               eyebrow=""
               title="评分结果"
               description=""
             />
+
+            {hasFeedback ? (
+              <>
+                <div className="feedback-layout">
+                  {/* Total score card */}
+                  <div className="glass-panel score-card">
+                    <div className="score-card__main">
+                      <Text type="secondary" className="score-card__label">总评分</Text>
+                      <Title level={2} className="score-card__value" style={{ margin: 0 }}>
+                        {feedback.totalScore}
+                      </Title>
+                      <Text type="secondary">/ 100</Text>
+                    </div>
+                    <TrophyOutlined className="score-card__icon" />
+                  </div>
+
+                  {/* Sub-metrics */}
+                  <div className="feedback-metrics">
+                    <div className="glass-panel feedback-metric-item">
+                      <Text type="secondary" className="metric-label">发音准确性</Text>
+                      <Title level={4} className="metric-value" style={{ margin: 0 }}>
+                        {feedback.pronunciation}
+                      </Title>
+                      <Text type="secondary">/ 100</Text>
+                    </div>
+                    <div className="glass-panel feedback-metric-item">
+                      <Text type="secondary" className="metric-label">流畅度</Text>
+                      <Title level={4} className="metric-value" style={{ margin: 0 }}>
+                        {feedback.fluency}
+                      </Title>
+                      <Text type="secondary">/ 100</Text>
+                    </div>
+                    <div className="glass-panel feedback-metric-item">
+                      <Text type="secondary" className="metric-label">语速</Text>
+                      <Title level={4} className="metric-value" style={{ margin: 0 }}>
+                        {feedback.speed}
+                      </Title>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Issue sentences */}
+                {feedback.issueSentences && feedback.issueSentences.length > 0 && (
+                  <div className="feedback-list glass-panel" style={{ marginBottom: 12 }}>
+                    <Text strong className="panel-title">需要改进的句子</Text>
+                    <ul className="feedback-issue-list">
+                      {feedback.issueSentences.map((sentence, idx) => (
+                        <li key={idx} className="feedback-issue-item">
+                          <span className="feedback-bullet" aria-hidden="true" />
+                          <Text>{sentence}</Text>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Suggestions */}
+                {feedback.suggestions && feedback.suggestions.length > 0 && (
+                  <div className="feedback-list glass-panel" style={{ marginBottom: 12 }}>
+                    <Text strong className="panel-title">改进建议</Text>
+                    <ul className="feedback-suggestion-list">
+                      {feedback.suggestions.map((suggestion, idx) => (
+                        <li key={idx} className="feedback-suggestion-item">
+                          <span className="feedback-bullet" aria-hidden="true" />
+                          <Text>{suggestion}</Text>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
+            ) : session ? (
+              <div className="speaking-alert" role="alert" style={{ marginBottom: 16 }}>
+                评分数据暂未生成。
+              </div>
+            ) : null}
+
+            {/* Session info summary */}
             {session ? (
               <div className="feedback-detail-grid">
                 <div className="feedback-list">
                   <Text className="panel-title">本次文本回放</Text>
                   <Paragraph>
-                    已从后端读取最新会话记录，共 {replayMessages.length} 条消息。语音录制、音频文件和发音评分接入后，可继续挂载到这些消息记录上。
+                    已从后端读取最新会话记录，共 {replayMessages.length} 条消息。
                   </Paragraph>
                 </div>
                 <div className="feedback-list">
@@ -182,6 +266,8 @@ export function SpeakingFeedbackPage() {
               </Button>
             </Space>
           </section>
+
+          {/* ---- Replay modal ---- */}
           <Modal
             title="会话回放"
             open={isReplayOpen}
@@ -195,7 +281,7 @@ export function SpeakingFeedbackPage() {
             onCancel={() => setIsReplayOpen(false)}
           >
             <div className="replay-modal-body">
-              <div className="chat-window replay-chat-window">
+              <div className="chat-window replay-chat-window" ref={chatWindowRef}>
                 {replayMessages.map((message, index) => (
                   <div
                     className={`chat-bubble-row chat-bubble-row--${message.role}`}
@@ -218,18 +304,6 @@ export function SpeakingFeedbackPage() {
                 >
                   {isPlaying ? "暂停" : "开始"}
                 </Button>
-                <div className="replay-segments" role="group" aria-label="回放进度">
-                  {replayTurns.map((_, index) => (
-                    <button
-                      className={index === activeTurn ? "replay-segment replay-segment--active" : "replay-segment"}
-                      key={index}
-                      type="button"
-                      onClick={() => playFromTurn(index)}
-                    >
-                      第 {index + 1} 轮
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
           </Modal>

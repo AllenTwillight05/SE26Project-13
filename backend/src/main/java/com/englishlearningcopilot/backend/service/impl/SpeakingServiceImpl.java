@@ -2,6 +2,7 @@ package com.englishlearningcopilot.backend.service.impl;
 
 import com.englishlearningcopilot.backend.dto.CreateSpeakingMessageRequest;
 import com.englishlearningcopilot.backend.dto.CreateSpeakingSessionRequest;
+import com.englishlearningcopilot.backend.dto.SpeakingFeedbackResponse;
 import com.englishlearningcopilot.backend.dto.SpeakingMessageResponse;
 import com.englishlearningcopilot.backend.dto.SpeakingScenarioResponse;
 import com.englishlearningcopilot.backend.dto.SpeakingSessionResponse;
@@ -22,7 +23,9 @@ import com.englishlearningcopilot.backend.service.SpeakingService;
 import com.englishlearningcopilot.backend.service.agent.SpeakingAgentClient;
 import com.englishlearningcopilot.backend.service.agent.SpeakingAgentReply;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -140,6 +143,50 @@ public class SpeakingServiceImpl implements SpeakingService {
                 SpeakingMessageResponse.from(savedUserMessage),
                 SpeakingMessageResponse.from(savedAgentMessage),
                 toSessionResponse(savedSession)
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SpeakingFeedbackResponse getFeedback(String username, Long sessionId) {
+        SpeakingSession session = findOwnedSession(username, sessionId);
+        List<SpeakingMessage> messages = messageRepository.findBySessionIdOrderByTurnIndexAscCreatedAtAsc(sessionId);
+
+        List<String> userMessages = messages.stream()
+                .filter(m -> m.getSender() == SpeakingMessageSender.USER)
+                .map(SpeakingMessage::getContent)
+                .toList();
+
+        // 占位评分数据，后续应调用api接口
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        int totalScore = 78 + rng.nextInt(18);   // 78–95
+        int pronunciation = 76 + rng.nextInt(20); // 76–95
+        int fluency = 72 + rng.nextInt(24);       // 72–95
+        int wpm = 108 + rng.nextInt(37);          // 108–144
+        String speed = wpm + " WPM";
+
+        List<String> issueSentences = new ArrayList<>();
+        if (!userMessages.isEmpty()) {
+            int pickCount = Math.min(userMessages.size(), 2);
+            for (int i = 0; i < pickCount; i++) {
+                issueSentences.add(userMessages.get(rng.nextInt(userMessages.size())));
+            }
+        }
+
+        // 占位返回建议
+        List<String> suggestions = List.of(
+                "建议1.",
+                "建议2.",
+                "建议3."
+        );
+
+        return new SpeakingFeedbackResponse(
+                totalScore,
+                pronunciation,
+                fluency,
+                speed,
+                issueSentences,
+                suggestions
         );
     }
 

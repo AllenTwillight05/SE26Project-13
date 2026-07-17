@@ -128,7 +128,15 @@ export const contractShapes = {
         turnIndex: 0,
         createdAt: "2026-07-09T00:00:00Z"
       }
-    ]
+    ],
+    feedback: {
+      totalScore: 0,
+      pronunciation: 0,
+      fluency: 0,
+      speed: "string",
+      issueSentences: ["string"],
+      suggestions: ["string"]
+    }
   },
   vocabularySnapshot: {
     dailyGoal: "string",

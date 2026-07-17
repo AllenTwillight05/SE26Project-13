@@ -2,6 +2,7 @@ package com.englishlearningcopilot.backend.service;
 
 import com.englishlearningcopilot.backend.dto.CreateSpeakingMessageRequest;
 import com.englishlearningcopilot.backend.dto.CreateSpeakingSessionRequest;
+import com.englishlearningcopilot.backend.dto.SpeakingFeedbackResponse;
 import com.englishlearningcopilot.backend.dto.SpeakingScenarioResponse;
 import com.englishlearningcopilot.backend.dto.SpeakingSessionResponse;
 import com.englishlearningcopilot.backend.dto.SpeakingTurnResponse;
@@ -20,4 +21,6 @@ public interface SpeakingService {
     List<SpeakingSessionResponse> listHistory(String username);
 
     SpeakingTurnResponse addMessage(String username, Long sessionId, CreateSpeakingMessageRequest request);
+
+    SpeakingFeedbackResponse getFeedback(String username, Long sessionId);
 }

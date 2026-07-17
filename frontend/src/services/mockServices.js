@@ -225,6 +225,28 @@ export function createMockServices() {
           agentMessage,
           session: updatedSession
         });
+      },
+      getFeedback: (sessionId) => {
+        const session = mockSpeakingSessions.get(Number(sessionId));
+        if (!session) {
+          return Promise.reject(new Error("Speaking session was not found."));
+        }
+        const userMessages = (session.messages ?? [])
+          .filter((msg) => msg.sender === "USER")
+          .map((msg) => msg.content);
+        const rng = () => Math.floor(Math.random() * 18) + 78;
+        return simulateLatency({
+          totalScore: rng(),
+          pronunciation: rng(),
+          fluency: rng(),
+          speed: (108 + Math.floor(Math.random() * 37)) + " WPM",
+          issueSentences: userMessages.slice(0, 2),
+          suggestions: [
+            "Try adding more detail to make your responses fuller and more natural.",
+            "Pay attention to sentence stress — emphasize key words for clearer communication.",
+            "Practice linking words together to improve your overall fluency."
+          ]
+        });
       }
     },
     vocabulary: {

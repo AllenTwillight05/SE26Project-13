@@ -2,6 +2,7 @@ package com.englishlearningcopilot.backend.controller;
 
 import com.englishlearningcopilot.backend.dto.CreateSpeakingMessageRequest;
 import com.englishlearningcopilot.backend.dto.CreateSpeakingSessionRequest;
+import com.englishlearningcopilot.backend.dto.SpeakingFeedbackResponse;
 import com.englishlearningcopilot.backend.dto.SpeakingScenarioResponse;
 import com.englishlearningcopilot.backend.dto.SpeakingSessionResponse;
 import com.englishlearningcopilot.backend.dto.SpeakingTurnResponse;
@@ -88,5 +89,14 @@ public class SpeakingController {
             @Valid @RequestBody CreateSpeakingMessageRequest request
     ) {
         return speakingService.addMessage(principal.getName(), sessionId, request);
+    }
+
+    /**
+     * GET /api/speaking/sessions/{sessionId}/feedback
+     * Get feedback for a speaking session
+     */
+    @GetMapping("/sessions/{sessionId}/feedback")
+    public SpeakingFeedbackResponse getFeedback(Principal principal, @PathVariable Long sessionId) {
+        return speakingService.getFeedback(principal.getName(), sessionId);
     }
 }
