@@ -10,6 +10,10 @@ const categoryOptions = [
 ];
 
 function getItemKey(item, category) {
+  if (category === "speaking") {
+    return item.scenarioId ?? item.topic;
+  }
+
   if (category === "vocabulary") {
     return item.vocabularyId ?? item.word;
   }
@@ -21,15 +25,21 @@ function getItemKey(item, category) {
   return item.topic;
 }
 
+function LearnerCount({ count }) {
+  if (count === undefined) {
+    return null;
+  }
+
+  return <span className="helper-text">{count} 人学过</span>;
+}
+
 function renderLearningItem(item, category) {
   if (category === "vocabulary") {
     return (
       <div className="dashboard-community__copy">
         <Text strong>{item.word}</Text>
         <span className="helper-text">{item.briefTranslation}</span>
-        {item.learnerCount !== undefined ? (
-          <span className="helper-text">{item.learnerCount} 人学过</span>
-        ) : null}
+        <LearnerCount count={item.learnerCount} />
       </div>
     );
   }
@@ -38,9 +48,7 @@ function renderLearningItem(item, category) {
     return (
       <div className="dashboard-community__copy">
         <Text strong>{item.grammarCategory ?? item.topic}</Text>
-        {item.learnerCount !== undefined ? (
-          <span className="helper-text">{item.learnerCount} 人学过</span>
-        ) : null}
+        <LearnerCount count={item.learnerCount} />
       </div>
     );
   }
@@ -49,12 +57,13 @@ function renderLearningItem(item, category) {
     <div className="dashboard-community__copy">
       <Text strong>{item.topic}</Text>
       <span className="helper-text">{item.description}</span>
+      <LearnerCount count={item.learnerCount} />
     </div>
   );
 }
 
 export function DashboardCommunityLearning({ learningTrends }) {
-  const [activeCategory, setActiveCategory] = useState("vocabulary");
+  const [activeCategory, setActiveCategory] = useState("speaking");
   const activeItems = learningTrends[activeCategory] ?? [];
 
   return (
