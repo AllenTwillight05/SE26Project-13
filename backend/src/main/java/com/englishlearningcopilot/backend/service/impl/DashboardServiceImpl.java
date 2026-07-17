@@ -2,16 +2,18 @@ package com.englishlearningcopilot.backend.service.impl;
 
 import com.englishlearningcopilot.backend.dto.DashboardCommunityLearningTrendsResponse;
 import com.englishlearningcopilot.backend.dto.DashboardGrammarTrendResponse;
+import com.englishlearningcopilot.backend.dto.DashboardSpeakingTrendResponse;
 import com.englishlearningcopilot.backend.dto.VocabularyLeaderboardItemResponse;
 import com.englishlearningcopilot.backend.entity.Vocabulary;
 import com.englishlearningcopilot.backend.repository.GrammarLeaderboardProjection;
+import com.englishlearningcopilot.backend.repository.SpeakingLeaderboardProjection;
+import com.englishlearningcopilot.backend.repository.SpeakingSessionRepository;
 import com.englishlearningcopilot.backend.repository.UserGrammarbookRepository;
 import com.englishlearningcopilot.backend.repository.UserWordbookRepository;
 import com.englishlearningcopilot.backend.repository.VocabularyLeaderboardProjection;
 import com.englishlearningcopilot.backend.repository.VocabularyRepository;
 import com.englishlearningcopilot.backend.service.DashboardService;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -25,16 +27,20 @@ public class DashboardServiceImpl implements DashboardService {
 
     private static final int VOCABULARY_LEADERBOARD_LIMIT = 10;
     private static final int GRAMMAR_LEADERBOARD_LIMIT = 10;
+    private static final int SPEAKING_LEADERBOARD_LIMIT = 10;
 
+    private final SpeakingSessionRepository speakingSessionRepository;
     private final UserGrammarbookRepository userGrammarbookRepository;
     private final UserWordbookRepository userWordbookRepository;
     private final VocabularyRepository vocabularyRepository;
 
     public DashboardServiceImpl(
+            SpeakingSessionRepository speakingSessionRepository,
             UserGrammarbookRepository userGrammarbookRepository,
             UserWordbookRepository userWordbookRepository,
             VocabularyRepository vocabularyRepository
     ) {
+        this.speakingSessionRepository = speakingSessionRepository;
         this.userGrammarbookRepository = userGrammarbookRepository;
         this.userWordbookRepository = userWordbookRepository;
         this.vocabularyRepository = vocabularyRepository;
@@ -44,10 +50,29 @@ public class DashboardServiceImpl implements DashboardService {
     @Transactional(readOnly = true)
     public DashboardCommunityLearningTrendsResponse getCommunityLearningTrends() {
         return new DashboardCommunityLearningTrendsResponse(
-                Collections.emptyList(),
+                getSpeakingLeaderboard(),
                 getVocabularyLeaderboard(),
                 getGrammarLeaderboard()
         );
+    }
+
+    private List<DashboardSpeakingTrendResponse> getSpeakingLeaderboard() {
+        List<SpeakingLeaderboardProjection> leaderboardRows = speakingSessionRepository.findSpeakingLeaderboard(
+                PageRequest.of(0, SPEAKING_LEADERBOARD_LIMIT)
+        );
+
+        List<DashboardSpeakingTrendResponse> leaderboard = new ArrayList<>();
+        for (SpeakingLeaderboardProjection row : leaderboardRows) {
+            leaderboard.add(new DashboardSpeakingTrendResponse(
+                    leaderboard.size() + 1,
+                    row.getScenarioId(),
+                    row.getTopic(),
+                    nullToEmpty(row.getDescription()),
+                    row.getLearnerCount()
+            ));
+        }
+
+        return leaderboard;
     }
 
     private List<VocabularyLeaderboardItemResponse> getVocabularyLeaderboard() {
