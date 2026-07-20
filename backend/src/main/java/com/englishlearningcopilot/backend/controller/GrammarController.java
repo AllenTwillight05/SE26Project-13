@@ -3,14 +3,18 @@ package com.englishlearningcopilot.backend.controller;
 import com.englishlearningcopilot.backend.dto.GrammarFavoriteRequest;
 import com.englishlearningcopilot.backend.dto.GrammarFavoriteResponse;
 import com.englishlearningcopilot.backend.dto.GrammarNotebookQuestionResponse;
+import com.englishlearningcopilot.backend.dto.GrammarOverviewResponse;
 import com.englishlearningcopilot.backend.dto.GrammarPracticeResultRequest;
 import com.englishlearningcopilot.backend.dto.GrammarPracticeQuestionResponse;
+import com.englishlearningcopilot.backend.dto.GrammarProgressResponse;
 import com.englishlearningcopilot.backend.dto.GrammarRatingRequest;
+import com.englishlearningcopilot.backend.dto.GrammarTopicResponse;
 import com.englishlearningcopilot.backend.dto.MessageResponse;
 import com.englishlearningcopilot.backend.service.GrammarService;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,6 +33,42 @@ public class GrammarController {
     }
 
     /**
+     * GET /api/grammar/memory
+     * Get the current user's FSRS grammar memory statistics
+     */
+    @GetMapping("/memory")
+    public Map<String, Object> getGrammarMemory(Principal principal) {
+        return grammarService.getMemory(getUsername(principal));
+    }
+
+    /**
+     * GET /api/grammar/overview
+     * Get the current user's grammar mastery summary
+     */
+    @GetMapping("/overview")
+    public GrammarOverviewResponse getOverview(Principal principal) {
+        return grammarService.getOverview(getUsername(principal));
+    }
+
+    /**
+     * GET /api/grammar/progress
+     * Get the current user's grammar practice progress
+     */
+    @GetMapping("/progress")
+    public GrammarProgressResponse getProgress(Principal principal) {
+        return grammarService.getProgress(getUsername(principal));
+    }
+
+    /**
+     * GET /api/grammar/topics
+     * Get available grammar topics with current user's progress
+     */
+    @GetMapping("/topics")
+    public List<GrammarTopicResponse> getTopics(Principal principal) {
+        return grammarService.getTopics(getUsername(principal));
+    }
+
+    /**
      * GET /api/grammar/practice-questions?category={category}
      * Get three random questions in the selected category that the current user has not practiced
      */
@@ -38,6 +78,15 @@ public class GrammarController {
             @RequestParam String category
     ) {
         return grammarService.getPracticeQuestions(principal.getName(), category);
+    }
+
+    /**
+     * GET /api/grammar/review-grammar
+     * Get the current user's due grammar review questions
+     */
+    @GetMapping("/review-grammar")
+    public List<GrammarPracticeQuestionResponse> getReviewQuestions(Principal principal) {
+        return grammarService.getReviewQuestions(principal.getName());
     }
 
     /**
@@ -65,7 +114,7 @@ public class GrammarController {
 
     /**
      * POST /api/grammar/practice-ratings
-     * Submit grammar practice self rating without persisting it
+     * Submit grammar practice self rating and update FSRS review progress
      */
     @PostMapping("/practice-ratings")
     public MessageResponse submitRating(
@@ -86,5 +135,9 @@ public class GrammarController {
             @Valid @RequestBody GrammarFavoriteRequest request
     ) {
         return grammarService.toggleFavorite(principal.getName(), request);
+    }
+
+    private String getUsername(Principal principal) {
+        return principal == null ? null : principal.getName();
     }
 }

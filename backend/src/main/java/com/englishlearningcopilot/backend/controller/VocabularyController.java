@@ -10,6 +10,7 @@ import com.englishlearningcopilot.backend.service.VocabularyService;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +26,16 @@ public class VocabularyController {
 
     public VocabularyController(VocabularyService vocabularyService) {
         this.vocabularyService = vocabularyService;
+    }
+
+    /**
+     * GET /api/vocabulary/memory
+     * Get the current user's FSRS vocabulary memory statistics
+    */
+    @GetMapping("/memory")
+    public Map<String, Object> getVocabularyMemory(Principal principal) {
+        String username = principal == null ? null : principal.getName();
+        return vocabularyService.getMemory(username);
     }
 
     /**

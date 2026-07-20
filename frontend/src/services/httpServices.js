@@ -37,8 +37,6 @@ export function createHttpServices(baseUrl = "") {
     vocabulary: {
       getSnapshot: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.vocabularySnapshot)),
       getVocabularyMemory: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.vocabularyMemory)),
-      getVocabularyPracticeProgress: () =>
-        getJson(withBaseUrl(baseUrl, API_ENDPOINTS.vocabularyPracticeProgress)),
       getVocabularyPracticeWords: ({ level } = {}) => {
         const query = level ? `?level=${encodeURIComponent(level)}` : "";
         return getJson(withBaseUrl(baseUrl, `${API_ENDPOINTS.vocabularyPracticeWords}${query}`));
@@ -63,14 +61,12 @@ export function createHttpServices(baseUrl = "") {
         postJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarPracticeRatings), payload),
       toggleGrammarFavorite: (payload) =>
         postJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarNotebookFavorites), payload),
-      getOverview: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarOverview)),
+      getMemory: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarMemory)),
       getReviewGrammar: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.reviewGrammar)),
       getPracticeQuestions: ({ category } = {}) => {
         const query = category ? `?category=${encodeURIComponent(category)}` : "";
         return getJson(withBaseUrl(baseUrl, `${API_ENDPOINTS.grammarPracticeQuestions}${query}`));
       },
-      getProgress: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarProgress)),
-      getTopics: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarTopics)),
       getSnapshot: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarSnapshot))
     },
     profile: {

@@ -16,7 +16,6 @@ export const API_ENDPOINTS = {
   speakingHistory: "/api/speaking/history",
   speakingSessionMessages: (sessionId) => `/api/speaking/sessions/${encodeURIComponent(sessionId)}/messages`,
   vocabularyMemory: "/api/vocabulary/memory",
-  vocabularyPracticeProgress: "/api/vocabulary/practice-progress",
   vocabularyPracticeWords: "/api/vocabulary/practice-words",
   vocabularyPracticeRatings: "/api/vocabulary/practice-ratings",
   reviewVocabulary: "/api/vocabulary/review-vocabulary",
@@ -28,11 +27,9 @@ export const API_ENDPOINTS = {
   grammarPracticeResults: "/api/grammar/practice-results",
   grammarPracticeRatings: "/api/grammar/practice-ratings",
   grammarNotebookFavorites: "/api/grammar/notebook-favorites",
-  grammarOverview: "/api/grammar/overview",
+  grammarMemory: "/api/grammar/memory",
   grammarPracticeQuestions: "/api/grammar/practice-questions",
   reviewGrammar: "/api/grammar/review-grammar",
-  grammarProgress: "/api/grammar/progress",
-  grammarTopics: "/api/grammar/topics",
   grammarSnapshot: "/api/grammar/snapshot",
   profileSnapshot: "/api/profile/snapshot"
 };

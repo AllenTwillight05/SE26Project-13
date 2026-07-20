@@ -145,11 +145,8 @@ export const contractShapes = {
   },
   vocabularyMemory: {
     retentionRate: 0,
-    stats: [{ value: "string", label: "string" }]
-  },
-  vocabularyPracticeProgress: {
-    completed: 0,
-    total: 0
+    mastered: 0,
+    dueCount: 0
   },
   vocabularyPracticeWords: [
     {
@@ -221,9 +218,10 @@ export const contractShapes = {
       }
     ]
   },
-  grammarOverview: {
-    masteryRate: 0,
-    stats: [{ value: "string", label: "string" }]
+  grammarMemory: {
+    retentionRate: 0,
+    mastered: 0,
+    dueCount: 0
   },
   grammarNotebookQuestions: [
     {
@@ -270,20 +268,6 @@ export const contractShapes = {
       answer: "A",
       grammar_category: "string",
       explanation: "string"
-    }
-  ],
-  grammarProgress: {
-    completed: 0,
-    total: 0
-  },
-  grammarTopics: [
-    {
-      id: "string",
-      title: "string",
-      summary: "string",
-      examples: ["string"],
-      progress: 0,
-      tag: "string"
     }
   ],
   profileSnapshot: {

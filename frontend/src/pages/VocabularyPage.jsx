@@ -8,11 +8,10 @@ import {
 } from "@ant-design/icons";
 import { Space, Tag, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
-import { MemoryRetentionPanel } from "../components/Vocabulary/MemoryRetentionPanel";
-import { PracticeProgressRing } from "../components/Vocabulary/PracticeProgressRing";
 import { VocabularyLevelCard } from "../components/Vocabulary/VocabularyLevelCard";
 import { VocabularyWordbookButton } from "../components/Vocabulary/VocabularyWordbookButton";
 import { AsyncPage } from "../components/common/AsyncPage";
+import { FSRSPanel } from "../components/common/FSRSPanel";
 import { useAsyncData } from "../hooks/useAsyncData";
 import { useAppServices } from "../services/ServiceContext";
 
@@ -53,12 +52,8 @@ export function VocabularyPage() {
   const navigate = useNavigate();
   const { vocabulary } = useAppServices();
   const loader = useCallback(async () => {
-    const [memory, practiceProgress] = await Promise.all([
-      vocabulary.getVocabularyMemory(),
-      vocabulary.getVocabularyPracticeProgress()
-    ]);
-
-    return { memory, practiceProgress };
+    const memory = await vocabulary.getVocabularyMemory();
+    return { memory };
   }, [vocabulary]);
   const { data, loading, error } = useAsyncData(loader, [loader]);
 
@@ -79,12 +74,15 @@ export function VocabularyPage() {
               </Paragraph>
             </div>
 
-            <PracticeProgressRing
-              completed={data.practiceProgress.completed}
-              total={data.practiceProgress.total}
+            <FSRSPanel
+              title="当前记忆留存率"
+              retentionRate={data.memory.retentionRate}
+              mastered={`${data.memory.mastered} 词`}
+              dueCount={`${data.memory.dueCount} 词`}
+              labelMastered="已掌握"
+              labelDue="今日待复习"
+              onDueClick={() => navigate("/vocabulary/practice/review")}
             />
-
-            <MemoryRetentionPanel overview={data.memory} />
           </section>
 
           <section className="vocabulary-action-grid">

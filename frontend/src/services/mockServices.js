@@ -3,16 +3,11 @@ import {
   dashboardRecommendedTaskMock,
   dashboardStudyPlanMock,
   dashboardWeeklyOverviewMock,
-  grammarOverviewMock,
-  grammarProgressMock,
   grammarSnapshotMock,
-  grammarTopicsMock,
   profileSnapshotMock,
   reviewGrammarMock,
   reviewVocabularyMock,
   speakingScenariosMock,
-  vocabularyMemoryMock,
-  vocabularyPracticeProgressMock,
   vocabularySnapshotMock
 } from "./mockData";
 import { getStoredAuth } from "./authStorage";
@@ -229,8 +224,7 @@ export function createMockServices() {
     },
     vocabulary: {
       getSnapshot: () => simulateLatency(vocabularySnapshotMock),
-      getVocabularyMemory: () => simulateLatency(vocabularyMemoryMock),
-      getVocabularyPracticeProgress: () => simulateLatency(vocabularyPracticeProgressMock),
+      getVocabularyMemory: () => httpServices.vocabulary.getVocabularyMemory(),
       getVocabularyPracticeWords: (options) =>
         httpServices.vocabulary.getVocabularyPracticeWords(options),
       submitVocabularyRating: (payload) => httpServices.vocabulary.submitVocabularyRating(payload),
@@ -245,11 +239,9 @@ export function createMockServices() {
         httpServices.grammar.submitGrammarPracticeResult(payload),
       submitGrammarRating: (payload) => httpServices.grammar.submitGrammarRating(payload),
       toggleGrammarFavorite: (payload) => httpServices.grammar.toggleGrammarFavorite(payload),
-      getOverview: () => simulateLatency(grammarOverviewMock),
-      getReviewGrammar: () => simulateLatency(reviewGrammarMock),
+      getMemory: () => httpServices.grammar.getMemory(),
+      getReviewGrammar: () => httpServices.grammar.getReviewGrammar(),
       getPracticeQuestions: (options) => httpServices.grammar.getPracticeQuestions(options),
-      getProgress: () => simulateLatency(grammarProgressMock),
-      getTopics: () => simulateLatency(grammarTopicsMock),
       getSnapshot: () => simulateLatency(grammarSnapshotMock)
     },
     profile: {

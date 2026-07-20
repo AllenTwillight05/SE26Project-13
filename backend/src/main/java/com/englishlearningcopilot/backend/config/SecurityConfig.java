@@ -46,8 +46,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/vocabulary/wordbook-words").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/vocabulary/review-vocabulary").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/grammar/notebook-questions").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/grammar/practice-questions").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/grammar/review-grammar").authenticated()
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/grammar/practice-results",
