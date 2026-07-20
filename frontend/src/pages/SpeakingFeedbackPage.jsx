@@ -14,7 +14,7 @@ import { PageSectionHeader } from "../components/common/PageSectionHeader";
 import { useAsyncData } from "../hooks/useAsyncData";
 import { useAppServices } from "../services/ServiceContext";
 
-const { Text, Paragraph, Title } = Typography;
+const { Text, Title } = Typography;
 
 function speakText(text, onEnd) {
   if (!window.speechSynthesis || !text) {
@@ -63,8 +63,8 @@ export function SpeakingFeedbackPage() {
     if (session?.id) {
       try {
         feedback = await speaking.getFeedback(session.id);
-      } catch {
-        // feedback may not be available yet for this session
+      } catch (err) {
+        console.error("Failed to fetch speaking feedback:", err);
       }
     }
 
@@ -77,7 +77,6 @@ export function SpeakingFeedbackPage() {
   const currentAudioRef = useRef(null);
   const stopReplayRef = useRef(false);
   const replayRunRef = useRef(0);
-  const chatWindowRef = useRef(null);
 
   const scenario = data?.scenario;
   const session = data?.session;
@@ -155,10 +154,12 @@ export function SpeakingFeedbackPage() {
                   <div className="glass-panel score-card">
                     <div className="score-card__main">
                       <Text type="secondary" className="score-card__label">总评分</Text>
-                      <Title level={2} className="score-card__value" style={{ margin: 0 }}>
-                        {feedback.totalScore}
-                      </Title>
-                      <Text type="secondary">/ 100</Text>
+                      <div className="score-card__score-row">
+                        <Title level={2} className="score-card__value" style={{ margin: 0 }}>
+                          {feedback.totalScore}
+                        </Title>
+                        <Text type="secondary" className="score-card__unit">/ 100</Text>
+                      </div>
                     </div>
                     <TrophyOutlined className="score-card__icon" />
                   </div>
@@ -167,17 +168,21 @@ export function SpeakingFeedbackPage() {
                   <div className="feedback-metrics">
                     <div className="glass-panel feedback-metric-item">
                       <Text type="secondary" className="metric-label">发音准确性</Text>
-                      <Title level={4} className="metric-value" style={{ margin: 0 }}>
-                        {feedback.pronunciation}
-                      </Title>
-                      <Text type="secondary">/ 100</Text>
+                      <div className="metric-score-row">
+                        <Title level={4} className="metric-value" style={{ margin: 0 }}>
+                          {feedback.pronunciation}
+                        </Title>
+                        <Text type="secondary" className="metric-unit">/ 100</Text>
+                      </div>
                     </div>
                     <div className="glass-panel feedback-metric-item">
                       <Text type="secondary" className="metric-label">流畅度</Text>
-                      <Title level={4} className="metric-value" style={{ margin: 0 }}>
-                        {feedback.fluency}
-                      </Title>
-                      <Text type="secondary">/ 100</Text>
+                      <div className="metric-score-row">
+                        <Title level={4} className="metric-value" style={{ margin: 0 }}>
+                          {feedback.fluency}
+                        </Title>
+                        <Text type="secondary" className="metric-unit">/ 100</Text>
+                      </div>
                     </div>
                     <div className="glass-panel feedback-metric-item">
                       <Text type="secondary" className="metric-label">语速</Text>
@@ -191,7 +196,7 @@ export function SpeakingFeedbackPage() {
                 {/* Issue sentences */}
                 {feedback.issueSentences && feedback.issueSentences.length > 0 && (
                   <div className="feedback-list glass-panel" style={{ marginBottom: 12 }}>
-                    <Text strong className="panel-title">需要改进的句子</Text>
+                    <Text strong className="panel-title">问题句子</Text>
                     <ul className="feedback-issue-list">
                       {feedback.issueSentences.map((sentence, idx) => (
                         <li key={idx} className="feedback-issue-item">
@@ -224,26 +229,11 @@ export function SpeakingFeedbackPage() {
               </div>
             ) : null}
 
-            {/* Session info summary */}
-            {session ? (
-              <div className="feedback-detail-grid">
-                <div className="feedback-list">
-                  <Text className="panel-title">本次文本回放</Text>
-                  <Paragraph>
-                    已从后端读取最新会话记录，共 {replayMessages.length} 条消息。
-                  </Paragraph>
-                </div>
-                <div className="feedback-list">
-                  <Text className="panel-title">会话状态</Text>
-                  <Paragraph>当前状态：{session.status}</Paragraph>
-                  <Paragraph>完成轮次：{session.currentTurn} / {session.targetTurns}</Paragraph>
-                </div>
-              </div>
-            ) : (
+            {!session ? (
               <div className="speaking-alert" role="alert">
                 暂无历史会话记录。请先进入会话完成一次文本练习。
               </div>
-            )}
+            ) : null}
 
             <Space wrap>
               <Button onClick={() => navigate("/speaking")}>退出</Button>
@@ -281,7 +271,7 @@ export function SpeakingFeedbackPage() {
             onCancel={() => setIsReplayOpen(false)}
           >
             <div className="replay-modal-body">
-              <div className="chat-window replay-chat-window" ref={chatWindowRef}>
+              <div className="chat-window replay-chat-window">
                 {replayMessages.map((message, index) => (
                   <div
                     className={`chat-bubble-row chat-bubble-row--${message.role}`}

@@ -224,9 +224,7 @@ GET/POST/PUT/DELETE /api/admin/vocabulary-entries
 
 后续可扩展接口：
 
-- `POST /api/speaking/sessions`：创建口语练习会话。
 - `POST /api/speaking/recordings`：上传录音。
-- `GET /api/speaking/sessions/{id}/feedback`：获取口语反馈。
 
 ### 2.2 创建口语会话
 
@@ -306,7 +304,7 @@ GET /api/speaking/history
 
 用途：查询当前用户自己的口语会话详情或历史 session 列表。接口需要登录；访问他人 session 返回 `403`。
 
-`GET /api/speaking/history` 返回当前用户所有口语 session，按 `startedAt` 倒序排列。前端详情页点击“历史记录”时，会调用该接口，并按当前 `scenarioId` 取最新一条 session 作为回放入口。
+`GET /api/speaking/history` 返回当前用户所有口语 session，按 `startedAt` 倒序排列。前端详情页点击”历史记录”时，会调用该接口，并按当前 `scenarioId` 取最新一条 session 作为回放入口。
 
 `GET /api/speaking/sessions/{sessionId}` 返回单条 session 的完整消息列表。前端反馈/回放页优先使用 URL 中的 `sessionId` 调用该接口；如果 URL 没有 `sessionId`，则回退到 `GET /api/speaking/history` 查找当前情景最新一条 session。
 
@@ -317,34 +315,78 @@ GET /api/speaking/history
   id: 1,
   userId: 1,
   scenario: {
-    id: "business-opening",
-    title: "Business Meeting"
+    id: “business-opening”,
+    title: “Business Meeting”
   },
-  status: "ACTIVE",
-  startedAt: "2026-07-14T00:00:00Z",
+  status: “ACTIVE”,
+  startedAt: “2026-07-14T00:00:00Z”,
   completedAt: null,
   currentTurn: 1,
   targetTurns: 6,
   messages: [
     {
       id: 1,
-      sender: "AGENT",
-      content: "Good morning. Could you briefly introduce today's agenda?",
+      sender: “AGENT”,
+      content: “Good morning. Could you briefly introduce today's agenda?”,
       instantTip: null,
       turnIndex: 0,
-      createdAt: "2026-07-14T00:00:00Z"
+      createdAt: “2026-07-14T00:00:00Z”
     },
     {
       id: 2,
-      sender: "USER",
-      content: "Today I would like to discuss the delivery timeline.",
+      sender: “USER”,
+      content: “Today I would like to discuss the delivery timeline.”,
       instantTip: null,
       turnIndex: 1,
-      createdAt: "2026-07-14T00:01:00Z"
+      createdAt: “2026-07-14T00:01:00Z”
     }
   ]
 }
 ```
+
+### 2.5 获取口语反馈
+
+`GET /api/speaking/sessions/{sessionId}/feedback`
+
+用途：获取某次口语练习的评分反馈。接口需要登录；访问他人 session 返回 `403`。
+
+当前阶段后端使用 mock 评分（随机生成 78–95 分的各项指标），后续可接入真实 ASR、发音评估和 LLM 反馈。
+
+请求头：
+
+```http
+Authorization: Bearer <token>
+```
+
+响应核心结构：
+
+```js
+{
+  totalScore: 88,
+  pronunciation: 91,
+  fluency: 84,
+  speed: “136 WPM”,
+  issueSentences: [
+    “Today I would like to discuss the delivery timeline.”
+  ],
+  suggestions: [
+    “Try adding more detail to make your responses fuller and more natural.”,
+    “Pay attention to sentence stress — emphasize key words for clearer communication.”,
+    “Practice linking words together to improve your overall fluency.”
+  ]
+}
+```
+
+字段说明：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `totalScore` | `int` | 总分，范围 0–100 |
+| `pronunciation` | `int` | 发音准确性评分，范围 0–100 |
+| `fluency` | `int` | 流畅度评分，范围 0–100 |
+| `speed` | `string` | 语速，格式如 `”136 WPM”` |
+| `issueSentences` | `string[]` | 需要改进的句子列表（从用户消息中选取） |
+| `suggestions` | `string[]` | 改进建议列表
 
 当前阶段仅保存纯文本消息。后续接入录音、转写和发音评价时，建议优先在消息或独立评价对象上扩展：
 

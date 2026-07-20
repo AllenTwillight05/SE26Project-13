@@ -1704,13 +1704,6 @@ a {
   padding: 14px;
 }
 
-.speaking-message-composer {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: end;
-}
-
 .recorder-strip__label {
   display: flex;
   align-items: center;
@@ -1776,11 +1769,21 @@ a {
   font-size: 14px;
 }
 
+.score-card__score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
 .score-card__value.ant-typography {
   font-size: 52px;
   font-weight: 700;
   line-height: 1.1;
   color: #0f766e;
+}
+
+.score-card__unit.ant-typography {
+  font-size: 16px;
 }
 
 .score-card__icon {
@@ -1807,9 +1810,19 @@ a {
   font-size: 13px;
 }
 
+.metric-score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
 .metric-value.ant-typography {
   color: #111;
   font-weight: 600;
+}
+
+.metric-unit.ant-typography {
+  font-size: 14px;
 }
 
 .feedback-detail-grid {
