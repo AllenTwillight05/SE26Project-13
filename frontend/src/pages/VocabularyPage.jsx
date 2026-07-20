@@ -2,20 +2,42 @@ import { useCallback } from "react";
 import {
   BookOutlined,
   FireOutlined,
+  LoginOutlined,
   HistoryOutlined,
   RocketOutlined,
-  StarOutlined
+  StarOutlined,
+  UserOutlined
 } from "@ant-design/icons";
-import { Space, Tag, Typography } from "antd";
-import { useNavigate } from "react-router-dom";
+import { Button, Result, Space, Tag, Typography } from "antd";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
+import { MemoryRetentionPanel } from "../components/Vocabulary/MemoryRetentionPanel";
+import { PracticeProgressRing } from "../components/Vocabulary/PracticeProgressRing";
 import { VocabularyLevelCard } from "../components/Vocabulary/VocabularyLevelCard";
 import { VocabularyWordbookButton } from "../components/Vocabulary/VocabularyWordbookButton";
 import { AsyncPage } from "../components/common/AsyncPage";
-import { FSRSPanel } from "../components/common/FSRSPanel";
 import { useAsyncData } from "../hooks/useAsyncData";
 import { useAppServices } from "../services/ServiceContext";
 
 const { Title, Paragraph } = Typography;
+
+function syncTodayPendingStat(memory, practiceProgress) {
+  const stats = memory.stats.map((stat, index) => {
+    if (index !== memory.stats.length - 1) {
+      return stat;
+    }
+
+    return {
+      ...stat,
+      value: `${practiceProgress.remaining} 词`
+    };
+  });
+
+  return {
+    ...memory,
+    stats
+  };
+}
 
 const practiceLevels = [
   {
@@ -49,13 +71,53 @@ const practiceLevels = [
 ];
 
 export function VocabularyPage() {
+  const auth = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
   const { vocabulary } = useAppServices();
   const loader = useCallback(async () => {
-    const memory = await vocabulary.getVocabularyMemory();
-    return { memory };
-  }, [vocabulary]);
+    if (auth.loading || !auth.isAuthenticated) {
+      return null;
+    }
+
+    const [memory, practiceProgress] = await Promise.all([
+      vocabulary.getVocabularyMemory(),
+      vocabulary.getVocabularyPracticeProgress()
+    ]);
+
+    return {
+      memory: syncTodayPendingStat(memory, practiceProgress),
+      practiceProgress
+    };
+  }, [auth.isAuthenticated, auth.loading, vocabulary]);
   const { data, loading, error } = useAsyncData(loader, [loader]);
+
+  if (auth.loading) {
+    return <AsyncPage loading error={null} />;
+  }
+
+  if (!auth.isAuthenticated) {
+    return (
+      <div className="page-stack">
+        <section className="glass-panel profile-empty-state">
+          <Result
+            icon={<UserOutlined />}
+            title="个人页面需要登录"
+            subTitle="登录后可以查看你的学习计划、能力进度和最近反馈。"
+            extra={
+              <Button
+                type="primary"
+                icon={<LoginOutlined />}
+                onClick={() => navigate("/login", { state: { from: location } })}
+              >
+                请先登录
+              </Button>
+            }
+          />
+        </section>
+      </div>
+    );
+  }
 
   return (
     <AsyncPage loading={loading} error={error}>
@@ -74,15 +136,13 @@ export function VocabularyPage() {
               </Paragraph>
             </div>
 
-            <FSRSPanel
-              title="当前记忆留存率"
-              retentionRate={data.memory.retentionRate}
-              mastered={`${data.memory.mastered} 词`}
-              dueCount={`${data.memory.dueCount} 词`}
-              labelMastered="已掌握"
-              labelDue="今日待复习"
-              onDueClick={() => navigate("/vocabulary/practice/review")}
+            <PracticeProgressRing
+              completed={data.practiceProgress.completed}
+              remaining={data.practiceProgress.remaining}
+              total={data.practiceProgress.total}
             />
+
+            <MemoryRetentionPanel overview={data.memory} />
           </section>
 
           <section className="vocabulary-action-grid">

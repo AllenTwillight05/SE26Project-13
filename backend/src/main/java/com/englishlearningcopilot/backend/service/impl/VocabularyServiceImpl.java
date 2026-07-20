@@ -1,5 +1,6 @@
 package com.englishlearningcopilot.backend.service.impl;
 
+import com.englishlearningcopilot.backend.dto.DailyPracticeProgressResponse;
 import com.englishlearningcopilot.backend.dto.VocabularyFavoriteRequest;
 import com.englishlearningcopilot.backend.dto.VocabularyFavoriteResponse;
 import com.englishlearningcopilot.backend.dto.VocabularyPracticeWordResponse;
@@ -15,6 +16,7 @@ import com.englishlearningcopilot.backend.repository.UserRepository;
 import com.englishlearningcopilot.backend.repository.UserWordProgressRepository;
 import com.englishlearningcopilot.backend.repository.UserWordbookRepository;
 import com.englishlearningcopilot.backend.repository.VocabularyRepository;
+import com.englishlearningcopilot.backend.service.LearningPlanService;
 import com.englishlearningcopilot.backend.service.ReviewService;
 import com.englishlearningcopilot.backend.service.VocabularyService;
 import java.time.Duration;
@@ -43,19 +45,22 @@ public class VocabularyServiceImpl implements VocabularyService {
     private final UserWordProgressRepository userWordProgressRepository;
     private final UserWordbookRepository userWordbookRepository;
     private final ReviewService reviewService;
+    private final LearningPlanService learningPlanService;
 
     public VocabularyServiceImpl(
             VocabularyRepository vocabularyRepository,
             UserRepository userRepository,
             UserWordProgressRepository userWordProgressRepository,
             UserWordbookRepository userWordbookRepository,
-            ReviewService reviewService
+            ReviewService reviewService,
+            LearningPlanService learningPlanService
     ) {
         this.vocabularyRepository = vocabularyRepository;
         this.userRepository = userRepository;
         this.userWordProgressRepository = userWordProgressRepository;
         this.userWordbookRepository = userWordbookRepository;
         this.reviewService = reviewService;
+        this.learningPlanService = learningPlanService;
     }
 
     @Override
@@ -104,6 +109,12 @@ public class VocabularyServiceImpl implements VocabularyService {
                 ).stream()
                 .map(VocabularyPracticeWordResponse::from)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public DailyPracticeProgressResponse getPracticeProgress(String username) {
+        return learningPlanService.getVocabularyProgress(username);
     }
 
     private String[] getLevelTags(String level) {
@@ -164,6 +175,7 @@ public class VocabularyServiceImpl implements VocabularyService {
         }
 
         reviewService.submitRating(user.getId(), String.valueOf(vocabularyId), request.score());
+        learningPlanService.recordVocabularyPractice(user.getId(), vocabularyId);
     }
 
     @Override
@@ -210,8 +222,11 @@ public class VocabularyServiceImpl implements VocabularyService {
     private Map<String, Object> memoryResponse(int retentionRate, int mastered, int dueCount) {
         return Map.of(
                 "retentionRate", retentionRate,
-                "mastered", mastered,
-                "dueCount", dueCount
+                "stats", List.of(
+                        Map.of("value", mastered + " 词", "label", "已掌握"),
+                        Map.of("value", dueCount + " 词", "label", "今日待复习"),
+                        Map.of("value", "0 词", "label", "今日待练")
+                )
         );
     }
 

@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from "./endpoints";
-import { getJson, postJson } from "./httpClient";
+import { getJson, postJson, requestJson } from "./httpClient";
+import { getStoredAuth } from "./authStorage";
 
 function withBaseUrl(baseUrl, path) {
   return `${baseUrl}${path}`;
@@ -31,12 +32,24 @@ export function createHttpServices(baseUrl = "") {
       getSession: (sessionId) =>
         getJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingSession(sessionId))),
       listHistory: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingHistory)),
-      addMessage: (sessionId, content) =>
-        postJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingSessionMessages(sessionId)), { content })
+      submitRecording: (sessionId, audioBlob) => {
+        const formData = new FormData();
+        formData.append("audio", audioBlob, "recording.webm");
+        const { token } = getStoredAuth();
+        return requestJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingSessionMessages(sessionId)), {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: formData
+        });
+      },
+      getFeedback: (sessionId) =>
+        getJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingSessionFeedback(sessionId)))
     },
     vocabulary: {
       getSnapshot: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.vocabularySnapshot)),
       getVocabularyMemory: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.vocabularyMemory)),
+      getVocabularyPracticeProgress: () =>
+        getJson(withBaseUrl(baseUrl, API_ENDPOINTS.vocabularyPracticeProgress)),
       getVocabularyPracticeWords: ({ level } = {}) => {
         const query = level ? `?level=${encodeURIComponent(level)}` : "";
         return getJson(withBaseUrl(baseUrl, `${API_ENDPOINTS.vocabularyPracticeWords}${query}`));
@@ -61,16 +74,22 @@ export function createHttpServices(baseUrl = "") {
         postJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarPracticeRatings), payload),
       toggleGrammarFavorite: (payload) =>
         postJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarNotebookFavorites), payload),
-      getMemory: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarMemory)),
+      getOverview: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarOverview)),
       getReviewGrammar: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.reviewGrammar)),
       getPracticeQuestions: ({ category } = {}) => {
         const query = category ? `?category=${encodeURIComponent(category)}` : "";
         return getJson(withBaseUrl(baseUrl, `${API_ENDPOINTS.grammarPracticeQuestions}${query}`));
       },
+      getProgress: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarProgress)),
+      getTopics: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarTopics)),
       getSnapshot: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarSnapshot))
     },
     profile: {
-      getSnapshot: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.profileSnapshot))
+      getSnapshot: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.profileSnapshot)),
+      getLearningPlan: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.profileLearningPlan)),
+      updateLearningPlan: (payload) =>
+        postJson(withBaseUrl(baseUrl, API_ENDPOINTS.profileLearningPlan), payload),
+      getDailyStatus: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.profileDailyStatus))
     }
   };
 }

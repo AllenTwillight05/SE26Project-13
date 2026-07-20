@@ -1,12 +1,12 @@
 package com.englishlearningcopilot.backend.service.impl;
 
+import com.englishlearningcopilot.backend.dto.DailyPracticeProgressResponse;
 import com.englishlearningcopilot.backend.dto.GrammarFavoriteRequest;
 import com.englishlearningcopilot.backend.dto.GrammarFavoriteResponse;
 import com.englishlearningcopilot.backend.dto.GrammarNotebookQuestionResponse;
 import com.englishlearningcopilot.backend.dto.GrammarOverviewResponse;
 import com.englishlearningcopilot.backend.dto.GrammarPracticeResultRequest;
 import com.englishlearningcopilot.backend.dto.GrammarPracticeQuestionResponse;
-import com.englishlearningcopilot.backend.dto.GrammarProgressResponse;
 import com.englishlearningcopilot.backend.dto.GrammarRatingRequest;
 import com.englishlearningcopilot.backend.dto.GrammarTopicResponse;
 import com.englishlearningcopilot.backend.entity.AppUser;
@@ -20,6 +20,7 @@ import com.englishlearningcopilot.backend.repository.UserGrammarbookRepository;
 import com.englishlearningcopilot.backend.repository.UserWordProgressRepository;
 import com.englishlearningcopilot.backend.repository.UserRepository;
 import com.englishlearningcopilot.backend.service.GrammarService;
+import com.englishlearningcopilot.backend.service.LearningPlanService;
 import com.englishlearningcopilot.backend.service.ReviewService;
 import java.time.Duration;
 import java.time.Instant;
@@ -47,6 +48,7 @@ public class GrammarServiceImpl implements GrammarService {
     private final UserGrammarbookRepository userGrammarbookRepository;
     private final UserWordProgressRepository userWordProgressRepository;
     private final UserRepository userRepository;
+    private final LearningPlanService learningPlanService;
     private final ReviewService reviewService;
 
     public GrammarServiceImpl(
@@ -54,35 +56,15 @@ public class GrammarServiceImpl implements GrammarService {
             UserGrammarbookRepository userGrammarbookRepository,
             UserWordProgressRepository userWordProgressRepository,
             UserRepository userRepository,
-            ReviewService reviewService
+            ReviewService reviewService,
+            LearningPlanService learningPlanService
     ) {
         this.grammarQuestionRepository = grammarQuestionRepository;
         this.userGrammarbookRepository = userGrammarbookRepository;
         this.userWordProgressRepository = userWordProgressRepository;
         this.userRepository = userRepository;
+        this.learningPlanService = learningPlanService;
         this.reviewService = reviewService;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Map<String, Object> getMemory(String username) {
-        AppUser user = getCurrentUserOrNull(username);
-        if (user == null) {
-            return memoryResponse(0, 0, 0);
-        }
-
-        List<UserWordProgress> reviewCards = getGrammarProgressRows(user.getId()).stream()
-                .filter(this::isReviewCard)
-                .toList();
-
-        int mastered = reviewCards.size();
-        Instant now = Instant.now();
-        int dueCount = (int) reviewCards.stream()
-                .filter(progress -> progress.getDue() != null && !progress.getDue().isAfter(now))
-                .count();
-        int retentionRate = averageRetentionRate(reviewCards, now);
-
-        return memoryResponse(retentionRate, mastered, dueCount);
     }
 
     @Override
@@ -94,27 +76,23 @@ public class GrammarServiceImpl implements GrammarService {
                 ? List.of()
                 : getGrammarProgressRows(user.getId());
         int total = questions.size();
-        int completed = countCompleted(progressRows);
-        int due = countDue(progressRows);
-        int masteryRate = percent(completed, total);
+        List<UserWordProgress> reviewCards = progressRows.stream()
+                .filter(this::isReviewCard)
+                .toList();
+        int mastered = reviewCards.size();
+        int due = countDue(reviewCards);
+        int masteryRate = reviewCards.isEmpty()
+                ? percent(countCompleted(progressRows), total)
+                : averageRetentionRate(reviewCards, Instant.now());
 
         return new GrammarOverviewResponse(
                 masteryRate,
                 List.of(
-                        new GrammarOverviewResponse.Stat(completed + " 题", "已练习"),
-                        new GrammarOverviewResponse.Stat(due + " 题", "待复习"),
-                        new GrammarOverviewResponse.Stat(total + " 题", "语法题库")
+                        new GrammarOverviewResponse.Stat(mastered + " 题", "已掌握"),
+                        new GrammarOverviewResponse.Stat(due + " 题", "今日待复习"),
+                        new GrammarOverviewResponse.Stat("0 题", "今日待练")
                 )
         );
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public GrammarProgressResponse getProgress(String username) {
-        int total = (int) grammarQuestionRepository.count();
-        AppUser user = getCurrentUserOrNull(username);
-        int completed = user == null ? 0 : countCompleted(getGrammarProgressRows(user.getId()));
-        return new GrammarProgressResponse(completed, total);
     }
 
     @Override
@@ -155,6 +133,12 @@ public class GrammarServiceImpl implements GrammarService {
                 ).stream()
                 .map(GrammarPracticeQuestionResponse::from)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public DailyPracticeProgressResponse getProgress(String username) {
+        return learningPlanService.getGrammarProgress(username);
     }
 
     @Override
@@ -200,6 +184,7 @@ public class GrammarServiceImpl implements GrammarService {
         UserGrammarbook grammarbook = getOrCreateGrammarbook(user.getId(), questionId);
         grammarbook.setIncorrect(request.incorrect());
         userGrammarbookRepository.save(grammarbook);
+        learningPlanService.recordGrammarPractice(user.getId(), questionId);
     }
 
     @Override
@@ -305,14 +290,6 @@ public class GrammarServiceImpl implements GrammarService {
 
     private int nullToZero(Integer value) {
         return value == null ? 0 : value;
-    }
-
-    private Map<String, Object> memoryResponse(int retentionRate, int mastered, int dueCount) {
-        return Map.of(
-                "retentionRate", retentionRate,
-                "mastered", mastered,
-                "dueCount", dueCount
-        );
     }
 
     private int averageRetentionRate(List<UserWordProgress> reviewCards, Instant now) {

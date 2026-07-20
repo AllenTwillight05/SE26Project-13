@@ -1,12 +1,12 @@
 package com.englishlearningcopilot.backend.controller;
 
 import com.englishlearningcopilot.backend.dto.GrammarFavoriteRequest;
+import com.englishlearningcopilot.backend.dto.DailyPracticeProgressResponse;
 import com.englishlearningcopilot.backend.dto.GrammarFavoriteResponse;
 import com.englishlearningcopilot.backend.dto.GrammarNotebookQuestionResponse;
 import com.englishlearningcopilot.backend.dto.GrammarOverviewResponse;
 import com.englishlearningcopilot.backend.dto.GrammarPracticeResultRequest;
 import com.englishlearningcopilot.backend.dto.GrammarPracticeQuestionResponse;
-import com.englishlearningcopilot.backend.dto.GrammarProgressResponse;
 import com.englishlearningcopilot.backend.dto.GrammarRatingRequest;
 import com.englishlearningcopilot.backend.dto.GrammarTopicResponse;
 import com.englishlearningcopilot.backend.dto.MessageResponse;
@@ -14,7 +14,6 @@ import com.englishlearningcopilot.backend.service.GrammarService;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.List;
-import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,30 +32,12 @@ public class GrammarController {
     }
 
     /**
-     * GET /api/grammar/memory
-     * Get the current user's FSRS grammar memory statistics
-     */
-    @GetMapping("/memory")
-    public Map<String, Object> getGrammarMemory(Principal principal) {
-        return grammarService.getMemory(getUsername(principal));
-    }
-
-    /**
      * GET /api/grammar/overview
      * Get the current user's grammar mastery summary
      */
     @GetMapping("/overview")
     public GrammarOverviewResponse getOverview(Principal principal) {
         return grammarService.getOverview(getUsername(principal));
-    }
-
-    /**
-     * GET /api/grammar/progress
-     * Get the current user's grammar practice progress
-     */
-    @GetMapping("/progress")
-    public GrammarProgressResponse getProgress(Principal principal) {
-        return grammarService.getProgress(getUsername(principal));
     }
 
     /**
@@ -78,6 +59,11 @@ public class GrammarController {
             @RequestParam String category
     ) {
         return grammarService.getPracticeQuestions(principal.getName(), category);
+    }
+
+    @GetMapping("/progress")
+    public DailyPracticeProgressResponse getProgress(Principal principal) {
+        return grammarService.getProgress(principal.getName());
     }
 
     /**

@@ -15,7 +15,9 @@ export const API_ENDPOINTS = {
   speakingSession: (sessionId) => `/api/speaking/sessions/${encodeURIComponent(sessionId)}`,
   speakingHistory: "/api/speaking/history",
   speakingSessionMessages: (sessionId) => `/api/speaking/sessions/${encodeURIComponent(sessionId)}/messages`,
+  speakingSessionFeedback: (sessionId) => `/api/speaking/sessions/${encodeURIComponent(sessionId)}/feedback`,
   vocabularyMemory: "/api/vocabulary/memory",
+  vocabularyPracticeProgress: "/api/vocabulary/practice-progress",
   vocabularyPracticeWords: "/api/vocabulary/practice-words",
   vocabularyPracticeRatings: "/api/vocabulary/practice-ratings",
   reviewVocabulary: "/api/vocabulary/review-vocabulary",
@@ -27,9 +29,13 @@ export const API_ENDPOINTS = {
   grammarPracticeResults: "/api/grammar/practice-results",
   grammarPracticeRatings: "/api/grammar/practice-ratings",
   grammarNotebookFavorites: "/api/grammar/notebook-favorites",
-  grammarMemory: "/api/grammar/memory",
+  grammarOverview: "/api/grammar/overview",
   grammarPracticeQuestions: "/api/grammar/practice-questions",
   reviewGrammar: "/api/grammar/review-grammar",
+  grammarProgress: "/api/grammar/progress",
+  grammarTopics: "/api/grammar/topics",
   grammarSnapshot: "/api/grammar/snapshot",
-  profileSnapshot: "/api/profile/snapshot"
+  profileSnapshot: "/api/profile/snapshot",
+  profileLearningPlan: "/api/profile/learning-plan",
+  profileDailyStatus: "/api/profile/daily-status"
 };
