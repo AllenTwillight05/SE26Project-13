@@ -7,8 +7,11 @@ import com.englishlearningcopilot.backend.dto.VocabularyPracticeWordResponse;
 import com.englishlearningcopilot.backend.dto.VocabularyRatingRequest;
 import com.englishlearningcopilot.backend.dto.VocabularyWordbookWordResponse;
 import java.util.List;
+import java.util.Map;
 
 public interface VocabularyService {
+
+    Map<String, Object> getMemory(String username);
 
     List<VocabularyPracticeWordResponse> getPracticeWords(String username, String level);
 
