@@ -162,6 +162,7 @@ class SpeakingServiceImplTest {
         when(agentClient.reply(eq(scenario), any(), eq("Hello, nice to meet you."), eq(1)))
                 .thenReturn(new SpeakingAgentReply("Welcome to the meeting.", "Use a fuller greeting."));
         when(ttsService.synthesize("Welcome to the meeting.")).thenReturn(new byte[] {9, 8});
+        when(audioStorageService.save(eq(99L), any(), any(), eq("mp3"))).thenReturn("/audio/agent.mp3");
         when(sessionRepository.save(session)).thenReturn(session);
 
         SpeakingTurnResponse response = speakingService.submitRecording(
@@ -176,6 +177,7 @@ class SpeakingServiceImplTest {
         assertThat(response.session().currentTurn()).isEqualTo(1);
         verify(agentClient).reply(eq(scenario), any(), eq("Hello, nice to meet you."), eq(1));
         verify(ttsService).synthesize("Welcome to the meeting.");
+        verify(audioStorageService).save(eq(99L), eq(101L), any(), eq("mp3"));
     }
 
     @Test
