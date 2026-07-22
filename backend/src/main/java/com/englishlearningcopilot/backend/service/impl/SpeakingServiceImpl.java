@@ -36,12 +36,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class SpeakingServiceImpl implements SpeakingService {
+
+    private static final Logger log = LoggerFactory.getLogger(SpeakingServiceImpl.class);
 
     private final SpeakingScenarioRepository scenarioRepository;
     private final SpeakingSessionRepository sessionRepository;
@@ -202,7 +206,7 @@ public class SpeakingServiceImpl implements SpeakingService {
         SpeakingAgentReply reply = agentClient.reply(session.getScenario(), history, transcribedText, nextTurn);
 
         // TTS
-        byte[] agentAudioBytes = ttsService.synthesize(reply.content());
+        byte[] agentAudioBytes = synthesizeAgentAudio(reply.content());
 
         // Save AGENT message
         SpeakingMessage agentMessage = new SpeakingMessage();
@@ -215,7 +219,7 @@ public class SpeakingServiceImpl implements SpeakingService {
 
         // Save agent audio if TTS produced any
         if (agentAudioBytes.length > 0) {
-            String agentAudioUrl = audioStorageService.save(sessionId, savedAgentMessage.getId(), agentAudioBytes);
+            String agentAudioUrl = audioStorageService.save(sessionId, savedAgentMessage.getId(), agentAudioBytes, "mp3");
             savedAgentMessage.setAudioUrl(agentAudioUrl);
             savedAgentMessage = messageRepository.save(savedAgentMessage);
         }
@@ -229,6 +233,15 @@ public class SpeakingServiceImpl implements SpeakingService {
                 pronunciationScore,
                 toSessionResponse(savedSession)
         );
+    }
+
+    private byte[] synthesizeAgentAudio(String text) {
+        try {
+            return ttsService.synthesize(text);
+        } catch (RuntimeException e) {
+            log.warn("Agent TTS synthesis failed. The frontend will fall back to browser speech synthesis.", e);
+            return new byte[0];
+        }
     }
 
     @Override
