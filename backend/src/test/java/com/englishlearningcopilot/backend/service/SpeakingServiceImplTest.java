@@ -168,12 +168,14 @@ class SpeakingServiceImplTest {
         SpeakingSession session = session(99L, user, scenario);
         session.setSelectedTopic("Work");
         AtomicLong ids = new AtomicLong(100);
+        List<SpeakingMessage> savedMessages = new ArrayList<>();
         when(sessionRepository.findById(99L)).thenReturn(Optional.of(session));
         when(messageRepository.save(any(SpeakingMessage.class))).thenAnswer(invocation -> {
             SpeakingMessage message = invocation.getArgument(0);
             if (message.getId() == null) {
                 ReflectionTestUtils.setField(message, "id", ids.getAndIncrement());
             }
+            savedMessages.add(message);
             return message;
         });
         when(audioStorageService.save(eq(99L), any(), any())).thenReturn("/audio/turn.wav");
@@ -191,10 +193,12 @@ class SpeakingServiceImplTest {
         SpeakingTurnResponse response = speakingService.submitRecording(
                 "learner",
                 99L,
-                new MockMultipartFile("audio", "turn.wav", "audio/wav", new byte[] {1, 2, 3})
+                new MockMultipartFile("audio", "turn.wav", "audio/wav", new byte[] {1, 2, 3}),
+                1234L
         );
 
         assertThat(response.userMessage().content()).isEqualTo("Hello, nice to meet you.");
+        assertThat(response.userMessage().id()).isEqualTo(100L);
         assertThat(response.userMessage().spokenText()).isNull();
         assertThat(response.userMessage().autoPlay()).isFalse();
         assertThat(response.agentMessage().content()).isEqualTo("Welcome to the meeting.");
@@ -202,6 +206,10 @@ class SpeakingServiceImplTest {
         assertThat(response.agentMessage().autoPlay()).isTrue();
         assertThat(response.pronunciationScore().totalScore()).isEqualTo(88);
         assertThat(response.session().currentTurn()).isEqualTo(1);
+        assertThat(savedMessages)
+                .filteredOn(message -> Long.valueOf(100L).equals(message.getId()))
+                .extracting(SpeakingMessage::getDurationMs)
+                .contains(1234L);
         verify(agentClient).reply(eq(scenario), eq("Work"), any(), eq("Hello, nice to meet you."), eq(1));
         verify(ttsService).synthesize("Welcome spoken.");
         verify(audioStorageService).save(eq(99L), eq(101L), any(), eq("mp3"));
@@ -216,7 +224,8 @@ class SpeakingServiceImplTest {
         assertThatThrownBy(() -> speakingService.submitRecording(
                 "learner",
                 99L,
-                new MockMultipartFile("audio", "turn.wav", "audio/wav", new byte[] {1})
+                new MockMultipartFile("audio", "turn.wav", "audio/wav", new byte[] {1}),
+                1000L
         ))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessage("Speaking session is not active.");
