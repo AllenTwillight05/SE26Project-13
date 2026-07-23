@@ -430,7 +430,7 @@ export XFYUN_ASR_FILE_NAME=recording.webm
 
 ## 2026-07-23 超拟人语音合成接入记录
 
-TTS 已切换为讯飞“超拟人语音合成”，默认音色为 `x6_lingxiaoxuan_pro`，采样率为 `24000`。
+TTS 已切换为讯飞"超拟人语音合成"，默认音色为 `x6_lingxiaoxuan_pro`，采样率为 `24000`。
 
 ### 当前流程
 
@@ -458,3 +458,233 @@ XFYUN_TTS_URL=wss://cbm01.cn-huabei-1.xf-yun.com/v1/private/mcd9m97e6
 XFYUN_TTS_VOICE=x6_lingxiaoxuan_pro
 XFYUN_TTS_SAMPLE_RATE=24000
 ```
+
+---
+
+## Conversation Agent 接口说明（给接入 LLM 的同学参考）
+
+### 接口定义
+
+当前口语模块的 Agent 接口位于：
+
+```
+backend/src/main/java/com/englishlearningcopilot/backend/service/agent/SpeakingAgentClient.java
+```
+
+```java
+public interface SpeakingAgentClient {
+
+    SpeakingAgentReply reply(SpeakingScenario scenario, List<SpeakingMessage> history, String userMessage, int turnIndex);
+}
+```
+
+### 返回值
+
+```java
+public record SpeakingAgentReply(
+        String content,    // Agent 的对话回复文本
+        String instantTip  // 即时提示（可选，可为 null）
+) { }
+```
+
+- `content`：Agent 扮演场景角色回复用户的内容。必填，不能为空。
+- `instantTip`：给用户的即时建议，例如语法纠正、更自然的表达方式。可选，不需要时返回 `null`。
+
+### 调用时机
+
+`SpeakingAgentClient.reply(...)` 在 `SpeakingServiceImpl.submitRecording(...)` 中被调用，流程如下：
+
+```text
+用户停止录音
+-> 保存用户录音文件
+-> ASR 转写（得到 transcribedText）
+-> ISE 发音评分
+-> 保存 USER 消息（含转写文本、发音分数）
+-> 调用 SpeakingAgentClient.reply(...)   ← 在这里
+-> TTS 合成 Agent 回复音频
+-> 保存 AGENT 消息（含回复文本、即时提示、音频地址）
+-> 返回本轮结果给前端
+```
+
+另外，创建 session 时也会调用一次 `agentClient.reply(...)`，此时 `turnIndex == 0`、`userMessage == ""`、`history` 为空列表。Agent 应返回场景的开场白（`scenario.getOpeningMessage()`）。
+
+### 参数详解
+
+#### 1. `SpeakingScenario scenario` — 当前场景信息
+
+包含以下字段，接入 LLM 时建议全部用于构建 prompt：
+
+| 字段 | 类型 | 说明 | 示例 |
+|---|---|---|---|
+| `id` | String | 场景唯一标识 | `"business-opening"` |
+| `title` | String | 场景标题 | `"商务会议开场"` |
+| `description` | String | 场景描述 | `"你正在参加一场跨国商务会议..."` |
+| `difficulty` | String | 难度等级 | `"intermediate"` |
+| `accent` | String | 推荐口音 | `"american"` |
+| `duration` | String | 建议时长 | `"5-8 minutes"` |
+| `summary` | String | 场景概要 | `"练习在商务会议中做开场白..."` |
+| `tone` | String | 语气风格 | `"professional"` |
+| `goal` | String | 练习目标 | `"学会如何自然地开启商务会议..."` |
+| `keywords` | String | 关键词（逗号分隔） | `"agenda, objective, timeline, stakeholder"` |
+| `rolePrompt` | String | 角色设定 prompt | `"你是一位有经验的会议主持人..."` |
+| `openingMessage` | String | 开场白文本 | `"Good morning, everyone. Let's start today's meeting."` |
+| `sampleDialogue` | String | 示例对话（可选） | `"A: Good morning... B: Thank you..."` |
+| `targetTurns` | int | 建议对话轮数 | `6` |
+| `scoringRubric` | String | 评分标准说明 | `"fluency: 考察表达是否流畅..."` |
+
+**建议**：将 `rolePrompt` 作为 system prompt 的核心，将 `goal`、`keywords`、`scoringRubric` 等作为约束条件注入 LLM。
+
+#### 2. `List<SpeakingMessage> history` — 历史消息列表
+
+按 `turnIndex` 升序、`createdAt` 升序排列。每条消息包含：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `id` | Long | 消息 ID |
+| `sender` | enum (USER / AGENT) | 发送者 |
+| `content` | String | 消息文本内容 |
+| `audioUrl` | String | 音频文件 URL（可能为 null） |
+| `transcribedText` | String | ASR 转写文本（仅 USER 消息有值） |
+| `pronunciationScore` | Double | 发音总分（仅 USER 消息有值） |
+| `pronunciationDetail` | String | 发音评分详情 JSON（仅 USER 消息有值） |
+| `instantTip` | String | 即时提示（仅 AGENT 消息有值） |
+| `turnIndex` | int | 轮次编号（从 1 开始） |
+| `createdAt` | Instant | 创建时间 |
+
+**建议**：将 history 转换为对话格式传入 LLM。USER 消息优先使用 `transcribedText`（如果非空），否则使用 `content`。AGENT 消息使用 `content`。
+
+#### 3. `String userMessage` — 用户最新转写文本
+
+当前轮用户录音经 ASR 转写后的文本。即 `transcribedText`。如果 ASR 失败可能为空字符串。
+
+#### 4. `int turnIndex` — 当前轮次
+
+从 1 开始递增。`turnIndex == 0` 表示创建 session 时的开场白请求。
+
+### 实现要求
+
+#### 1. 实现类命名
+
+新增实现类应命名为 `LlmSpeakingAgentClient`，放在同一包下：
+
+```
+backend/src/main/java/com/englishlearningcopilot/backend/service/agent/LlmSpeakingAgentClient.java
+```
+
+#### 2. Spring 条件注入
+
+使用 `@ConditionalOnProperty` 控制启用开关，方便本地开发和测试：
+
+```java
+@Component
+@ConditionalOnProperty(name = "agent.llm.enabled", havingValue = "true")
+public class LlmSpeakingAgentClient implements SpeakingAgentClient {
+    // ...
+}
+```
+
+当 `agent.llm.enabled=false` 或未配置时，Spring 自动回退到 `MockSpeakingAgentClient`（当前默认实现）。
+
+#### 3. 配置项
+
+在 `application.properties` 中添加：
+
+```properties
+agent.llm.enabled=false
+agent.llm.api-key=
+agent.llm.model=gpt-4o-mini
+agent.llm.temperature=0.7
+agent.llm.max-tokens=300
+agent.llm.timeout-ms=15000
+```
+
+本地开发时可在 `backend/.env.local` 中覆盖：
+
+```bash
+export AGENT_LLM_ENABLED=true
+export AGENT_LLM_API_KEY=你的APIKey
+export AGENT_LLM_MODEL=gpt-4o-mini
+```
+
+#### 4. Prompt 构建建议
+
+建议将 prompt 分为以下几层：
+
+**System Prompt**（从 scenario 构建）：
+```
+你是一个英语口语练习助手，正在扮演以下角色：
+
+{scenario.rolePrompt}
+
+场景：{scenario.title}
+场景描述：{scenario.description}
+练习目标：{scenario.goal}
+语气风格：{scenario.tone}
+关键词：{scenario.keywords}
+
+对话要求：
+1. 每次回复控制在 1-3 句话，适合口语练习。
+2. 使用自然的口语表达，不要过于书面化。
+3. 适当引导用户使用场景关键词。
+4. 如果用户表达有语法问题，在 instantTip 中给出简短纠正。
+5. 不要替用户把话说完，留出空间让用户自己表达。
+```
+
+**History 格式**（建议转为多轮对话）：
+```
+User: {transcribedText or content}
+Assistant: {content}
+User: ...
+Assistant: ...
+```
+
+**当前轮输入**：
+```
+User (current turn): {userMessage}
+```
+
+**输出格式要求**（建议使用 JSON mode 或结构化输出）：
+```json
+{
+  "content": "Agent 的对话回复",
+  "instantTip": "即时提示（可选，不需要时返回 null）"
+}
+```
+
+#### 5. 错误处理
+
+- LLM 调用超时或失败时，应记录错误日志，然后回退到 `MockSpeakingAgentClient` 的回复逻辑，或返回一个固定的兜底回复（例如 `"Could you please repeat that?"`），保证会话不中断。
+- 不要将 LLM 的原始错误信息直接返回给前端。
+- 建议使用重试机制（retry 1-2 次），但总耗时不应超过 15 秒。
+
+#### 6. 测试建议
+
+- 单元测试：mock LLM 客户端，验证 prompt 构建逻辑和回复解析逻辑。
+- 集成测试：使用真实 LLM（但使用低 token 消耗的模型），验证端到端流程。
+- 手动测试：在本地打开 `agent.llm.enabled=true`，通过前端页面进行真实对话。
+
+### 当前 Mock 实现参考
+
+当前 `MockSpeakingAgentClient` 的实现逻辑：
+
+- `turnIndex == 0`：返回 `scenario.getOpeningMessage()`。
+- `turnIndex > 0`：根据 `scenario.getId()` 和 `turnIndex` 返回固定模板回复。
+- `instantTip`：根据用户消息长度和标点符号生成简单提示。
+
+接入真实 LLM 后，这些固定回复将被模型生成的动态回复替代。
+
+### 配置开关总览
+
+所有外部服务的开关统一在 `application.properties` 中管理：
+
+```properties
+# 语音服务
+xfyun.asr.enabled=false
+xfyun.ise.enabled=false
+xfyun.tts.enabled=false
+
+# 对话 Agent
+agent.llm.enabled=false
+```
+
+建议接入顺序：先开 TTS → 再开 ASR → 再开 ISE → 最后开 Agent。不要一口气全部打开。
