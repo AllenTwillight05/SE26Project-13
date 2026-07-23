@@ -1686,6 +1686,12 @@ a {
   margin-left: 4px;
 }
 
+.chat-audio-button--playing.ant-btn {
+  color: var(--accent-blue);
+  border-color: var(--accent-blue);
+  background: rgba(158, 197, 255, 0.15);
+}
+
 .chat-bubble--coach {
   border-top-left-radius: 6px;
   background: rgba(255, 255, 255, 0.82);
