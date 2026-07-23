@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SpeakingFeedbackPage } from "../../../src/pages/SpeakingFeedbackPage";
 import { speakingScenariosMock } from "../../../src/services/mockData";
 import { renderWithProviders } from "../utils/renderWithProviders";
@@ -14,7 +14,7 @@ const replayMessages = [
   { id: 4, sender: "USER", content: "First, I will share the project update.", audioUrl: "", turnIndex: 2 }
 ];
 
-function createFeedbackServices(session) {
+function createFeedbackServices(session, feedbackOverrides = {}) {
   return {
     speaking: {
       getScenario: (scenarioId) => {
@@ -26,15 +26,32 @@ function createFeedbackServices(session) {
       getSession: () => Promise.resolve(structuredClone(session)),
       listHistory: () => Promise.resolve([structuredClone(session)]),
       getFeedback: () => Promise.resolve({
-        totalScore: 88,
-        pronunciation: 91,
-        fluency: 84,
-        speed: "136 WPM",
-        issueSentences: ["I want to review my meeting opening."],
-        suggestions: [
-          "Try adding more detail to make your responses fuller.",
-          "Pay attention to sentence stress."
-        ]
+        ...{
+          totalScore: 88,
+          pronunciation: 91,
+          fluency: 84,
+          integrity: 86,
+          issueSentences: ["I want to review my meeting opening."],
+          suggestions: [
+            "Try adding more detail to make your responses fuller.",
+            "Pay attention to sentence stress."
+          ],
+          turns: [
+            {
+              turnIndex: 1,
+              userText: "I want to review my meeting opening.",
+              agentText: "Great. Please start with a short agenda.",
+              score: {
+                totalScore: 88,
+                accuracy: 91,
+                fluency: 84,
+                integrity: 86,
+                speed: 136
+              }
+            }
+          ]
+        },
+        ...feedbackOverrides
       })
     }
   };
@@ -53,6 +70,11 @@ const session = {
 };
 
 describe("SpeakingFeedbackPage", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   it("opens the replay modal with chat records and controls", async () => {
     renderWithProviders(<SpeakingFeedbackPage />, {
       path: "/speaking/:scenarioId/feedback",
@@ -87,6 +109,34 @@ describe("SpeakingFeedbackPage", () => {
     });
   });
 
+  it("restarts replay from the beginning after a full playback finishes", async () => {
+    const spokenTexts = [];
+    vi.spyOn(window.speechSynthesis, "speak").mockImplementation((utterance) => {
+      spokenTexts.push(utterance.text);
+      window.setTimeout(() => utterance.onend?.(), 0);
+    });
+
+    renderWithProviders(<SpeakingFeedbackPage />, {
+      path: "/speaking/:scenarioId/feedback",
+      route: `/speaking/${defaultScenario.id}/feedback?sessionId=${session.id}`,
+      services: createFeedbackServices(session)
+    });
+
+    await userEvent.click(await screen.findByRole("button", { name: /查看回放/ }));
+    const dialog = await screen.findByRole("dialog", { name: /会话回放/ });
+
+    await waitFor(() => {
+      expect(spokenTexts).toHaveLength(replayMessages.length);
+      expect(within(dialog).getByRole("button", { name: /开始/ })).toBeInTheDocument();
+    });
+
+    await userEvent.click(within(dialog).getByRole("button", { name: /开始/ }));
+
+    await waitFor(() => {
+      expect(spokenTexts[replayMessages.length]).toBe(replayMessages[0].content);
+    });
+  });
+
   it("displays feedback scores when feedback is available", async () => {
     renderWithProviders(<SpeakingFeedbackPage />, {
       path: "/speaking/:scenarioId/feedback",
@@ -94,14 +144,18 @@ describe("SpeakingFeedbackPage", () => {
       services: createFeedbackServices(session)
     });
 
-    expect(await screen.findByText("88")).toBeInTheDocument();
-    expect(screen.getByText("91")).toBeInTheDocument();
-    expect(screen.getByText("84")).toBeInTheDocument();
-    expect(screen.getByText("136 WPM")).toBeInTheDocument();
+    expect(await screen.findAllByText("88")).not.toHaveLength(0);
+    expect(screen.getAllByText("91")).not.toHaveLength(0);
+    expect(screen.getAllByText("84")).not.toHaveLength(0);
+    expect(screen.getAllByText("86")).not.toHaveLength(0);
     expect(screen.getByText(/总评分/)).toBeInTheDocument();
     expect(screen.getByText(/发音准确性/)).toBeInTheDocument();
     expect(screen.getByText(/流畅度/)).toBeInTheDocument();
-    expect(screen.getByText(/语速/)).toBeInTheDocument();
+    expect(screen.getByText(/每轮发音明细/)).toBeInTheDocument();
+    expect(screen.getByText(/第 1 轮/)).toBeInTheDocument();
+    expect(screen.getAllByText(/完整度/)).not.toHaveLength(0);
+    expect(screen.queryByText("136 WPM")).not.toBeInTheDocument();
+    expect(screen.queryByText(/语速/)).not.toBeInTheDocument();
   });
 
   it("shows feedback missing message when no feedback available", async () => {
@@ -114,5 +168,58 @@ describe("SpeakingFeedbackPage", () => {
     });
 
     expect(await screen.findByText(/评分数据暂未生成/)).toBeInTheDocument();
+  });
+
+  it("shows no issue sentence placeholder when no issue sentences are returned", async () => {
+    renderWithProviders(<SpeakingFeedbackPage />, {
+      path: "/speaking/:scenarioId/feedback",
+      route: `/speaking/${defaultScenario.id}/feedback?sessionId=${session.id}`,
+      services: createFeedbackServices(session, { issueSentences: [] })
+    });
+
+    expect(await screen.findByText(/问题句子/)).toBeInTheDocument();
+    expect(screen.getByText("无")).toBeInTheDocument();
+  });
+
+  it("plays stored user recording audio during replay", async () => {
+    const audioSources = [];
+    vi.stubGlobal("Audio", class AudioMock {
+      constructor(src) {
+        audioSources.push(src);
+        this.onended = null;
+        this.onerror = null;
+      }
+
+      play() {
+        return Promise.resolve();
+      }
+
+      pause() {}
+    });
+
+    const userAudioSession = {
+      ...session,
+      messages: [
+        {
+          id: 2,
+          sender: "USER",
+          content: "I want to review my meeting opening.",
+          audioUrl: "speaking/42/2.webm",
+          turnIndex: 1
+        }
+      ]
+    };
+
+    renderWithProviders(<SpeakingFeedbackPage />, {
+      path: "/speaking/:scenarioId/feedback",
+      route: `/speaking/${defaultScenario.id}/feedback?sessionId=${userAudioSession.id}`,
+      services: createFeedbackServices(userAudioSession)
+    });
+
+    await userEvent.click(await screen.findByRole("button", { name: /查看回放/ }));
+
+    await waitFor(() => {
+      expect(audioSources[0]).toMatch(/\/uploads\/speaking\/42\/2\.webm$/);
+    });
   });
 });
