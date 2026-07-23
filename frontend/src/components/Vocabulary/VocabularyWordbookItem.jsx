@@ -1,7 +1,8 @@
 import { SoundOutlined, StarFilled, StarOutlined } from "@ant-design/icons";
 import { Button, Flex, Tag, Typography } from "antd";
+import { VocabularyDefinitionText } from "./VocabularyDefinitionText";
 
-const { Paragraph, Text, Title } = Typography;
+const { Text, Title } = Typography;
 
 export function VocabularyWordbookItem({ word, onToggleFavorite, onPlayAudio }) {
   return (
@@ -25,8 +26,17 @@ export function VocabularyWordbookItem({ word, onToggleFavorite, onPlayAudio }) 
           />
         </Flex>
       </Flex>
-      <Paragraph className="wordbook-item__translation">{word.briefTranslation}</Paragraph>
-      <Paragraph className="wordbook-item__definition">{word.definition}</Paragraph>
+      <div className="word-card-section">
+        <Text strong>中文释义</Text>
+        <VocabularyDefinitionText
+          className="wordbook-item__translation"
+          value={word.translation || word.briefTranslation}
+        />
+      </div>
+      <div className="word-card-section">
+        <Text strong>英文释义</Text>
+        <VocabularyDefinitionText className="wordbook-item__definition" value={word.definition} />
+      </div>
       <Button
         htmlType="button"
         icon={<SoundOutlined />}

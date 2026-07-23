@@ -9,6 +9,7 @@ public record VocabularyWordbookWordResponse(
         String phonetic,
         String definition,
         String briefTranslation,
+        String translation,
         String tag,
         @JsonProperty("us_audio") String usAudio,
         boolean favorited
@@ -21,6 +22,7 @@ public record VocabularyWordbookWordResponse(
                 vocabulary.getPhonetic(),
                 vocabulary.getDefinition(),
                 nullToEmpty(vocabulary.getBriefTranslation()),
+                vocabulary.getTranslation(),
                 vocabulary.getTag(),
                 vocabulary.getUsAudio(),
                 favorited

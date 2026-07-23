@@ -238,6 +238,7 @@ export const contractShapes = {
       phonetic: "string",
       definition: "string",
       briefTranslation: "string",
+      translation: "string",
       tag: "string",
       us_audio: "string",
       favorited: true
