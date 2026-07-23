@@ -82,6 +82,7 @@ class VocabularyControllerTest {
                         "/ak-sept/",
                         "receive willingly",
                         "接受",
+                        "vt. 接受, 同意",
                         "cet4",
                         "accept.mp3",
                         true
@@ -90,6 +91,7 @@ class VocabularyControllerTest {
         mockMvc.perform(get("/api/vocabulary/wordbook-words").principal(() -> "learner"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].word").value("accept"))
+                .andExpect(jsonPath("$[0].translation").value("vt. 接受, 同意"))
                 .andExpect(jsonPath("$[0].favorited").value(true));
     }
 

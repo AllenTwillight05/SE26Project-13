@@ -452,6 +452,7 @@ export const vocabularyWordbookWordsMock = [
     phonetic: "'pә:pl",
     definition: "n. a purple color or pigment\nn. of imperial status",
     briefTranslation: "紫色",
+    translation: "n. 紫色, 帝位\na. 紫色的, 帝王的, 华而不实的\nv. (使)成紫色",
     tag: "cet4 cet6 toefl",
     us_audio: "https://dictionary.cambridge.org/media/english/us_pron/p/pur/purpl/purple.mp3",
     favorited: true
@@ -462,6 +463,7 @@ export const vocabularyWordbookWordsMock = [
     phonetic: "'fleigrәnt",
     definition: "s conspicuously and outrageously bad or reprehensible",
     briefTranslation: "恶名昭著的",
+    translation: "a. 极端明显的, 不能容忍的, 恶名昭著的\n[法] 公然的, 罪恶昭彰的, 现行的",
     tag: "gre",
     us_audio: "https://dictionary.cambridge.org/media/english/us_pron/f/fla/flagr/flagrant.mp3",
     favorited: false
@@ -472,6 +474,7 @@ export const vocabularyWordbookWordsMock = [
     phonetic: "ai'tinәrәri",
     definition: "n. a proposed route of travel",
     briefTranslation: "旅行计划",
+    translation: "n. 旅行计划, 行程",
     tag: "cet6 toefl ielts",
     us_audio: "",
     favorited: true
