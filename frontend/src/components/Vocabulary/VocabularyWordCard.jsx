@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { SoundOutlined, StarFilled, StarOutlined } from "@ant-design/icons";
 import { App, Button, Descriptions, Flex, Space, Tag, Typography } from "antd";
+import { VocabularyDefinitionText } from "./VocabularyDefinitionText";
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -88,11 +89,11 @@ export function VocabularyWordCard({ word, selectedRating, onRate, onToggleFavor
       </Flex>
       <div className="word-card-section">
         <Text strong>中文释义</Text>
-        <Paragraph className="word-multiline">{word.translation}</Paragraph>
+        <VocabularyDefinitionText className="word-multiline" value={word.translation} />
       </div>
       <div className="word-card-section">
         <Text strong>英文释义</Text>
-        <Paragraph className="word-multiline word-definition">{word.definition}</Paragraph>
+        <VocabularyDefinitionText className="word-multiline word-definition" value={word.definition} />
       </div>
       <Descriptions className="word-meta" column={{ xs: 1, sm: 2, md: 4 }} size="small">
         <Descriptions.Item label="Collins">{word.collins || "-"}</Descriptions.Item>
