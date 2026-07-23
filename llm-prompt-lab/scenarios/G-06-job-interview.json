@@ -60,6 +60,30 @@
       "triggers": ["优势", "strength"],
       "phrase": "One of my strengths is solving practical problems with a team.",
       "explanation": "Use 'One of my strengths is...' to introduce a professional strength."
+    },
+    {
+      "intent": "reason for changing jobs",
+      "triggers": ["换工作", "离职原因", "changing positions", "switching jobs"],
+      "phrase": "I'm interested in switching fields.",
+      "explanation": "Use this to explain a simple reason for changing jobs or positions."
+    },
+    {
+      "intent": "weakness",
+      "triggers": ["弱点", "缺点", "weakness", "challenge"],
+      "phrase": "I can be hard on myself at times.",
+      "explanation": "Use this to describe a weakness in a professional but not overly negative way."
+    },
+    {
+      "intent": "relocation",
+      "triggers": ["搬家", "异地工作", "relocate", "another state"],
+      "phrase": "I would be open to relocating in the future.",
+      "explanation": "Use this when the interviewer asks whether you can work in another city or state."
+    },
+    {
+      "intent": "salary requirement",
+      "triggers": ["薪资", "工资", "salary"],
+      "phrase": "My salary expectation is around 75,000 per year.",
+      "explanation": "Use this to state your salary requirement clearly and professionally."
     }
   ],
   "sampleDialogue": [

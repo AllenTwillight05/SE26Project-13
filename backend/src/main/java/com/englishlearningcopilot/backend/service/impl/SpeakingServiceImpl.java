@@ -108,9 +108,10 @@ public class SpeakingServiceImpl implements SpeakingService {
         session.setStartedAt(Instant.now());
         session.setTargetTurns(scenario.getTargetTurns());
         session.setCurrentTurn(0);
+        session.setSelectedTopic(normalizeSelectedTopic(request.selectedTopic()));
         SpeakingSession savedSession = sessionRepository.save(session);
 
-        SpeakingAgentReply openingReply = agentClient.reply(scenario, List.of(), "", 0);
+        SpeakingAgentReply openingReply = agentClient.reply(scenario, savedSession.getSelectedTopic(), List.of(), "", 0);
         saveAgentMessageWithAudio(savedSession, openingReply, 0);
 
         return toSessionResponse(savedSession);
@@ -189,7 +190,13 @@ public class SpeakingServiceImpl implements SpeakingService {
 
         // Agent reply
         List<SpeakingMessage> history = messageRepository.findBySessionIdOrderByTurnIndexAscCreatedAtAsc(sessionId);
-        SpeakingAgentReply reply = agentClient.reply(session.getScenario(), history, transcribedText, nextTurn);
+        SpeakingAgentReply reply = agentClient.reply(
+                session.getScenario(),
+                session.getSelectedTopic(),
+                history,
+                transcribedText,
+                nextTurn
+        );
 
         SpeakingMessage savedAgentMessage = saveAgentMessageWithAudio(session, reply, nextTurn);
 
@@ -226,7 +233,10 @@ public class SpeakingServiceImpl implements SpeakingService {
         agentMessage.setTurnIndex(turnIndex);
         SpeakingMessage savedAgentMessage = messageRepository.save(agentMessage);
 
-        byte[] agentAudioBytes = synthesizeAgentAudio(reply.content());
+        String spokenText = reply.spokenText() != null && !reply.spokenText().isBlank()
+                ? reply.spokenText()
+                : reply.content();
+        byte[] agentAudioBytes = synthesizeAgentAudio(spokenText);
         if (agentAudioBytes.length > 0) {
             String agentAudioUrl = audioStorageService.save(
                     session.getId(),
@@ -366,6 +376,13 @@ public class SpeakingServiceImpl implements SpeakingService {
             return "0 WPM";
         }
         return toDisplayScore(value) + " WPM";
+    }
+
+    private String normalizeSelectedTopic(String selectedTopic) {
+        if (selectedTopic == null || selectedTopic.isBlank()) {
+            return null;
+        }
+        return selectedTopic.trim();
     }
 
     private SpeakingSessionResponse toSessionResponse(SpeakingSession session) {

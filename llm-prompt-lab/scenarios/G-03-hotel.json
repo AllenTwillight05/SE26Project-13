@@ -80,6 +80,24 @@
       "triggers": ["早餐", "breakfast"],
       "phrase": "Is breakfast included?",
       "explanation": "Use this to ask whether breakfast is part of your room booking."
+    },
+    {
+      "intent": "provide ID",
+      "triggers": ["身份证", "护照", "ID", "passport"],
+      "phrase": "Here is my ID.",
+      "explanation": "Use this when the front desk asks to see your identification."
+    },
+    {
+      "intent": "credit card",
+      "triggers": ["信用卡", "刷卡", "credit card", "Visa", "MasterCard"],
+      "phrase": "Here's my Visa card.",
+      "explanation": "Use this when the hotel asks for a credit card at check-in."
+    },
+    {
+      "intent": "ask for room help",
+      "triggers": ["房卡", "Wi-Fi", "需要帮助", "room key", "wifi"],
+      "phrase": "If I need anything, who should I call?",
+      "explanation": "Use this to ask how to contact the front desk or get hotel help."
     }
   ],
   "sampleDialogue": [

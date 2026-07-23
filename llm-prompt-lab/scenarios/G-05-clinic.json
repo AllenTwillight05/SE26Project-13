@@ -60,6 +60,24 @@
       "triggers": ["过敏", "药", "allergy", "medicine"],
       "phrase": "I don't have any allergies.",
       "explanation": "Use this to answer a doctor's question about allergies."
+    },
+    {
+      "intent": "describe stomachache",
+      "triggers": ["肚子疼", "胃疼", "stomachache", "sick to my stomach"],
+      "phrase": "I have a stomachache.",
+      "explanation": "Use this simple sentence to describe stomach pain to a doctor."
+    },
+    {
+      "intent": "describe cold",
+      "triggers": ["感冒", "流鼻涕", "cold", "runny nose"],
+      "phrase": "I think I have a cold.",
+      "explanation": "Use this when you have common cold symptoms such as a runny nose or sore throat."
+    },
+    {
+      "intent": "ask pharmacy help",
+      "triggers": ["药店", "药剂师", "pharmacy", "pharmacist"],
+      "phrase": "Should I ask the pharmacist for medicine?",
+      "explanation": "Use this to ask whether you should get advice or medicine from a pharmacy."
     }
   ],
   "sampleDialogue": [

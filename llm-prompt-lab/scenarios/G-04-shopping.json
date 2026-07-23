@@ -61,6 +61,24 @@
       "triggers": ["我要了", "买这个", "take it"],
       "phrase": "I'll take it.",
       "explanation": "Use this when you decide to buy the item."
+    },
+    {
+      "intent": "ask size",
+      "triggers": ["尺码", "中码", "大码", "size", "medium", "large"],
+      "phrase": "Do you have this in medium?",
+      "explanation": "Use 'in medium' or 'in large' to ask for a clothing size."
+    },
+    {
+      "intent": "ask fitting room",
+      "triggers": ["试衣间", "fitting room", "dressing room"],
+      "phrase": "Where is the fitting room?",
+      "explanation": "Use this to ask where you can try on clothes."
+    },
+    {
+      "intent": "payment method",
+      "triggers": ["现金", "信用卡", "刷卡", "cash", "card"],
+      "phrase": "Can I pay by credit card?",
+      "explanation": "Use this when you want to ask whether card payment is accepted."
     }
   ],
   "sampleDialogue": [

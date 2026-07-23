@@ -60,6 +60,30 @@
       "triggers": ["跟进", "行动项", "follow up"],
       "phrase": "I'll follow up on this before the next meeting.",
       "explanation": "Use 'follow up on...' to say you will handle a next step."
+    },
+    {
+      "intent": "start meeting",
+      "triggers": ["开始会议", "开会", "start meeting", "get started"],
+      "phrase": "Let's get the ball rolling.",
+      "explanation": "Use this informal business phrase to start a meeting."
+    },
+    {
+      "intent": "ask update",
+      "triggers": ["汇报", "更新", "update", "talk us through"],
+      "phrase": "Could you give us an update on the project?",
+      "explanation": "Use this to invite someone to report progress in a meeting."
+    },
+    {
+      "intent": "disagree politely",
+      "triggers": ["不同意", "反对", "disagree", "can't agree"],
+      "phrase": "I can't agree with you there.",
+      "explanation": "Use this to disagree directly but still professionally."
+    },
+    {
+      "intent": "move to next topic",
+      "triggers": ["下一个议题", "继续", "move on", "agenda"],
+      "phrase": "Let's move on to the next topic.",
+      "explanation": "Use this when the meeting is ready to continue to the next agenda item."
     }
   ],
   "sampleDialogue": [

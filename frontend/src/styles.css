@@ -654,6 +654,10 @@ a {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.speaking-entry-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .metrics-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -816,6 +820,24 @@ a {
 .scenario-card__tone--rose { --card-color: var(--accent-rose); }
 .scenario-card__tone--violet { --card-color: var(--accent-violet); }
 .scenario-card__tone--orange { --card-color: var(--accent-orange); }
+
+.speaking-entry-card__icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  color: #ffffff;
+  background:
+    linear-gradient(135deg, rgba(17, 17, 17, 0.95), rgba(58, 73, 133, 0.92)),
+    #111111;
+  font-size: 20px;
+  box-shadow: 0 14px 28px rgba(63, 81, 181, 0.2);
+}
+
+.ielts-topic-card .scenario-card__title.ant-typography {
+  min-height: 58px;
+}
 
 .scenario-card__header {
   display: grid;
@@ -2056,6 +2078,7 @@ a {
   }
 
   .feature-grid,
+  .speaking-entry-grid,
   .home-panel-grid,
   .vocabulary-action-grid,
   .result-grid,
@@ -2145,6 +2168,7 @@ a {
   }
 
   .feature-grid,
+  .speaking-entry-grid,
   .home-panel-grid,
   .vocabulary-action-grid,
   .result-grid,

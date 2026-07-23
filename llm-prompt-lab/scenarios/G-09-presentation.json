@@ -60,6 +60,24 @@
       "triggers": ["下一页", "slide"],
       "phrase": "Now, if I could turn to the first slide...",
       "explanation": "Use this to move smoothly into the visual part of a presentation."
+    },
+    {
+      "intent": "nervous",
+      "triggers": ["紧张", "忘词", "nervous", "can't remember"],
+      "phrase": "I'm a little nervous, but I'll follow the structure.",
+      "explanation": "Use this to acknowledge nervousness and return to the presentation plan."
+    },
+    {
+      "intent": "benefits section",
+      "triggers": ["好处", "优势", "benefits"],
+      "phrase": "Then I'll move on to discuss the benefits for your company.",
+      "explanation": "Use 'move on to discuss...' when changing from one presentation section to another."
+    },
+    {
+      "intent": "closing",
+      "triggers": ["结尾", "总结", "closing", "finish"],
+      "phrase": "To sum up, this product is practical, affordable, and easy to use.",
+      "explanation": "Use 'To sum up...' to begin a short presentation conclusion."
     }
   ],
   "sampleDialogue": [

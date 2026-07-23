@@ -112,24 +112,27 @@ class SpeakingServiceImplTest {
             }
             return message;
         });
-        when(agentClient.reply(eq(scenario), any(), eq(""), eq(0)))
-                .thenReturn(new SpeakingAgentReply("Generated opening from agent.", null));
-        when(ttsService.synthesize("Generated opening from agent.")).thenReturn(new byte[] {4, 2});
+        when(agentClient.reply(eq(scenario), eq("Hometown"), any(), eq(""), eq(0)))
+                .thenReturn(new SpeakingAgentReply("Generated opening from agent.", "Generated spoken opening.", null));
+        when(ttsService.synthesize("Generated spoken opening.")).thenReturn(new byte[] {4, 2});
         when(audioStorageService.save(eq(99L), eq(100L), any(), eq("mp3")))
                 .thenReturn("/audio/opening.mp3");
         when(messageRepository.findBySessionIdOrderByTurnIndexAscCreatedAtAsc(99L))
                 .thenAnswer(invocation -> savedMessages);
 
         SpeakingSessionResponse response =
-                speakingService.createSession("learner", new CreateSpeakingSessionRequest("business-opening"));
+                speakingService.createSession("learner", new CreateSpeakingSessionRequest("business-opening", " Hometown "));
 
         assertThat(response.id()).isEqualTo(99L);
         assertThat(response.scenario().id()).isEqualTo("business-opening");
+        assertThat(response.selectedTopic()).isEqualTo("Hometown");
         assertThat(response.messages()).hasSize(1);
         assertThat(response.messages().get(0).content()).isEqualTo("Generated opening from agent.");
+        assertThat(response.messages().get(0).spokenText()).isEqualTo("Generated opening from agent.");
+        assertThat(response.messages().get(0).autoPlay()).isTrue();
         assertThat(response.messages().get(0).audioUrl()).isEqualTo("/audio/opening.mp3");
-        verify(agentClient).reply(eq(scenario), any(), eq(""), eq(0));
-        verify(ttsService).synthesize("Generated opening from agent.");
+        verify(agentClient).reply(eq(scenario), eq("Hometown"), any(), eq(""), eq(0));
+        verify(ttsService).synthesize("Generated spoken opening.");
         verify(audioStorageService).save(eq(99L), eq(100L), any(), eq("mp3"));
     }
 
@@ -142,7 +145,7 @@ class SpeakingServiceImplTest {
 
         assertThatThrownBy(() -> speakingService.createSession(
                 "learner",
-                new CreateSpeakingSessionRequest("business-opening")
+                new CreateSpeakingSessionRequest("business-opening", null)
         ))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Speaking scenario was not found.");
@@ -163,6 +166,7 @@ class SpeakingServiceImplTest {
         AppUser user = user(7L, "learner");
         SpeakingScenario scenario = scenario("business-opening");
         SpeakingSession session = session(99L, user, scenario);
+        session.setSelectedTopic("Work");
         AtomicLong ids = new AtomicLong(100);
         when(sessionRepository.findById(99L)).thenReturn(Optional.of(session));
         when(messageRepository.save(any(SpeakingMessage.class))).thenAnswer(invocation -> {
@@ -178,9 +182,9 @@ class SpeakingServiceImplTest {
                 .thenReturn(new PronunciationScore(88, 87, 86, 85, 120));
         when(objectMapper.writeValueAsString(any())).thenReturn("{}");
         when(messageRepository.findBySessionIdOrderByTurnIndexAscCreatedAtAsc(99L)).thenReturn(List.of());
-        when(agentClient.reply(eq(scenario), any(), eq("Hello, nice to meet you."), eq(1)))
-                .thenReturn(new SpeakingAgentReply("Welcome to the meeting.", "Use a fuller greeting."));
-        when(ttsService.synthesize("Welcome to the meeting.")).thenReturn(new byte[] {9, 8});
+        when(agentClient.reply(eq(scenario), eq("Work"), any(), eq("Hello, nice to meet you."), eq(1)))
+                .thenReturn(new SpeakingAgentReply("Welcome to the meeting.", "Welcome spoken.", "Use a fuller greeting."));
+        when(ttsService.synthesize("Welcome spoken.")).thenReturn(new byte[] {9, 8});
         when(audioStorageService.save(eq(99L), any(), any(), eq("mp3"))).thenReturn("/audio/agent.mp3");
         when(sessionRepository.save(session)).thenReturn(session);
 
@@ -191,11 +195,15 @@ class SpeakingServiceImplTest {
         );
 
         assertThat(response.userMessage().content()).isEqualTo("Hello, nice to meet you.");
+        assertThat(response.userMessage().spokenText()).isNull();
+        assertThat(response.userMessage().autoPlay()).isFalse();
         assertThat(response.agentMessage().content()).isEqualTo("Welcome to the meeting.");
+        assertThat(response.agentMessage().spokenText()).isEqualTo("Welcome to the meeting.");
+        assertThat(response.agentMessage().autoPlay()).isTrue();
         assertThat(response.pronunciationScore().totalScore()).isEqualTo(88);
         assertThat(response.session().currentTurn()).isEqualTo(1);
-        verify(agentClient).reply(eq(scenario), any(), eq("Hello, nice to meet you."), eq(1));
-        verify(ttsService).synthesize("Welcome to the meeting.");
+        verify(agentClient).reply(eq(scenario), eq("Work"), any(), eq("Hello, nice to meet you."), eq(1));
+        verify(ttsService).synthesize("Welcome spoken.");
         verify(audioStorageService).save(eq(99L), eq(101L), any(), eq("mp3"));
     }
 

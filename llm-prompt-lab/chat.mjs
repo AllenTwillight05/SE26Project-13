@@ -137,10 +137,30 @@ function renderTemplate(template, scenario) {
   return template.replace(/\{\{([A-Z_]+)\}\}/g, (_match, key) => values[key] ?? "");
 }
 
+function resolvePromptPaths(scenarioId) {
+  const ieltsPromptFiles = {
+    "IELTS-P1-practice": "IELTS-P1-practice-system.md",
+    "IELTS-P2-practice": "IELTS-P2-practice-system.md",
+    "IELTS-P3-practice": "IELTS-P3-practice-system.md",
+    "IELTS-mock-test": "IELTS-mock-test-system.md"
+  };
+
+  if (ieltsPromptFiles[scenarioId]) {
+    return {
+      commonPromptPath: path.join(moduleRoot, "common", "ielts-core.md"),
+      promptPath: path.join(moduleRoot, "prompts", ieltsPromptFiles[scenarioId])
+    };
+  }
+
+  return {
+    commonPromptPath: path.join(moduleRoot, "common", "roleplay-core.md"),
+    promptPath: path.join(moduleRoot, "prompts", `${scenarioId}-system.md`)
+  };
+}
+
 function loadScenarioBundle(scenarioId) {
   const scenarioPath = path.join(moduleRoot, "scenarios", `${scenarioId}.json`);
-  const promptPath = path.join(moduleRoot, "prompts", `${scenarioId}-system.md`);
-  const commonPromptPath = path.join(moduleRoot, "common", "roleplay-core.md");
+  const { commonPromptPath, promptPath } = resolvePromptPaths(scenarioId);
 
   if (!fs.existsSync(scenarioPath)) {
     throw new Error(`Scenario file not found: ${scenarioPath}`);
@@ -177,6 +197,18 @@ function listScenarios() {
         title: scenario.title,
         level: scenario.level
       };
+    })
+    .filter((scenario) => {
+      const visibleIeltsEntrypoints = new Set([
+        "IELTS-P1-practice",
+        "IELTS-P2-practice",
+        "IELTS-P3-practice",
+        "IELTS-mock-test"
+      ]);
+      if (visibleIeltsEntrypoints.has(scenario.id)) {
+        return true;
+      }
+      return !scenario.id.startsWith("IELTS");
     })
     .sort((left, right) => left.id.localeCompare(right.id));
 }

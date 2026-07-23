@@ -60,6 +60,24 @@
       "triggers": ["哪里下车", "get off"],
       "phrase": "Where should I get off?",
       "explanation": "Use this to ask for the correct stop."
+    },
+    {
+      "intent": "ask certainty",
+      "triggers": ["确定吗", "sure", "positive"],
+      "phrase": "Are you sure this is the right bus?",
+      "explanation": "Use this when you want to confirm that the route is correct."
+    },
+    {
+      "intent": "wrong bus",
+      "triggers": ["坐错车", "错车", "wrong bus"],
+      "phrase": "I think I'm on the wrong bus.",
+      "explanation": "Use this when you realize your bus may not be going to the right place."
+    },
+    {
+      "intent": "ask directions on foot",
+      "triggers": ["怎么走", "往哪边", "directions", "which way"],
+      "phrase": "Which way is the mall?",
+      "explanation": "Use this to ask for walking directions to a place."
     }
   ],
   "sampleDialogue": [

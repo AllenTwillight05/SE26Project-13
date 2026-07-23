@@ -6,6 +6,17 @@ function withBaseUrl(baseUrl, path) {
   return `${baseUrl}${path}`;
 }
 
+function toCreateSpeakingSessionPayload(input, selectedTopic) {
+  if (typeof input === "object" && input !== null) {
+    return input;
+  }
+
+  return {
+    scenarioId: input,
+    ...(selectedTopic ? { selectedTopic } : {})
+  };
+}
+
 // 真实接口服务实现，结构要和 mockServices 保持一致，页面才能只通过环境变量切换数据源。
 export function createHttpServices(baseUrl = "") {
   return {
@@ -27,8 +38,11 @@ export function createHttpServices(baseUrl = "") {
     speaking: {
       listScenarios: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingScenarios)),
       getScenario: (scenarioId) => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingScenario(scenarioId))),
-      createSession: (scenarioId) =>
-        postJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingSessions), { scenarioId }),
+      createSession: (input, selectedTopic) =>
+        postJson(
+          withBaseUrl(baseUrl, API_ENDPOINTS.speakingSessions),
+          toCreateSpeakingSessionPayload(input, selectedTopic)
+        ),
       getSession: (sessionId) =>
         getJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingSession(sessionId))),
       listHistory: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingHistory)),

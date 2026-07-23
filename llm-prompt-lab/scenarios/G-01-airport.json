@@ -64,6 +64,24 @@
       "triggers": ["靠窗", "靠过道", "seat"],
       "phrase": "Could I have an aisle seat, please?",
       "explanation": "Use this to politely ask for a seat preference."
+    },
+    {
+      "intent": "passport and ticket",
+      "triggers": ["护照", "机票", "passport", "ticket", "booking reference"],
+      "phrase": "Here is my passport and booking reference.",
+      "explanation": "Use this when the check-in agent asks for your travel documents."
+    },
+    {
+      "intent": "book a flight",
+      "triggers": ["订机票", "买机票", "book a flight", "plane reservation"],
+      "phrase": "I'd like to book a flight.",
+      "explanation": "Use this when you want to make a plane reservation or buy a ticket."
+    },
+    {
+      "intent": "departure preference",
+      "triggers": ["早上出发", "下午出发", "morning flight", "afternoon flight"],
+      "phrase": "I'd prefer a morning flight.",
+      "explanation": "Use 'I'd prefer...' to choose a departure time politely."
     }
   ],
   "sampleDialogue": [

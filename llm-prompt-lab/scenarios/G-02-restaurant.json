@@ -60,6 +60,24 @@
       "triggers": ["买单", "结账", "bill"],
       "phrase": "Can I have the bill, please?",
       "explanation": "Use this when you are ready to pay."
+    },
+    {
+      "intent": "order food",
+      "triggers": ["点菜", "点餐", "order food", "我要点"],
+      "phrase": "I'd like to order, please.",
+      "explanation": "Use this when you are ready to tell the server what food you want."
+    },
+    {
+      "intent": "food preference",
+      "triggers": ["不辣", "清淡", "spicy", "not spicy"],
+      "phrase": "I don't want anything too spicy.",
+      "explanation": "Use this to tell the server your spice preference before ordering."
+    },
+    {
+      "intent": "make reservation",
+      "triggers": ["预订", "订位", "reservation", "get a table"],
+      "phrase": "I'd like to make a reservation.",
+      "explanation": "Use this when you want to book a table before eating at a restaurant."
     }
   ],
   "sampleDialogue": [

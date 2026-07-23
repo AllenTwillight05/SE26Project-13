@@ -60,6 +60,24 @@
       "triggers": ["确认", "see you"],
       "phrase": "I'll see you there around twelve.",
       "explanation": "Use this to confirm the time and place before ending the call."
+    },
+    {
+      "intent": "identify caller",
+      "triggers": ["我是", "打电话给", "this is", "calling about"],
+      "phrase": "This is Ray calling about tomorrow's lunch.",
+      "explanation": "Use 'This is...' plus your name and reason when you start a phone call."
+    },
+    {
+      "intent": "leave message",
+      "triggers": ["留言", "message", "not available"],
+      "phrase": "Can I leave a message?",
+      "explanation": "Use this when the person you want is not available."
+    },
+    {
+      "intent": "arrange meeting",
+      "triggers": ["约午饭", "见面", "meet", "lunch"],
+      "phrase": "Could we meet for lunch tomorrow?",
+      "explanation": "Use this to suggest a meeting time or social plan by phone."
     }
   ],
   "sampleDialogue": [

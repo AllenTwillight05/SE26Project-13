@@ -60,6 +60,24 @@
       "triggers": ["看房", "viewing", "appointment"],
       "phrase": "Can I come see it today at 6 p.m.?",
       "explanation": "Use this to schedule a viewing appointment."
+    },
+    {
+      "intent": "ask rent",
+      "triggers": ["租金", "多少钱", "rent", "how much"],
+      "phrase": "How much is the rent per month?",
+      "explanation": "Use this to ask the monthly apartment price."
+    },
+    {
+      "intent": "ask what to bring",
+      "triggers": ["带什么", "证件", "bring", "ID"],
+      "phrase": "Do I need to bring anything?",
+      "explanation": "Use this before a viewing to ask whether you need ID or documents."
+    },
+    {
+      "intent": "ask directions",
+      "triggers": ["怎么去", "地址", "directions", "where it is"],
+      "phrase": "Do you know how to get there?",
+      "explanation": "Use this to ask about directions to the apartment."
     }
   ],
   "sampleDialogue": [

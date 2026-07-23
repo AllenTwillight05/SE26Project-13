@@ -60,6 +60,24 @@
       "triggers": ["约", "出去玩", "hang out"],
       "phrase": "Do you want to hang out tomorrow?",
       "explanation": "Use this for a casual invitation to a friend."
+    },
+    {
+      "intent": "ask how someone is",
+      "triggers": ["最近怎么样", "你好吗", "how are you", "how's it going"],
+      "phrase": "How's it going?",
+      "explanation": "Use this casual question to ask how someone is doing."
+    },
+    {
+      "intent": "ask weekend plans",
+      "triggers": ["周末", "weekend", "plans"],
+      "phrase": "What are you doing this weekend?",
+      "explanation": "Use this to start small talk about someone's plans."
+    },
+    {
+      "intent": "talk about movie plan",
+      "triggers": ["看电影", "movie", "see a movie"],
+      "phrase": "Maybe we can go see a movie.",
+      "explanation": "Use this to suggest a simple casual plan with a friend."
     }
   ],
   "sampleDialogue": [

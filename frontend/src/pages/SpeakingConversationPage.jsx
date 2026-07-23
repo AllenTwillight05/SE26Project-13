@@ -7,7 +7,7 @@ import {
   SoundOutlined
 } from "@ant-design/icons";
 import { Button, Flex, Progress, Space, Tag } from "antd";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AsyncPage } from "../components/common/AsyncPage";
 import { PageSectionHeader } from "../components/common/PageSectionHeader";
 import { useAsyncData } from "../hooks/useAsyncData";
@@ -42,7 +42,9 @@ function toChatMessage(message) {
     id: message.id,
     role: isUser ? "learner" : "coach",
     text: message.content,
+    spokenText: message.spokenText,
     audioUrl: message.audioUrl,
+    autoPlay: message.autoPlay,
     instantTip: message.instantTip,
     turnIndex: message.turnIndex
   };
@@ -52,17 +54,39 @@ function getMessagePlaybackKey(message) {
   return message.id ?? `${message.role}-${message.turnIndex ?? "unknown"}-${message.text}`;
 }
 
+function getDefaultBackPath(scenarioId) {
+  switch (scenarioId) {
+    case "IELTS-P1-practice":
+      return "/speaking/ielts/part1";
+    case "IELTS-P2-practice":
+      return "/speaking/ielts/part2";
+    case "IELTS-P3-practice":
+      return "/speaking/ielts/part3";
+    case "IELTS-mock-test":
+      return "/speaking/ielts";
+    default:
+      return `/speaking/${scenarioId}`;
+  }
+}
+
 export function SpeakingConversationPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { scenarioId } = useParams();
   const { speaking } = useAppServices();
+  const selectedTopic = searchParams.get("topic") || location.state?.selectedTopic || "";
+  const backPath = location.state?.speakingBackPath || getDefaultBackPath(scenarioId);
   const sessionRequestRef = useRef(null);
   const loader = useCallback(() => {
     if (!sessionRequestRef.current) {
-      sessionRequestRef.current = speaking.createSession(scenarioId);
+      sessionRequestRef.current = speaking.createSession({
+        scenarioId,
+        ...(selectedTopic ? { selectedTopic } : {})
+      });
     }
     return sessionRequestRef.current;
-  }, [speaking, scenarioId]);
+  }, [speaking, scenarioId, selectedTopic]);
   const { data, loading, error } = useAsyncData(loader, [loader]);
   const [session, setSession] = useState(null);
   const [isSending, setIsSending] = useState(false);
@@ -135,7 +159,7 @@ export function SpeakingConversationPage() {
       return;
     }
 
-    const utterance = speakText(message.text);
+    const utterance = speakText(message.spokenText || message.text);
     if (!utterance) {
       handleEnd();
       return;
@@ -159,7 +183,7 @@ export function SpeakingConversationPage() {
     const openingMessage = messages.find(
       (message) => message.role === "coach" && message.turnIndex === 0
     );
-    if (!openingMessage?.audioUrl) {
+    if (!openingMessage?.autoPlay && !openingMessage?.audioUrl) {
       return;
     }
 
@@ -269,6 +293,11 @@ export function SpeakingConversationPage() {
                   <Tag bordered={false} className="soft-tag soft-tag--dark">
                     {scenario.level}
                   </Tag>
+                  {selectedTopic ? (
+                    <Tag bordered={false} className="soft-tag">
+                      {selectedTopic}
+                    </Tag>
+                  ) : null}
                 </Space>
               }
             />
@@ -328,7 +357,7 @@ export function SpeakingConversationPage() {
 
             <Flex justify="space-between" gap={12} wrap="wrap">
               <Space wrap>
-                <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/speaking/${scenario.id}`)}>
+                <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(backPath || `/speaking/${scenario.id}`)}>
                   返回
                 </Button>
                 <Button
