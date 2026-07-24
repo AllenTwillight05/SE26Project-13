@@ -31,23 +31,15 @@ function createTestServices(scenarios = speakingScenariosMock) {
           ? Promise.resolve(structuredClone(scenario))
           : Promise.reject(new Error("Speaking scenario was not found."));
       },
-      createSession: (input, selectedTopicArg) => {
-        const payload = typeof input === "object" && input !== null
-          ? input
-          : {
-              scenarioId: input,
-              ...(selectedTopicArg ? { selectedTopic: selectedTopicArg } : {})
-            };
-        const scenario = scenarios.find((item) => item.id === payload.scenarioId);
+      createSession: (scenarioId) => {
+        const scenario = scenarios.find((item) => item.id === scenarioId);
         if (!scenario) {
           return Promise.reject(new Error("Speaking scenario was not found."));
         }
         const session = {
           id: nextSessionId++,
           userId: 1,
-          scenario: structuredClone(payload.selectedTopic
-            ? { ...scenario, selectedTopic: payload.selectedTopic }
-            : scenario),
+          scenario: structuredClone(scenario),
           status: "ACTIVE",
           startedAt: new Date().toISOString(),
           completedAt: null,
@@ -143,8 +135,6 @@ export function renderWithProviders(
             <Route path="/speaking/:scenarioId/feedback" element={<div>反馈页占位</div>} />
             <Route path="/speaking/:scenarioId/conversation" element={<div>会话页占位</div>} />
             <Route path="/speaking/:scenarioId" element={<div>详情页占位</div>} />
-            <Route path="/speaking/daily" element={<div>日常口语页占位</div>} />
-            <Route path="/speaking/ielts" element={<div>雅思口语页占位</div>} />
             <Route path="/speaking" element={<div>口语页占位</div>} />
           </Routes>
         </MemoryRouter>
