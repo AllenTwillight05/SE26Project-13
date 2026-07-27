@@ -1,10 +1,12 @@
 package com.englishlearningcopilot.backend.repository;
 
 import com.englishlearningcopilot.backend.entity.UserDailyLearningProgress;
+import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,6 +14,22 @@ import org.springframework.data.repository.query.Param;
 public interface UserDailyLearningProgressRepository extends JpaRepository<UserDailyLearningProgress, Long> {
 
     Optional<UserDailyLearningProgress> findByUserIdAndPlanDate(Long userId, LocalDate planDate);
+
+    /**
+     * Uses a locking/current read rather than a repeatable-read snapshot after
+     * an insert-if-absent operation has encountered a concurrent insert.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT progress
+            FROM UserDailyLearningProgress progress
+            WHERE progress.userId = :userId
+              AND progress.planDate = :planDate
+            """)
+    Optional<UserDailyLearningProgress> findCurrentByUserIdAndPlanDate(
+            @Param("userId") Long userId,
+            @Param("planDate") LocalDate planDate
+    );
 
     long countByUserIdAndPlanDate(Long userId, LocalDate planDate);
 

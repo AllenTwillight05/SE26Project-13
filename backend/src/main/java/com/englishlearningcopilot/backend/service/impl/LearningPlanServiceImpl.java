@@ -226,7 +226,7 @@ public class LearningPlanServiceImpl implements LearningPlanService {
                 UserLearningPlan.DEFAULT_VOCABULARY_GOAL,
                 UserLearningPlan.DEFAULT_GRAMMAR_GOAL
         );
-        return userLearningPlanRepository.findByUserId(userId)
+        return userLearningPlanRepository.findCurrentByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("Learning plan was not created."));
     }
 
@@ -238,7 +238,7 @@ public class LearningPlanServiceImpl implements LearningPlanService {
                 plan.getDailyVocabularyGoal(),
                 plan.getDailyGrammarGoal()
         );
-        return userDailyLearningProgressRepository.findByUserIdAndPlanDate(userId, today)
+        return userDailyLearningProgressRepository.findCurrentByUserIdAndPlanDate(userId, today)
                 .orElseThrow(() -> new IllegalStateException("Today's learning progress was not created."));
     }
 

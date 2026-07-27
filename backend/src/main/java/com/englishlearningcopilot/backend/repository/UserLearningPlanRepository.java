@@ -1,8 +1,10 @@
 package com.englishlearningcopilot.backend.repository;
 
 import com.englishlearningcopilot.backend.entity.UserLearningPlan;
+import jakarta.persistence.LockModeType;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,6 +12,14 @@ import org.springframework.data.repository.query.Param;
 public interface UserLearningPlanRepository extends JpaRepository<UserLearningPlan, Long> {
 
     Optional<UserLearningPlan> findByUserId(Long userId);
+
+    /**
+     * Uses a locking/current read rather than a repeatable-read snapshot after
+     * an insert-if-absent operation has encountered a concurrent insert.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT plan FROM UserLearningPlan plan WHERE plan.userId = :userId")
+    Optional<UserLearningPlan> findCurrentByUserId(@Param("userId") Long userId);
 
     long countByUserId(Long userId);
 
