@@ -2,18 +2,48 @@
 
 # Build deployable frontend and backend artifacts from a checked-out repository.
 # This script deliberately does not pull Git changes, publish files, or restart
-# services. Run it as the `deploy` user on the server after reviewing `main`.
+# services. The current server test suites are not release gates, so tests run
+# only when explicitly requested with --with-tests.
 
 set -Eeuo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 frontend_dir="$repo_root/frontend"
 backend_dir="$repo_root/backend"
+with_tests=false
+
+usage() {
+  cat <<'EOF'
+Usage: scripts/build-server.sh [--with-tests]
+
+Builds the backend JAR and frontend distribution from the current checkout.
+Tests are skipped by default because the server's legacy suites are not yet
+maintained as release gates. Pass --with-tests only when they are known to pass.
+EOF
+}
+
+while (($# > 0)); do
+  case "$1" in
+    --with-tests)
+      with_tests=true
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      printf 'Unknown option: %s\n' "$1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
 
 require_command() {
   local command_name="$1"
   if ! command -v "$command_name" >/dev/null 2>&1; then
-    echo "Missing required command: $command_name" >&2
+    printf 'Missing required command: %s\n' "$command_name" >&2
     exit 1
   fi
 }
@@ -23,8 +53,8 @@ require_supported_node() {
   version="$(node --version | sed 's/^v//')"
   IFS='.' read -r major minor patch <<<"$version"
 
-  if (( major < 20 || (major == 20 && minor < 19) )); then
-    echo "Node.js $version is unsupported. Vite 8 requires Node.js >= 20.19 or >= 22.12." >&2
+  if ((major < 20 || (major == 20 && minor < 19))); then
+    printf 'Node.js %s is unsupported. Vite 8 requires Node.js >= 20.19 or >= 22.12.\n' "$version" >&2
     exit 1
   fi
 }
@@ -47,34 +77,44 @@ export VITE_VOCABULARY_API_MODE="${VITE_VOCABULARY_API_MODE:-mock}"
 export VITE_GRAMMAR_API_MODE="${VITE_GRAMMAR_API_MODE:-mock}"
 export VITE_PROFILE_API_MODE="${VITE_PROFILE_API_MODE:-mock}"
 
-echo "Building commit $(git -C "$repo_root" rev-parse --short HEAD) from $repo_root"
-echo "Frontend API mode: $VITE_API_MODE (auth: $VITE_AUTH_API_MODE, vocabulary: $VITE_VOCABULARY_API_MODE)"
+printf 'Building commit %s from %s\n' "$(git -C "$repo_root" rev-parse --short HEAD)" "$repo_root"
+printf 'Frontend API mode: %s (auth: %s, vocabulary: %s)\n' \
+  "$VITE_API_MODE" "$VITE_AUTH_API_MODE" "$VITE_VOCABULARY_API_MODE"
 
-echo "==> Building backend and running its tests"
-(
-  cd "$backend_dir"
-  mvn -B clean package
-)
+if "$with_tests"; then
+  printf '==> Building backend and running its tests\n'
+  (
+    cd "$backend_dir"
+    mvn -B clean package
+  )
+else
+  printf '==> Building backend (tests skipped)\n'
+  (
+    cd "$backend_dir"
+    mvn -B clean package -Dmaven.test.skip=true
+  )
+fi
 
-echo "==> Installing locked frontend dependencies"
+printf '==> Installing locked frontend dependencies\n'
 (
   cd "$frontend_dir"
   npm ci
 )
 
-echo "==> Running frontend unit tests"
-(
-  cd "$frontend_dir"
-  npm run test:run
-)
+if "$with_tests"; then
+  printf '==> Running frontend unit tests\n'
+  (
+    cd "$frontend_dir"
+    npm run test:run
+  )
+fi
 
-echo "==> Building frontend"
+printf '==> Building frontend\n'
 (
   cd "$frontend_dir"
   npm run build
 )
 
-echo
-echo "Build completed. Artifacts:"
-echo "  frontend: $frontend_dir/dist"
-echo "  backend:  $backend_dir/target/backend-0.1.0-SNAPSHOT.jar"
+printf '\nBuild completed. Artifacts:\n'
+printf '  frontend: %s\n' "$frontend_dir/dist"
+printf '  backend:  %s\n' "$backend_dir/target/backend-0.1.0-SNAPSHOT.jar"

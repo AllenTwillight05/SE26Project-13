@@ -44,6 +44,7 @@
 - 前端交付说明：[docs/frontend-handoff.md](docs/frontend-handoff.md)
 - 接口契约说明：[docs/api-contracts.md](docs/api-contracts.md)
 - 认证前端规约：[docs/auth-frontend-spec.md](docs/auth-frontend-spec.md)
+- 服务器一键发布：[docs/server-deploy.md](docs/server-deploy.md)
 
 ## 推荐仓库结构
 
