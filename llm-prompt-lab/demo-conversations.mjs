@@ -2,6 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { buildBackendMessages, containsChineseCharacters, loadScenario, parseAgentReply } from "./backend-prompt.mjs";
 
 const root = new URL(".", import.meta.url).pathname;
 
@@ -61,22 +62,11 @@ function renderTemplate(tpl, s) {
 }
 
 function loadBundle(scenarioId) {
-  const scenarioPath = path.join(root, "scenarios", `${scenarioId}.json`);
-  const ieltsPromptMap = {
-    "IELTS-P1-practice": "IELTS-P1-practice-system.md",
-    "IELTS-P2-practice": "IELTS-P2-practice-system.md",
-    "IELTS-P3-practice": "IELTS-P3-practice-system.md",
-    "IELTS-mock-test": "IELTS-mock-test-system.md",
-  };
-  const isIelts = !!ieltsPromptMap[scenarioId];
-  const commonPath = path.join(root, "common", isIelts ? "ielts-core.md" : "roleplay-core.md");
-  const promptPath = path.join(root, "prompts", ieltsPromptMap[scenarioId] || `${scenarioId}-system.md`);
-  if (!fs.existsSync(scenarioPath)) return null;
-  const scenario = readJson(scenarioPath);
-  const common = fs.readFileSync(commonPath, "utf8");
-  const prompt = fs.readFileSync(promptPath, "utf8");
-  const systemPrompt = renderTemplate(`${common}\n\n${prompt}`, scenario);
-  return { scenario, systemPrompt };
+  try {
+    return { scenario: loadScenario(scenarioId) };
+  } catch {
+    return null;
+  }
 }
 
 async function callAPI(messages) {
@@ -88,31 +78,34 @@ async function callAPI(messages) {
   const text = await resp.text();
   if (!resp.ok) throw new Error(`API ${resp.status}: ${text.substring(0,100)}`);
   const body = JSON.parse(text);
-  return body?.choices?.[0]?.message?.content?.trim() || "";
+  return parseAgentReply(body?.choices?.[0]?.message?.content?.trim() || "").content;
 }
 
 async function runConversation(sid, label, userInputs) {
   const bundle = loadBundle(sid);
   if (!bundle) { console.log(`SKIP: ${sid}`); return; }
-  const { scenario, systemPrompt } = bundle;
-  const messages = [{ role: "system", content: systemPrompt }];
+  const { scenario } = bundle;
+  const history = [{ role: "assistant", content: scenario.openingMessage }];
+  let practiceTurns = 0;
   const out = [`### ${label}`];
   out.push(`角色: ${scenario.agentRole}，级别: ${scenario.level}`);
   out.push(``);
 
   // Opening
   const opening = scenario.openingMessage;
-  messages.push({ role: "assistant", content: opening });
   out.push(`**Agent:** ${opening}`);
 
   for (const input of userInputs) {
     out.push(``);
     out.push(`**You:** ${input}`);
-    messages.push({ role: "user", content: input });
+    const chineseHelpTurn = containsChineseCharacters(input);
+    const turnIndex = chineseHelpTurn ? practiceTurns : practiceTurns + 1;
+    const messages = buildBackendMessages({ scenario, history, userMessage: input, turnIndex });
 
     try {
       const reply = await callAPI(messages);
-      messages.push({ role: "assistant", content: reply });
+      history.push({ role: "user", content: input }, { role: "assistant", content: reply });
+      if (!chineseHelpTurn) practiceTurns += 1;
       out.push(`**Agent:** ${reply}`);
     } catch (err) {
       out.push(`**Agent:** [错误: ${err.message}]`);

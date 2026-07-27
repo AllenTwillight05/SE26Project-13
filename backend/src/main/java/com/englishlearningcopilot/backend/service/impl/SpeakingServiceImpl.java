@@ -125,11 +125,10 @@ public class SpeakingServiceImpl implements SpeakingService {
         session.setSelectedTopic(normalizeSelectedTopic(request.selectedTopic()));
         SpeakingSession savedSession = sessionRepository.save(session);
 
-        long modelStartedAt = System.nanoTime();
-        SpeakingAgentReply openingReply = agentClient.reply(scenario, savedSession.getSelectedTopic(), List.of(), "", 0);
-        saveAgentMessageWithAudio(savedSession, openingReply, 0);
-        log.info("Speaking session opening generated: sessionId={}, llmMs={}",
-                savedSession.getId(), (System.nanoTime() - modelStartedAt) / 1_000_000);
+        // The authored opening line is immediately available, avoiding an LLM round trip before the page can render.
+        SpeakingAgentReply openingReply = SpeakingAgentReply.of(scenario.getOpeningMessage(), null);
+        saveAgentMessageWithAudio(savedSession, openingReply, 0, true);
+        log.info("Speaking session opening seeded: sessionId={}, source=scenario", savedSession.getId());
 
         return toSessionResponse(savedSession);
     }
@@ -180,12 +179,15 @@ public class SpeakingServiceImpl implements SpeakingService {
         String audioUrl = audioStorageService.save(sessionId, savedUserMessage.getId(), audioBytes);
 
         String transcribedText;
+        boolean chineseHelpTurn = false;
         PronunciationScore pronunciationScore = null;
         long asrStartedAt = System.nanoTime();
         long iseMs = 0;
         try {
             transcribedText = asrService.transcribe(audioBytes, audio.getOriginalFilename());
+            chineseHelpTurn = EnglishSpeechText.containsChineseCharacters(transcribedText);
             if (evaluatePronunciationOnTurn
+                    && !chineseHelpTurn
                     && EnglishSpeechText.isEligibleForPronunciationEvaluation(transcribedText)) {
                 long iseStartedAt = System.nanoTime();
                 pronunciationScore = iseService.evaluate(audioBytes, transcribedText);
@@ -208,8 +210,12 @@ public class SpeakingServiceImpl implements SpeakingService {
             pronunciationDetail = null;
         }
 
+        // Chinese and mixed Chinese-English requests are help turns, not scored practice turns.
+        int messageTurn = chineseHelpTurn ? session.getCurrentTurn() : nextTurn;
+
         // Update USER message with ASR + ISE results
         savedUserMessage.setContent(transcribedText);
+        savedUserMessage.setTurnIndex(messageTurn);
         savedUserMessage.setAudioUrl(audioUrl);
         savedUserMessage.setTranscribedText(transcribedText);
         savedUserMessage.setPronunciationScore(pronunciationScore != null ? pronunciationScore.totalScore() : null);
@@ -217,6 +223,7 @@ public class SpeakingServiceImpl implements SpeakingService {
         savedUserMessage.setDurationMs(normalizeDurationMs(durationMs));
         savedUserMessage = messageRepository.save(savedUserMessage);
         if (pronunciationScore == null
+                && !chineseHelpTurn
                 && evaluatePronunciationAsync
                 && EnglishSpeechText.isEligibleForPronunciationEvaluation(transcribedText)) {
             scheduleAsyncPronunciationEvaluation(savedUserMessage.getId(), audioBytes, transcribedText);
@@ -230,18 +237,21 @@ public class SpeakingServiceImpl implements SpeakingService {
                 session.getSelectedTopic(),
                 history,
                 transcribedText,
-                nextTurn
+                messageTurn
         );
         long modelMs = (System.nanoTime() - modelStartedAt) / 1_000_000;
 
-        SpeakingMessage savedAgentMessage = saveAgentMessageWithAudio(session, reply, nextTurn);
+        SpeakingMessage savedAgentMessage = saveAgentMessageWithAudio(session, reply, messageTurn, !chineseHelpTurn);
 
-        session.setCurrentTurn(nextTurn);
+        if (!chineseHelpTurn) {
+            session.setCurrentTurn(nextTurn);
+        }
         SpeakingSession savedSession = sessionRepository.save(session);
 
-        log.info("Speaking turn processed: sessionId={}, turn={}, asrMs={}, iseMs={}, llmMs={}, totalMs={}",
+        log.info("Speaking turn processed: sessionId={}, turn={}, chineseHelp={}, asrMs={}, iseMs={}, llmMs={}, totalMs={}",
                 sessionId,
-                nextTurn,
+                messageTurn,
+                chineseHelpTurn,
                 Math.max(0, asrMs),
                 iseMs,
                 modelMs,
@@ -299,18 +309,21 @@ public class SpeakingServiceImpl implements SpeakingService {
     private SpeakingMessage saveAgentMessageWithAudio(
             SpeakingSession session,
             SpeakingAgentReply reply,
-            int turnIndex
+            int turnIndex,
+            boolean synthesizeAudio
     ) {
         SpeakingMessage agentMessage = new SpeakingMessage();
         agentMessage.setSession(session);
         agentMessage.setSender(SpeakingMessageSender.AGENT);
         agentMessage.setContent(reply.content());
-        agentMessage.setSpokenText(resolveSpokenText(reply));
+        agentMessage.setSpokenText(synthesizeAudio ? resolveSpokenText(reply) : null);
         agentMessage.setInstantTip(reply.instantTip());
         agentMessage.setTurnIndex(turnIndex);
-        agentMessage.setAudioPending(true);
+        agentMessage.setAudioPending(synthesizeAudio);
         SpeakingMessage savedAgentMessage = messageRepository.save(agentMessage);
-        scheduleAgentAudioSynthesis(savedAgentMessage.getId());
+        if (synthesizeAudio) {
+            scheduleAgentAudioSynthesis(savedAgentMessage.getId());
+        }
         return savedAgentMessage;
     }
 

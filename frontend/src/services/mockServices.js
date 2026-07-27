@@ -19,6 +19,7 @@ import { getStoredAuth } from "./authStorage";
 import { createHttpServices } from "./httpServices";
 import {
   DAILY_SPEAKING_SCENARIOS,
+  FREE_CONVERSATION_SCENARIO,
   IELTS_SCENARIOS,
   createIeltsScenario
 } from "./speakingCatalog";
@@ -44,6 +45,7 @@ let nextSpeakingSessionId = 1;
 let nextSpeakingMessageId = 1;
 const mockSpeakingSessions = new Map();
 const catalogSpeakingScenarios = [
+  FREE_CONVERSATION_SCENARIO,
   ...DAILY_SPEAKING_SCENARIOS,
   createIeltsScenario("part1"),
   createIeltsScenario("part2"),

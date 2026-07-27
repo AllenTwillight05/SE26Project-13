@@ -367,6 +367,27 @@ public class SpeakingScenarioSeedConfig {
                             "Score housing vocabulary, clarity, negotiation, and task completion."
                     ),
                     scenario(
+                            "free-conversation",
+                            "自由对话",
+                            "Have an open English conversation without a preset topic, task flow, or time limit.",
+                            "A2-B2",
+                            "Open conversation",
+                            "不限时",
+                            "自由选择话题，练习自然表达、接话和追问。",
+                            "mint",
+                            "Talk freely about any topic and sustain a natural English conversation.",
+                            "conversation,opinions,stories,daily life,interests",
+                            "You are a friendly English conversation partner. Follow the learner's topic naturally without imposing a task flow or ending condition.",
+                            "Hi! What would you like to talk about today?",
+                            """
+                                    Partner: Hi! What would you like to talk about today?
+                                    Learner: I'd like to talk about a place I visited recently.
+                                    Partner: That sounds lovely. What was the place like?
+                                    """,
+                            0,
+                            "No fixed score. Give optional language support only when it helps the learner."
+                    ),
+                    scenario(
                             "IELTS-P1-practice",
                             "雅思口语 Part 1",
                             "Practice short IELTS Speaking Part 1 questions around a selected topic.",
