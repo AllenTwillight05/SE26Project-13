@@ -36,6 +36,50 @@ public interface UserDailyLearningProgressRepository extends JpaRepository<UserD
             @Param("grammarGoal") int grammarGoal
     );
 
+    @Modifying
+    @Query(value = """
+            UPDATE user_daily_learning_progress
+            SET completed_at = CASE
+                    WHEN vocabulary_completed + 1 >= vocabulary_goal
+                         AND grammar_completed >= grammar_goal
+                    THEN CASE WHEN completed THEN completed_at ELSE CURRENT_TIMESTAMP END
+                    ELSE NULL
+                END,
+                completed = CASE
+                    WHEN vocabulary_completed + 1 >= vocabulary_goal
+                         AND grammar_completed >= grammar_goal
+                    THEN TRUE
+                    ELSE FALSE
+                END,
+                vocabulary_completed = vocabulary_completed + 1,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = :userId
+              AND plan_date = :planDate
+            """, nativeQuery = true)
+    int incrementVocabularyCompletion(@Param("userId") Long userId, @Param("planDate") LocalDate planDate);
+
+    @Modifying
+    @Query(value = """
+            UPDATE user_daily_learning_progress
+            SET completed_at = CASE
+                    WHEN vocabulary_completed >= vocabulary_goal
+                         AND grammar_completed + 1 >= grammar_goal
+                    THEN CASE WHEN completed THEN completed_at ELSE CURRENT_TIMESTAMP END
+                    ELSE NULL
+                END,
+                completed = CASE
+                    WHEN vocabulary_completed >= vocabulary_goal
+                         AND grammar_completed + 1 >= grammar_goal
+                    THEN TRUE
+                    ELSE FALSE
+                END,
+                grammar_completed = grammar_completed + 1,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = :userId
+              AND plan_date = :planDate
+            """, nativeQuery = true)
+    int incrementGrammarCompletion(@Param("userId") Long userId, @Param("planDate") LocalDate planDate);
+
     List<UserDailyLearningProgress> findByUserIdAndCompletedTrueOrderByPlanDateDesc(Long userId);
 
     @Query("""

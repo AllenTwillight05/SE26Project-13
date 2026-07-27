@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.englishlearningcopilot.backend.entity.AppUser;
 import com.englishlearningcopilot.backend.entity.UserRole;
 import com.englishlearningcopilot.backend.repository.UserDailyLearningProgressRepository;
+import com.englishlearningcopilot.backend.repository.UserDailyPracticeLogRepository;
 import com.englishlearningcopilot.backend.repository.UserLearningPlanRepository;
 import com.englishlearningcopilot.backend.repository.UserRepository;
 import com.englishlearningcopilot.backend.service.LearningPlanService;
@@ -17,6 +18,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,9 @@ class LearningPlanInitializationIntegrationTest {
 
     @Autowired
     private UserDailyLearningProgressRepository userDailyLearningProgressRepository;
+
+    @Autowired
+    private UserDailyPracticeLogRepository userDailyPracticeLogRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -83,6 +88,31 @@ class LearningPlanInitializationIntegrationTest {
                 .isPresent();
         assertThat(userDailyLearningProgressRepository.countByUserIdAndPlanDate(user.getId(), LocalDate.now()))
                 .isEqualTo(1);
+    }
+
+    @Test
+    void concurrentPracticeRecordingIsIdempotentAndDoesNotLoseIncrements() throws Exception {
+        AppUser user = createUser();
+
+        runConcurrently(() -> learningPlanService.recordVocabularyPractice(user.getId(), 42L));
+
+        assertThat(userDailyPracticeLogRepository.countByUserIdAndPlanDateAndPracticeTypeAndItemId(
+                user.getId(), LocalDate.now(), "VOCABULARY", "42"
+        )).isEqualTo(1);
+        assertThat(userDailyLearningProgressRepository.findByUserIdAndPlanDate(user.getId(), LocalDate.now()))
+                .get()
+                .extracting(progress -> progress.getVocabularyCompleted())
+                .isEqualTo(1);
+
+        AtomicInteger vocabularyId = new AtomicInteger(100);
+        runConcurrently(() -> learningPlanService.recordVocabularyPractice(
+                user.getId(), (long) vocabularyId.getAndIncrement()
+        ));
+
+        assertThat(userDailyLearningProgressRepository.findByUserIdAndPlanDate(user.getId(), LocalDate.now()))
+                .get()
+                .extracting(progress -> progress.getVocabularyCompleted())
+                .isEqualTo(4);
     }
 
     private AppUser createUser() {
