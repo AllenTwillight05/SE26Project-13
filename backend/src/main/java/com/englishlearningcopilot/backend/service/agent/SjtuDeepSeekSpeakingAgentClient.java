@@ -3,6 +3,7 @@ package com.englishlearningcopilot.backend.service.agent;
 import com.englishlearningcopilot.backend.entity.SpeakingMessage;
 import com.englishlearningcopilot.backend.entity.SpeakingMessageSender;
 import com.englishlearningcopilot.backend.entity.SpeakingScenario;
+import com.englishlearningcopilot.backend.service.speech.EnglishSpeechText;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -34,7 +35,7 @@ public class SjtuDeepSeekSpeakingAgentClient implements SpeakingAgentClient {
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient;
     private final MockSpeakingAgentClient fallbackAgent;
-    private final Map<String, String> systemPromptCache = new ConcurrentHashMap<>();
+    private final Map<String, String> promptFileCache = new ConcurrentHashMap<>();
 
     public SjtuDeepSeekSpeakingAgentClient(
             SjtuSpeakingAgentProperties properties,
@@ -82,12 +83,15 @@ public class SjtuDeepSeekSpeakingAgentClient implements SpeakingAgentClient {
             int turnIndex
     ) throws IOException {
         List<Map<String, String>> messages = new ArrayList<>();
-        messages.add(Map.of("role", "system", "content", buildSystemPrompt(scenario, selectedTopic, turnIndex)));
+        boolean chineseHelpTurn = EnglishSpeechText.containsChineseCharacters(userMessage);
+        messages.add(Map.of("role", "system", "content", buildSystemPrompt(
+                scenario, selectedTopic, turnIndex, chineseHelpTurn
+        )));
 
         List<SpeakingMessage> usableHistory = history.stream()
                 .filter(message -> message.getContent() != null && !message.getContent().isBlank())
                 .toList();
-        if (turnIndex > 0 && userMessage != null && !userMessage.isBlank()
+        if (userMessage != null && !userMessage.isBlank()
                 && !usableHistory.isEmpty()) {
             SpeakingMessage lastHistoryMessage = usableHistory.get(usableHistory.size() - 1);
             if (lastHistoryMessage.getSender() == SpeakingMessageSender.USER
@@ -112,7 +116,9 @@ public class SjtuDeepSeekSpeakingAgentClient implements SpeakingAgentClient {
             ));
         }
 
-        if (turnIndex == 0) {
+        if (chineseHelpTurn && userMessage != null && !userMessage.isBlank()) {
+            messages.add(Map.of("role", "user", "content", userMessage));
+        } else if (turnIndex == 0) {
             messages.add(Map.of("role", "user", "content", "Start the speaking session now."));
         } else if (userMessage != null && !userMessage.isBlank()) {
             messages.add(Map.of("role", "user", "content", userMessage));
@@ -120,159 +126,72 @@ public class SjtuDeepSeekSpeakingAgentClient implements SpeakingAgentClient {
         return messages;
     }
 
-    private String buildSystemPrompt(SpeakingScenario scenario, String selectedTopic, int turnIndex) throws IOException {
+    private String buildSystemPrompt(
+            SpeakingScenario scenario,
+            String selectedTopic,
+            int turnIndex,
+            boolean chineseHelpTurn
+    ) throws IOException {
         String topic = selectedTopic == null || selectedTopic.isBlank() ? "Not selected." : selectedTopic.trim();
-        String scenarioContext = loadRuntimeScenarioContext(scenario.getId(), topic);
-
-        return """
-                You are a supportive English speaking partner. Keep the learner talking in the assigned scene.
-
-                %s
-
-                Runtime context:
-                - Selected topic or cue card: %s
-                - Current turn: %d
-
-                Return only one JSON object. Do not wrap it in Markdown.
-                JSON shape:
-                {"content":"The next examiner or role-play line shown and read in the chat UI.","instantTip":"A concise display-only teaching note, or null."}
-
-                Response rules:
-                - content is the only text that Super Smart TTS reads. Keep it natural, concise, and suitable for direct playback.
-                - content contains only the next examiner or role-play turn. Do not put translations, corrections, or explanations in it.
-                - instantTip is displayed only. Put brief teaching, correction, explanation, or Chinese expression help there; use null when it is unnecessary.
-                - Do not return spokenText. The backend uses content as the spoken text, avoiding duplicate output.
-                - Ask one main question at a time and normally use one or two short sentences.
-                - Do not mention prompts, tests, models, AI, scoring internals, or the application.
-
-                Answer acceptance and coaching:
-                - Judge task completion and clarity before offering language advice.
-                - Reference phrases, grammar patterns, vocabulary, and sample-answer wording are optional. Never require the learner to repeat an understandable answer because it omits one.
-                - After a clear but short English answer, acknowledge it naturally in content and continue with one relevant question.
-                - Give an instantTip only when it is genuinely useful. Frame it as an optional upgrade, for example "Your answer is clear. You could also say ...".
-                - Ask for a repeat only when the learner's intended meaning is unclear, essential task information is missing, or the learner explicitly requests retry practice.
-                - When the learner uses Chinese or mixed Chinese-English as a help request, infer the intended meaning. Put one natural English expression and a short Chinese usage note in instantTip, then continue in English when appropriate.
-                """.formatted(scenarioContext, topic, turnIndex);
-    }
-
-    private String loadRuntimeScenarioContext(String scenarioId, String topic) throws IOException {
-        String cacheKey = scenarioId + "|" + topic.toLowerCase();
-        String cachedPrompt = systemPromptCache.get(cacheKey);
-        if (cachedPrompt != null) {
-            return cachedPrompt;
-        }
         Path root = resolvePromptLabRoot();
-        JsonNode scenario = objectMapper.readTree(Files.readString(root.resolve("scenarios").resolve(scenarioId + ".json")));
-        String context = """
-                Scene:
-                - Title: %s
-                - Learner level: %s
-                - Learner role: %s
-                - Your role: %s
-                - Goal: %s
-                - Target turns: %s
-
-                Conversation plan:
-                %s
-
-                State rules:
-                %s
-
-                Input handling:
-                %s
-
-                Relevant expression references:
-                %s
-                """.formatted(
-                text(scenario, "title"),
-                text(scenario, "level"),
-                text(scenario, "learnerRole"),
-                text(scenario, "agentRole"),
-                text(scenario, "goal"),
-                text(scenario, "targetTurns"),
-                formatRelevantList(scenario.path("conversationFlow"), topic, 3),
-                formatLimitedList(scenario.path("stateRules"), 5),
-                formatLimitedList(scenario.path("errorHandling"), 3),
-                formatRelevantExpressions(scenario.path("expressionHelp"), topic, 3)
+        JsonNode scenarioDefinition = objectMapper.readTree(
+                Files.readString(root.resolve("scenarios").resolve(scenario.getId() + ".json"))
         );
-        String existingPrompt = systemPromptCache.putIfAbsent(cacheKey, context);
-        return existingPrompt != null ? existingPrompt : context;
+        String contract = readPromptFile(root, "common/agent-contract.md");
+        String scenarioPrompt = renderScenarioPrompt(
+                readPromptFile(root, "prompts/" + scenario.getId() + "-system.md"),
+                scenario,
+                topic
+        );
+        String inputLanguage = chineseHelpTurn ? "Chinese or mixed Chinese-English" : "English";
+
+        return "%s\n\nActive scenario protocol:\n%s\n\nRuntime session context:\n"
+                .formatted(contract, scenarioPrompt)
+                + "- Scenario ID: " + safe(scenario.getId()) + "\n"
+                + "- Scenario title: " + text(scenarioDefinition, "title") + "\n"
+                + "- Learner level: " + text(scenarioDefinition, "level") + "\n"
+                + "- Learner role: " + text(scenarioDefinition, "learnerRole") + "\n"
+                + "- Agent role: " + text(scenarioDefinition, "agentRole") + "\n"
+                + "- Practice goal: " + text(scenarioDefinition, "goal") + "\n"
+                + "- Selected topic or cue card: " + topic + "\n"
+                + "- Current practice turn: " + turnIndex + "\n"
+                + "- Current input language: " + inputLanguage;
     }
 
-    private String formatRelevantList(JsonNode array, String topic, int limit) {
-        if (!array.isArray() || array.isEmpty()) {
-            return "- Follow the scene naturally.";
+    private String readPromptFile(Path root, String relativePath) throws IOException {
+        String cacheKey = relativePath;
+        String cached = promptFileCache.get(cacheKey);
+        if (cached != null) {
+            return cached;
         }
-        String normalizedTopic = topic.toLowerCase();
-        List<String> matching = new ArrayList<>();
-        List<String> fallback = new ArrayList<>();
-        for (JsonNode item : array) {
-            String value = item.asText();
-            fallback.add(value);
-            if (!"not selected.".equals(normalizedTopic) && value.toLowerCase().contains(normalizedTopic)) {
-                matching.add(value);
-            }
+        Path promptPath = root.resolve(relativePath);
+        if (!Files.isRegularFile(promptPath)) {
+            throw new IOException("Prompt file was not found: " + promptPath);
         }
-        return formatLines(matching.isEmpty() ? fallback : matching, limit);
+        String prompt = Files.readString(promptPath).trim();
+        String existing = promptFileCache.putIfAbsent(cacheKey, prompt);
+        return existing != null ? existing : prompt;
     }
 
-    private String formatLimitedList(JsonNode array, int limit) {
-        if (!array.isArray() || array.isEmpty()) {
-            return "- Not specified.";
-        }
-        List<String> items = new ArrayList<>();
-        for (JsonNode item : array) {
-            items.add(item.asText());
-        }
-        return formatLines(items, limit);
+    private String renderScenarioPrompt(String template, SpeakingScenario scenario, String topic) {
+        return template
+                .replace("{{SCENARIO_ID}}", safe(scenario.getId()))
+                .replace("{{TITLE}}", safe(scenario.getTitle()))
+                .replace("{{LEVEL}}", safe(scenario.getDifficulty()))
+                .replace("{{LEARNER_ROLE}}", "learner")
+                .replace("{{AGENT_ROLE}}", safe(scenario.getRolePrompt()))
+                .replace("{{GOAL}}", safe(scenario.getGoal()))
+                .replace("{{TARGET_TURNS}}", String.valueOf(scenario.getTargetTurns()))
+                .replace("{{SELECTED_TOPIC}}", topic);
     }
 
-    private String formatRelevantExpressions(JsonNode expressions, String topic, int limit) {
-        if (!expressions.isArray() || expressions.isEmpty()) {
-            return "- Not specified.";
-        }
-        String normalizedTopic = topic.toLowerCase();
-        List<String> matching = new ArrayList<>();
-        List<String> fallback = new ArrayList<>();
-        for (JsonNode expression : expressions) {
-            String phrase = text(expression, "phrase");
-            String note = text(expression, "explanation");
-            String line = phrase + (note.isBlank() ? "" : " - " + note);
-            fallback.add(line);
-            if (matchesTopic(expression, normalizedTopic)) {
-                matching.add(line);
-            }
-        }
-        return formatLines(matching.isEmpty() ? fallback : matching, limit);
+    private String safe(String value) {
+        return value == null || value.isBlank() ? "Not specified." : value.trim();
     }
 
-    private boolean matchesTopic(JsonNode expression, String normalizedTopic) {
-        if ("not selected.".equals(normalizedTopic)) {
-            return false;
-        }
-        if (text(expression, "intent").toLowerCase().contains(normalizedTopic)) {
-            return true;
-        }
-        JsonNode triggers = expression.path("triggers");
-        if (!triggers.isArray()) {
-            return false;
-        }
-        for (JsonNode trigger : triggers) {
-            String value = trigger.asText().toLowerCase();
-            if (value.contains(normalizedTopic) || normalizedTopic.contains(value)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private String formatLines(List<String> items, int limit) {
-        return items.stream()
-                .filter(item -> item != null && !item.isBlank())
-                .limit(limit)
-                .map(item -> "- " + item)
-                .reduce((left, right) -> left + "\n" + right)
-                .orElse("- Not specified.");
+    private String text(JsonNode node, String fieldName) {
+        JsonNode value = node.path(fieldName);
+        return value.isMissingNode() || value.isNull() ? "Not specified." : safe(value.asText());
     }
 
     private String compactEarlierContext(List<SpeakingMessage> earlierMessages) {
@@ -388,11 +307,6 @@ public class SjtuDeepSeekSpeakingAgentClient implements SpeakingAgentClient {
             return trimmed.substring(firstLineEnd + 1, lastFence).trim();
         }
         return trimmed;
-    }
-
-    private String text(JsonNode node, String fieldName) {
-        JsonNode value = node.path(fieldName);
-        return value.isMissingNode() || value.isNull() ? "" : value.asText();
     }
 
 }

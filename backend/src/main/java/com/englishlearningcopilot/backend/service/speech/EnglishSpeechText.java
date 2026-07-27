@@ -8,6 +8,21 @@ public final class EnglishSpeechText {
     private EnglishSpeechText() {
     }
 
+    public static boolean containsChineseCharacters(String transcript) {
+        if (transcript == null || transcript.isBlank()) {
+            return false;
+        }
+
+        for (int offset = 0; offset < transcript.length();) {
+            int codePoint = transcript.codePointAt(offset);
+            if (Character.UnicodeScript.of(codePoint) == Character.UnicodeScript.HAN) {
+                return true;
+            }
+            offset += Character.charCount(codePoint);
+        }
+        return false;
+    }
+
     public static boolean isEligibleForPronunciationEvaluation(String transcript) {
         if (transcript == null || transcript.isBlank()) {
             return false;

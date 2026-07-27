@@ -57,7 +57,26 @@ class SjtuDeepSeekSpeakingAgentClientTest {
     }
 
     @Test
-    void buildsCompactRuntimePromptWithoutDevelopmentFixtures() throws Exception {
+    void exposesChineseInputLanguageWithoutApplyingAUniversalDialogueMode() throws Exception {
+        SjtuSpeakingAgentProperties properties = new SjtuSpeakingAgentProperties(
+                "https://example.test/v1", "test-key", "deepseek-chat", 0.7, 120, 30000,
+                "llm-prompt-lab", 8, 600
+        );
+        SjtuDeepSeekSpeakingAgentClient client = new SjtuDeepSeekSpeakingAgentClient(properties, new ObjectMapper());
+
+        List<Map<String, String>> messages = buildMessages(client, scenario(), List.of(), "这个问题怎么回答？");
+
+        assertThat(messages.getFirst().get("content"))
+                .contains("Shared output and safety contract")
+                .contains("Current input language: Chinese or mixed Chinese-English")
+                .contains("friendly conversation partner practising everyday small talk");
+        assertThat(messages)
+                .filteredOn(message -> "这个问题怎么回答？".equals(message.get("content")))
+                .hasSize(1);
+    }
+
+    @Test
+    void loadsTheExactScenarioPromptWithoutInjectingGenericFlowArrays() throws Exception {
         SjtuSpeakingAgentProperties properties = new SjtuSpeakingAgentProperties(
                 "https://example.test/v1",
                 "test-key",
@@ -75,9 +94,11 @@ class SjtuDeepSeekSpeakingAgentClientTest {
         String systemPrompt = messages.getFirst().get("content");
 
         assertThat(systemPrompt).contains("Selected topic or cue card: Hometown");
-        assertThat(systemPrompt).contains("Where is your hometown?");
+        assertThat(systemPrompt).contains("isolated IELTS Speaking Part 1 practice");
         assertThat(systemPrompt).doesNotContain("Regression test inputs");
         assertThat(systemPrompt).doesNotContain("Reference samples");
+        assertThat(systemPrompt).doesNotContain("Conversation plan:");
+        assertThat(systemPrompt).doesNotContain("State rules:");
         assertThat(systemPrompt).doesNotContain("\"spokenText\":");
         assertThat(systemPrompt.length()).isLessThan(5000);
     }

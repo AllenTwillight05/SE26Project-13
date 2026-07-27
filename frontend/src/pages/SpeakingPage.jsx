@@ -1,4 +1,4 @@
-import { ArrowRightOutlined, CoffeeOutlined, ReadOutlined } from "@ant-design/icons";
+import { ArrowRightOutlined, CommentOutlined, CoffeeOutlined, ReadOutlined } from "@ant-design/icons";
 import { Button, Space, Tag, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
 import { PageSectionHeader } from "../components/common/PageSectionHeader";
@@ -7,9 +7,18 @@ const { Paragraph, Title } = Typography;
 
 const entryCards = [
   {
+    id: "free-conversation",
+    title: "自由对话",
+    description: "不设主题、回合或时长限制，自然地聊你想聊的内容。",
+    path: "/speaking/free-conversation",
+    icon: <CommentOutlined />,
+    tone: "mint",
+    tags: ["开放话题", "不限时"]
+  },
+  {
     id: "daily",
     title: "日常口语",
-    description: "12 个 G 系列生活、旅行和职场场景。",
+    description: "12 个生活、旅行和职场英语场景。",
     path: "/speaking/daily",
     icon: <CoffeeOutlined />,
     tone: "gold",

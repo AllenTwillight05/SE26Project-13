@@ -2,6 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { buildBackendMessages, loadScenario, parseAgentReply } from "./backend-prompt.mjs";
 
 const root = new URL(".", import.meta.url).pathname;
 const outDir = path.join(root, "test-outputs");
@@ -90,20 +91,8 @@ function renderTemplate(template, scenario) {
 }
 
 function loadBundle(scenarioId) {
-  const promptFileName = IELTS_PROMPTS[scenarioId];
-  if (!promptFileName) {
-    throw new Error(`Unknown IELTS scenario: ${scenarioId}`);
-  }
-
-  const scenarioPath = path.join(root, "scenarios", `${scenarioId}.json`);
-  const promptPath = path.join(root, "prompts", promptFileName);
-  const commonPath = path.join(root, "common", "ielts-core.md");
-
-  const scenario = readJson(scenarioPath);
-  const commonPrompt = fs.readFileSync(commonPath, "utf8");
-  const scenarioPrompt = fs.readFileSync(promptPath, "utf8");
-  const systemPrompt = renderTemplate(`${commonPrompt}\n\n${scenarioPrompt}`, scenario);
-  return { scenario, systemPrompt };
+  if (!IELTS_PROMPTS[scenarioId]) throw new Error(`Unknown IELTS scenario: ${scenarioId}`);
+  return { scenario: loadScenario(scenarioId) };
 }
 
 async function callApi(messages) {
@@ -130,7 +119,7 @@ async function callApi(messages) {
     throw new Error(`API ${response.status}: ${text.substring(0, 160)}`);
   }
   const body = JSON.parse(text);
-  return body?.choices?.[0]?.message?.content?.trim() || "";
+  return parseAgentReply(body?.choices?.[0]?.message?.content?.trim() || "").content;
 }
 
 const TESTS = {
@@ -197,15 +186,16 @@ async function run() {
   const issues = [];
 
   for (const [scenarioId, cases] of Object.entries(TESTS)) {
-    const { scenario, systemPrompt } = loadBundle(scenarioId);
+    const { scenario } = loadBundle(scenarioId);
     const log = [`=== ${scenarioId}: ${scenario.title} ===`, `Opening: ${scenario.openingMessage}`, ""];
 
     for (const [label, input] of cases) {
-      const messages = [
-        { role: "system", content: systemPrompt },
-        { role: "assistant", content: scenario.openingMessage },
-        { role: "user", content: input }
-      ];
+      const messages = buildBackendMessages({
+        scenario,
+        history: [{ role: "assistant", content: scenario.openingMessage }],
+        userMessage: input,
+        turnIndex: 1
+      });
 
       try {
         const reply = await callApi(messages);

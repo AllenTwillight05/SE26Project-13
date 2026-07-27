@@ -232,6 +232,7 @@ class SpeakingControllerTest {
                 null,
                 false,
                 "AGENT".equals(sender),
+                false,
                 content,
                 null,
                 null,

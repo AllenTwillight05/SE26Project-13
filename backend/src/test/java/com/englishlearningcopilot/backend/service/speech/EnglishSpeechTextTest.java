@@ -14,6 +14,13 @@ class EnglishSpeechTextTest {
     }
 
     @Test
+    void detectsChineseCharactersInChineseAndMixedTranscripts() {
+        assertThat(EnglishSpeechText.containsChineseCharacters("这个怎么说？")).isTrue();
+        assertThat(EnglishSpeechText.containsChineseCharacters("这个 restaurant 怎么读？")).isTrue();
+        assertThat(EnglishSpeechText.containsChineseCharacters("How are you today?")).isFalse();
+    }
+
+    @Test
     void rejectsChineseAndMixedLanguageHelpRequests() {
         assertThat(EnglishSpeechText.isEligibleForPronunciationEvaluation("这个怎么说？")).isFalse();
         assertThat(EnglishSpeechText.isEligibleForPronunciationEvaluation("这个 restaurant 怎么读？")).isFalse();

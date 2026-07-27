@@ -11,6 +11,7 @@ public record SpeakingMessageResponse(
         String audioUrl,
         boolean audioPending,
         boolean autoPlay,
+        boolean textOnly,
         String transcribedText,
         Double pronunciationScore,
         String pronunciationDetail,
@@ -27,7 +28,11 @@ public record SpeakingMessageResponse(
                 message.getSender().name().equals("AGENT") ? message.getSpokenText() : null,
                 message.getAudioUrl(),
                 message.getSender().name().equals("AGENT") && message.isAudioPending(),
-                message.getSender().name().equals("AGENT"),
+                message.getSender().name().equals("AGENT")
+                        && (message.isAudioPending() || (message.getAudioUrl() != null && !message.getAudioUrl().isBlank())),
+                message.getSender().name().equals("AGENT")
+                        && !message.isAudioPending()
+                        && (message.getSpokenText() == null || message.getSpokenText().isBlank()),
                 message.getTranscribedText(),
                 message.getPronunciationScore(),
                 message.getPronunciationDetail(),
