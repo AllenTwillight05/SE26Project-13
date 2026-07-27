@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.englishlearningcopilot.backend.dto.AuthResponse;
+import com.englishlearningcopilot.backend.dto.LoginRequest;
 import com.englishlearningcopilot.backend.dto.RegisterRequest;
 import com.englishlearningcopilot.backend.dto.UserResponse;
 import com.englishlearningcopilot.backend.entity.UserRole;
@@ -118,6 +119,26 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.username").value("learner"));
 
         verify(authService).currentUser("learner");
+    }
+
+    @Test
+    void loginDelegatesValidRequestToService() throws Exception {
+        UserResponse user = userResponse("learner");
+        when(authService.login(any(LoginRequest.class))).thenReturn(new AuthResponse("login-token", user));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "account": "learner",
+                                  "password": "Password123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("login-token"))
+                .andExpect(jsonPath("$.user.username").value("learner"));
+
+        verify(authService).login(any(LoginRequest.class));
     }
 
     @Test

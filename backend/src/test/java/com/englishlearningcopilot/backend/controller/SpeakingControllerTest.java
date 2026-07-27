@@ -101,6 +101,39 @@ class SpeakingControllerTest {
     }
 
     @Test
+    void getScenarioDelegatesScenarioId() throws Exception {
+        when(speakingService.getScenario("business-opening")).thenReturn(scenario());
+
+        mockMvc.perform(get("/api/speaking/scenarios/business-opening"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("business-opening"));
+
+        verify(speakingService).getScenario("business-opening");
+    }
+
+    @Test
+    void getSessionUsesPrincipalAndSessionId() throws Exception {
+        when(speakingService.getSession("learner", 99L)).thenReturn(sessionResponse(List.of()));
+
+        mockMvc.perform(get("/api/speaking/sessions/99").principal(() -> "learner"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(99));
+
+        verify(speakingService).getSession("learner", 99L);
+    }
+
+    @Test
+    void listHistoryUsesPrincipalName() throws Exception {
+        when(speakingService.listHistory("learner")).thenReturn(List.of(sessionResponse(List.of())));
+
+        mockMvc.perform(get("/api/speaking/history").principal(() -> "learner"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(99));
+
+        verify(speakingService).listHistory("learner");
+    }
+
+    @Test
     void submitRecordingPassesMultipartAudio() throws Exception {
         SpeakingMessageResponse userMessage = message(1L, "USER", "hello");
         SpeakingMessageResponse agentMessage = message(2L, "AGENT", "welcome");
