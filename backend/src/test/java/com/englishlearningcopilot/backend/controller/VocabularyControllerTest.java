@@ -61,6 +61,18 @@ class VocabularyControllerTest {
     }
 
     @Test
+    void getMemoryPassesNullWhenPrincipalMissing() throws Exception {
+        when(vocabularyService.getMemory(null))
+                .thenReturn(Map.of("retentionRate", 0, "stats", List.of()));
+
+        mockMvc.perform(get("/api/vocabulary/memory"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.retentionRate").value(0));
+
+        verify(vocabularyService).getMemory(null);
+    }
+
+    @Test
     void getPracticeWordsUsesDefaultStarterLevel() throws Exception {
         when(vocabularyService.getPracticeWords("learner", "starter"))
                 .thenReturn(List.of(practiceWord(10L, "accept")));
@@ -71,6 +83,18 @@ class VocabularyControllerTest {
                 .andExpect(jsonPath("$[0].word").value("accept"));
 
         verify(vocabularyService).getPracticeWords("learner", "starter");
+    }
+
+    @Test
+    void getPracticeWordsPassesNullWhenPrincipalMissing() throws Exception {
+        when(vocabularyService.getPracticeWords(null, "advanced"))
+                .thenReturn(List.of(practiceWord(11L, "analyze")));
+
+        mockMvc.perform(get("/api/vocabulary/practice-words").param("level", "advanced"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].word").value("analyze"));
+
+        verify(vocabularyService).getPracticeWords(null, "advanced");
     }
 
     @Test
@@ -93,6 +117,16 @@ class VocabularyControllerTest {
                 .andExpect(jsonPath("$[0].word").value("accept"))
                 .andExpect(jsonPath("$[0].translation").value("vt. 接受, 同意"))
                 .andExpect(jsonPath("$[0].favorited").value(true));
+    }
+
+    @Test
+    void getWordbookWordsPassesNullWhenPrincipalMissing() throws Exception {
+        when(vocabularyService.getWordbookWords(null)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/vocabulary/wordbook-words"))
+                .andExpect(status().isOk());
+
+        verify(vocabularyService).getWordbookWords(null);
     }
 
     @Test
