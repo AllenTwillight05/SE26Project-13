@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.englishlearningcopilot.backend.dto.DailyPracticeProgressResponse;
 import com.englishlearningcopilot.backend.dto.GrammarFavoriteRequest;
 import com.englishlearningcopilot.backend.dto.GrammarFavoriteResponse;
+import com.englishlearningcopilot.backend.dto.GrammarNotebookQuestionResponse;
 import com.englishlearningcopilot.backend.dto.GrammarOverviewResponse;
 import com.englishlearningcopilot.backend.dto.GrammarPracticeQuestionResponse;
 import com.englishlearningcopilot.backend.dto.GrammarPracticeResultRequest;
@@ -62,6 +63,18 @@ class GrammarControllerTest {
     }
 
     @Test
+    void getOverviewPassesNullWhenPrincipalMissing() throws Exception {
+        when(grammarService.getOverview(null))
+                .thenReturn(new GrammarOverviewResponse(0, List.of()));
+
+        mockMvc.perform(get("/api/grammar/overview"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.masteryRate").value(0));
+
+        verify(grammarService).getOverview(null);
+    }
+
+    @Test
     void getTopicsReturnsTopicProgress() throws Exception {
         when(grammarService.getTopics("learner"))
                 .thenReturn(List.of(new GrammarTopicResponse("Tense", "Tense", "summary", List.of("example"), 50, "2 questions")));
@@ -70,6 +83,16 @@ class GrammarControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("Tense"))
                 .andExpect(jsonPath("$[0].progress").value(50));
+    }
+
+    @Test
+    void getTopicsPassesNullWhenPrincipalMissing() throws Exception {
+        when(grammarService.getTopics(null)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/grammar/topics"))
+                .andExpect(status().isOk());
+
+        verify(grammarService).getTopics(null);
     }
 
     @Test
@@ -149,6 +172,67 @@ class GrammarControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.completed").value(1))
                 .andExpect(jsonPath("$.total").value(5));
+    }
+
+    @Test
+    void getReviewQuestionsUsesPrincipalName() throws Exception {
+        when(grammarService.getReviewQuestions("learner"))
+                .thenReturn(List.of(question(2, "Clause")));
+
+        mockMvc.perform(get("/api/grammar/review-grammar").principal(() -> "learner"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(2));
+
+        verify(grammarService).getReviewQuestions("learner");
+    }
+
+    @Test
+    void getNotebookQuestionsUsesPrincipalName() throws Exception {
+        when(grammarService.getNotebookQuestions("learner"))
+                .thenReturn(List.of(new GrammarNotebookQuestionResponse(
+                        3,
+                        "Pick one.",
+                        List.of("A", "B"),
+                        "A",
+                        "Tense",
+                        "Because.",
+                        true,
+                        true
+                )));
+
+        mockMvc.perform(get("/api/grammar/notebook-questions").principal(() -> "learner"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(3))
+                .andExpect(jsonPath("$[0].favorited").value(true));
+
+        verify(grammarService).getNotebookQuestions("learner");
+    }
+
+    @Test
+    void getNotebookQuestionsPassesNullWhenPrincipalMissing() throws Exception {
+        when(grammarService.getNotebookQuestions(null)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/grammar/notebook-questions"))
+                .andExpect(status().isOk());
+
+        verify(grammarService).getNotebookQuestions(null);
+    }
+
+    @Test
+    void submitRatingValidatesBodyAndDelegates() throws Exception {
+        mockMvc.perform(post("/api/grammar/practice-ratings")
+                        .principal(() -> "learner")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "grammarQuestionId": 1,
+                                  "score": 3
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Grammar rating received."));
+
+        verify(grammarService).submitRating(org.mockito.Mockito.eq("learner"), any(GrammarRatingRequest.class));
     }
 
     private static GrammarPracticeQuestionResponse question(Integer id, String category) {
