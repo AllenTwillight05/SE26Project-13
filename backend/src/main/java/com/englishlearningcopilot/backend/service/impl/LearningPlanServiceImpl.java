@@ -10,7 +10,6 @@ import com.englishlearningcopilot.backend.entity.SpeakingMessage;
 import com.englishlearningcopilot.backend.entity.SpeakingMessageSender;
 import com.englishlearningcopilot.backend.entity.SpeakingSession;
 import com.englishlearningcopilot.backend.entity.UserDailyLearningProgress;
-import com.englishlearningcopilot.backend.entity.UserDailyPracticeLog;
 import com.englishlearningcopilot.backend.entity.UserLearningPlan;
 import com.englishlearningcopilot.backend.exception.ResourceNotFoundException;
 import com.englishlearningcopilot.backend.repository.SpeakingMessageRepository;
@@ -189,34 +188,23 @@ public class LearningPlanServiceImpl implements LearningPlanService {
     private void recordPractice(Long userId, String practiceType, String itemId) {
         LocalDate today = today();
 
-        if (userDailyPracticeLogRepository.existsByUserIdAndPlanDateAndPracticeTypeAndItemId(
+        if (userDailyPracticeLogRepository.insertIfAbsent(
                 userId,
                 today,
                 practiceType,
                 itemId
-        )) {
+        ) == 0) {
             return;
         }
 
-        UserDailyPracticeLog log = new UserDailyPracticeLog();
-        log.setUserId(userId);
-        log.setPlanDate(today);
-        log.setPracticeType(practiceType);
-        log.setItemId(itemId);
-
-        userDailyPracticeLogRepository.save(log);
-
         UserLearningPlan plan = getOrCreatePlan(userId);
-        UserDailyLearningProgress progress = getOrCreateTodayProgress(userId, plan);
+        getOrCreateTodayProgress(userId, plan);
 
         if (PRACTICE_TYPE_VOCABULARY.equals(practiceType)) {
-            progress.setVocabularyCompleted(progress.getVocabularyCompleted() + 1);
+            userDailyLearningProgressRepository.incrementVocabularyCompletion(userId, today);
         } else if (PRACTICE_TYPE_GRAMMAR.equals(practiceType)) {
-            progress.setGrammarCompleted(progress.getGrammarCompleted() + 1);
+            userDailyLearningProgressRepository.incrementGrammarCompletion(userId, today);
         }
-
-        refreshCompletion(progress);
-        userDailyLearningProgressRepository.save(progress);
     }
 
     private DailyLearningStatusResponse toDailyStatus(Long userId) {
@@ -233,24 +221,25 @@ public class LearningPlanServiceImpl implements LearningPlanService {
     }
 
     private UserLearningPlan getOrCreatePlan(Long userId) {
+        userLearningPlanRepository.insertDefaultIfAbsent(
+                userId,
+                UserLearningPlan.DEFAULT_VOCABULARY_GOAL,
+                UserLearningPlan.DEFAULT_GRAMMAR_GOAL
+        );
         return userLearningPlanRepository.findByUserId(userId)
-                .orElseGet(() -> {
-                    UserLearningPlan plan = new UserLearningPlan();
-                    plan.setUserId(userId);
-                    return userLearningPlanRepository.save(plan);
-                });
+                .orElseThrow(() -> new IllegalStateException("Learning plan was not created."));
     }
 
     private UserDailyLearningProgress getOrCreateTodayProgress(Long userId, UserLearningPlan plan) {
-        return userDailyLearningProgressRepository.findByUserIdAndPlanDate(userId, today())
-                .orElseGet(() -> {
-                    UserDailyLearningProgress progress = new UserDailyLearningProgress();
-                    progress.setUserId(userId);
-                    progress.setPlanDate(today());
-                    progress.setVocabularyGoal(plan.getDailyVocabularyGoal());
-                    progress.setGrammarGoal(plan.getDailyGrammarGoal());
-                    return userDailyLearningProgressRepository.save(progress);
-                });
+        LocalDate today = today();
+        userDailyLearningProgressRepository.insertIfAbsent(
+                userId,
+                today,
+                plan.getDailyVocabularyGoal(),
+                plan.getDailyGrammarGoal()
+        );
+        return userDailyLearningProgressRepository.findByUserIdAndPlanDate(userId, today)
+                .orElseThrow(() -> new IllegalStateException("Today's learning progress was not created."));
     }
 
     private void refreshCompletion(UserDailyLearningProgress progress) {
