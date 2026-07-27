@@ -233,24 +233,25 @@ public class LearningPlanServiceImpl implements LearningPlanService {
     }
 
     private UserLearningPlan getOrCreatePlan(Long userId) {
+        userLearningPlanRepository.insertDefaultIfAbsent(
+                userId,
+                UserLearningPlan.DEFAULT_VOCABULARY_GOAL,
+                UserLearningPlan.DEFAULT_GRAMMAR_GOAL
+        );
         return userLearningPlanRepository.findByUserId(userId)
-                .orElseGet(() -> {
-                    UserLearningPlan plan = new UserLearningPlan();
-                    plan.setUserId(userId);
-                    return userLearningPlanRepository.save(plan);
-                });
+                .orElseThrow(() -> new IllegalStateException("Learning plan was not created."));
     }
 
     private UserDailyLearningProgress getOrCreateTodayProgress(Long userId, UserLearningPlan plan) {
-        return userDailyLearningProgressRepository.findByUserIdAndPlanDate(userId, today())
-                .orElseGet(() -> {
-                    UserDailyLearningProgress progress = new UserDailyLearningProgress();
-                    progress.setUserId(userId);
-                    progress.setPlanDate(today());
-                    progress.setVocabularyGoal(plan.getDailyVocabularyGoal());
-                    progress.setGrammarGoal(plan.getDailyGrammarGoal());
-                    return userDailyLearningProgressRepository.save(progress);
-                });
+        LocalDate today = today();
+        userDailyLearningProgressRepository.insertIfAbsent(
+                userId,
+                today,
+                plan.getDailyVocabularyGoal(),
+                plan.getDailyGrammarGoal()
+        );
+        return userDailyLearningProgressRepository.findByUserIdAndPlanDate(userId, today)
+                .orElseThrow(() -> new IllegalStateException("Today's learning progress was not created."));
     }
 
     private void refreshCompletion(UserDailyLearningProgress progress) {

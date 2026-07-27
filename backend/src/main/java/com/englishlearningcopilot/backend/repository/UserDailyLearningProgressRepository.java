@@ -5,12 +5,36 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface UserDailyLearningProgressRepository extends JpaRepository<UserDailyLearningProgress, Long> {
 
     Optional<UserDailyLearningProgress> findByUserIdAndPlanDate(Long userId, LocalDate planDate);
+
+    long countByUserIdAndPlanDate(Long userId, LocalDate planDate);
+
+    /**
+     * Creates one progress row for a user and date. Concurrent attempts are
+     * resolved by the table's {@code (user_id, plan_date)} unique key.
+     */
+    @Modifying
+    @Query(value = """
+            INSERT INTO user_daily_learning_progress (
+                user_id, plan_date, vocabulary_completed, grammar_completed,
+                vocabulary_goal, grammar_goal, completed, created_at, updated_at
+            ) VALUES (
+                :userId, :planDate, 0, 0,
+                :vocabularyGoal, :grammarGoal, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            ) ON DUPLICATE KEY UPDATE user_id = user_id
+            """, nativeQuery = true)
+    void insertIfAbsent(
+            @Param("userId") Long userId,
+            @Param("planDate") LocalDate planDate,
+            @Param("vocabularyGoal") int vocabularyGoal,
+            @Param("grammarGoal") int grammarGoal
+    );
 
     List<UserDailyLearningProgress> findByUserIdAndCompletedTrueOrderByPlanDateDesc(Long userId);
 
