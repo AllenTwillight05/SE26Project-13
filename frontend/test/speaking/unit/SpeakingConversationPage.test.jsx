@@ -81,6 +81,30 @@ describe("SpeakingConversationPage", () => {
     expect(window.speechSynthesis.speak).not.toHaveBeenCalled();
   });
 
+  it("does not label text-only coach explanations as unavailable audio", async () => {
+    renderWithProviders(<SpeakingConversationPage />, {
+      path: "/speaking/:scenarioId/conversation",
+      route: "/speaking/" + defaultScenario.id + "/conversation",
+      services: createConversationServices([
+        {
+          id: 1,
+          sender: "AGENT",
+          content: "这个问题是在问你的日常安排。",
+          instantTip: "可以说：I usually spend my weekends with my family.",
+          textOnly: true,
+          audioPending: false,
+          audioUrl: null,
+          turnIndex: 0
+        }
+      ])
+    });
+
+    expect(await screen.findByText("这个问题是在问你的日常安排。")).toBeInTheDocument();
+    expect(screen.getByText("可以说：I usually spend my weekends with my family.")).toBeInTheDocument();
+    expect(screen.queryByText("高质量语音暂不可用")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "播放此句音频" })).not.toBeInTheDocument();
+  });
+
   it("does not render the removed text message composer", async () => {
     renderWithProviders(<SpeakingConversationPage />, {
       path: "/speaking/:scenarioId/conversation",

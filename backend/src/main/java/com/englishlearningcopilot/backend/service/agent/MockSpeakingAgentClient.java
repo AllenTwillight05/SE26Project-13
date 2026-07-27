@@ -2,6 +2,7 @@ package com.englishlearningcopilot.backend.service.agent;
 
 import com.englishlearningcopilot.backend.entity.SpeakingMessage;
 import com.englishlearningcopilot.backend.entity.SpeakingScenario;
+import com.englishlearningcopilot.backend.service.speech.EnglishSpeechText;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -18,9 +19,21 @@ public class MockSpeakingAgentClient implements SpeakingAgentClient {
             String userMessage,
             int turnIndex
     ) {
+        if (EnglishSpeechText.containsChineseCharacters(userMessage)) {
+            return new SpeakingAgentReply(
+                    "我先帮你理解这句话。请查看下方的推荐英文表达；这不会推进当前的英语练习回合。",
+                    null,
+                    "可以说：I am not sure how to answer this question. 意思是“我不太确定该怎么回答这个问题”。"
+            );
+        }
+
         String topic = normalizeTopic(selectedTopic);
         if (turnIndex == 0) {
             return SpeakingAgentReply.of(openingMessage(scenario, topic), null);
+        }
+
+        if ("free-conversation".equals(scenario.getId())) {
+            return SpeakingAgentReply.of(freeConversationReply(userMessage), null);
         }
 
         String content = switch (scenario.getId()) {
@@ -205,6 +218,13 @@ public class MockSpeakingAgentClient implements SpeakingAgentClient {
             return "Let's continue with " + topic + ". Could you add one clear example?";
         }
         return "Let's continue the " + scenario.getTitle() + " practice. Could you answer with one specific detail?";
+    }
+
+    private String freeConversationReply(String userMessage) {
+        if (userMessage != null && userMessage.trim().endsWith("?")) {
+            return "That is a thoughtful question. What is your own view?";
+        }
+        return "That sounds interesting. Could you tell me a little more about that?";
     }
 
     private String buildTip(String userMessage, SpeakingScenario scenario, String topic) {

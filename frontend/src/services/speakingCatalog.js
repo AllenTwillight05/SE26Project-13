@@ -1,3 +1,16 @@
+export const FREE_CONVERSATION_SCENARIO = {
+  id: "free-conversation",
+  title: "自由对话",
+  level: "A2-B2",
+  accent: "开放表达",
+  duration: "不限时",
+  summary: "自由选择任何话题，像和英语伙伴聊天一样自然展开。",
+  tone: "mint",
+  goal: "围绕你想聊的话题持续表达、接话和追问。",
+  keywords: ["conversation", "opinions", "stories", "interests"],
+  targetTurns: 0
+};
+
 export const DAILY_SPEAKING_SCENARIOS = [
   {
     id: "G-01-airport",

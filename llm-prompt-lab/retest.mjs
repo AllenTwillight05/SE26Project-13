@@ -2,6 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { buildBackendMessages, loadScenario, parseAgentReply } from "./backend-prompt.mjs";
 
 const moduleRoot = new URL(".", import.meta.url).pathname;
 const outputsDir = path.join(moduleRoot, "test-outputs");
@@ -65,15 +66,11 @@ function renderTemplate(tpl, s) {
 }
 
 function loadBundle(scenarioId) {
-  const scenarioPath = path.join(moduleRoot, "scenarios", `${scenarioId}.json`);
-  const promptPath = path.join(moduleRoot, "prompts", `${scenarioId}-system.md`);
-  const commonPath = path.join(moduleRoot, "common", "roleplay-core.md");
-  if (!fs.existsSync(scenarioPath)) return null;
-  const scenario = readJson(scenarioPath);
-  const common = fs.readFileSync(commonPath, "utf8");
-  const prompt = fs.readFileSync(promptPath, "utf8");
-  const systemPrompt = renderTemplate(`${common}\n\n${prompt}`, scenario);
-  return { scenario, systemPrompt };
+  try {
+    return { scenario: loadScenario(scenarioId) };
+  } catch {
+    return null;
+  }
 }
 
 async function callAPI(messages) {
@@ -85,7 +82,7 @@ async function callAPI(messages) {
   const text = await resp.text();
   if (!resp.ok) throw new Error(`API ${resp.status}: ${text.substring(0,100)}`);
   const body = JSON.parse(text);
-  return body?.choices?.[0]?.message?.content?.trim() || "";
+  return parseAgentReply(body?.choices?.[0]?.message?.content?.trim() || "").content;
 }
 
 // Scenarios needing retest with their test cases
@@ -144,17 +141,18 @@ async function main() {
   for (const [sid, inputs] of Object.entries(RETESTS)) {
     const bundle = loadBundle(sid);
     if (!bundle) { console.log(`SKIP: ${sid}`); continue; }
-    const { scenario, systemPrompt } = bundle;
+    const { scenario } = bundle;
     const log = [`=== ${sid}: ${scenario.title} (retest) ===`];
 
     for (let i = 0; i < inputs.length; i++) {
       const input = inputs[i];
       const label = labels[i] || `test${i+1}`;
-      const messages = [
-        { role: "system", content: systemPrompt },
-        { role: "assistant", content: scenario.openingMessage },
-        { role: "user", content: input }
-      ];
+      const messages = buildBackendMessages({
+        scenario,
+        history: [{ role: "assistant", content: scenario.openingMessage }],
+        userMessage: input,
+        turnIndex: 1
+      });
 
       try {
         const reply = await callAPI(messages);

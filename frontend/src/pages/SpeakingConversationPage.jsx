@@ -80,6 +80,7 @@ function toChatMessage(message) {
     spokenText: message.spokenText,
     audioUrl: message.audioUrl,
     audioPending: message.audioPending,
+    textOnly: message.textOnly === true,
     autoPlay: message.autoPlay,
     instantTip: message.instantTip,
     turnIndex: message.turnIndex
@@ -155,6 +156,10 @@ export function SpeakingConversationPage() {
   const messages = useMemo(
     () => (activeSession?.messages ?? []).map(toChatMessage),
     [activeSession]
+  );
+  const hasPendingAgentAudio = useMemo(
+    () => messages.some((message) => message.role === "coach" && message.audioPending),
+    [messages]
   );
   const notice = sendError
     ? {
@@ -354,10 +359,7 @@ export function SpeakingConversationPage() {
 
   useEffect(() => {
     const sessionId = activeSession?.id;
-    const hasPendingAudio = messages.some(
-      (message) => message.role === "coach" && message.audioPending
-    );
-    if (!sessionId || !hasPendingAudio) {
+    if (!sessionId || !hasPendingAgentAudio) {
       return undefined;
     }
 
@@ -380,12 +382,14 @@ export function SpeakingConversationPage() {
       }
     };
 
-    const intervalId = window.setInterval(refreshSessionAudio, 1200);
+    // Do not wait for the first interval after the turn response; TTS may already be ready.
+    refreshSessionAudio();
+    const intervalId = window.setInterval(refreshSessionAudio, 800);
     return () => {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [activeSession?.id, messages, speaking]);
+  }, [activeSession?.id, hasPendingAgentAudio, speaking]);
 
   const startRecording = useCallback(async () => {
     if (isRecording || isPreparingRecording || isSending) {
@@ -626,6 +630,7 @@ export function SpeakingConversationPage() {
                 const playbackKey = getMessagePlaybackKey(message);
                 const isThisPlaying = playingMessageKey === playbackKey;
                 const isOtherPlaying = playingMessageKey !== null && playingMessageKey !== playbackKey;
+                const isTextOnlyCoachMessage = message.role === "coach" && message.textOnly;
                 return (
                   <div
                     className={`chat-bubble-row chat-bubble-row--${message.role}`}
@@ -634,26 +639,28 @@ export function SpeakingConversationPage() {
                     <div className={`chat-message-stack chat-message-stack--${message.role}`}>
                       <div className={`chat-bubble chat-bubble--${message.role}`}>
                         <span>{message.text}</span>
-                        <Button
-                          aria-label={
+                        {!isTextOnlyCoachMessage ? (
+                          <Button
+                            aria-label={
                             message.audioPending
                               ? "高质量音频生成中"
                               : isThisPlaying
                                 ? "停止播放"
                                 : "播放此句音频"
                           }
-                          className={`chat-audio-button ${isThisPlaying ? "chat-audio-button--playing" : ""}`}
-                          icon={<SoundOutlined />}
-                          shape="circle"
-                          size="small"
-                          disabled={isOtherPlaying || (message.role === "coach" && !message.audioUrl)}
-                          title={message.audioPending ? "正在生成高质量语音" : "播放此句音频"}
-                          onClick={() => playMessageAudio(message)}
+                            className={`chat-audio-button ${isThisPlaying ? "chat-audio-button--playing" : ""}`}
+                            icon={<SoundOutlined />}
+                            shape="circle"
+                            size="small"
+                            disabled={isOtherPlaying || (message.role === "coach" && !message.audioUrl)}
+                            title={message.audioPending ? "正在生成高质量语音" : "播放此句音频"}
+                            onClick={() => playMessageAudio(message)}
                         />
+                        ) : null}
                       </div>
                       {message.audioPending ? (
                         <div className="chat-audio-pending" role="status">正在生成高质量语音...</div>
-                      ) : message.role === "coach" && !message.audioUrl ? (
+                      ) : message.role === "coach" && !message.audioUrl && !isTextOnlyCoachMessage ? (
                         <div className="chat-audio-pending">高质量语音暂不可用</div>
                       ) : null}
                       {message.instantTip ? (

@@ -113,7 +113,7 @@ class SpeakingServiceImplTest {
     }
 
     @Test
-    void createSessionQueuesAgentOpeningMessageForTts() {
+    void createSessionUsesConfiguredOpeningMessageWithoutCallingAgent() {
         AppUser user = user(7L, "learner");
         SpeakingScenario scenario = scenario("business-opening");
         AtomicLong ids = new AtomicLong(100);
@@ -133,8 +133,6 @@ class SpeakingServiceImplTest {
             }
             return message;
         });
-        when(agentClient.reply(eq(scenario), eq("Hometown"), any(), eq(""), eq(0)))
-                .thenReturn(new SpeakingAgentReply("Generated opening from agent.", "Generated spoken opening.", null));
         when(messageRepository.findBySessionIdOrderByTurnIndexAscCreatedAtAsc(99L))
                 .thenAnswer(invocation -> savedMessages);
 
@@ -145,12 +143,12 @@ class SpeakingServiceImplTest {
         assertThat(response.scenario().id()).isEqualTo("business-opening");
         assertThat(response.selectedTopic()).isEqualTo("Hometown");
         assertThat(response.messages()).hasSize(1);
-        assertThat(response.messages().get(0).content()).isEqualTo("Generated opening from agent.");
-        assertThat(response.messages().get(0).spokenText()).isEqualTo("Generated spoken opening.");
+        assertThat(response.messages().get(0).content()).isEqualTo("Hello");
+        assertThat(response.messages().get(0).spokenText()).isEqualTo("Hello");
         assertThat(response.messages().get(0).autoPlay()).isTrue();
         assertThat(response.messages().get(0).audioUrl()).isNull();
         assertThat(response.messages().get(0).audioPending()).isTrue();
-        verify(agentClient).reply(eq(scenario), eq("Hometown"), any(), eq(""), eq(0));
+        verify(agentClient, never()).reply(eq(scenario), eq("Hometown"), any(), eq(""), eq(0));
         verify(agentAudioSynthesisService).synthesizeAgentMessageAsync(100L);
     }
 
@@ -263,11 +261,11 @@ class SpeakingServiceImplTest {
         when(audioStorageService.save(eq(99L), any(), any())).thenReturn("/audio/turn.webm");
         when(asrService.transcribe(any(), any())).thenReturn("这个问题我不会回答");
         when(messageRepository.findBySessionIdOrderByTurnIndexAscCreatedAtAsc(99L)).thenReturn(List.of());
-        when(agentClient.reply(eq(scenario), any(), any(), eq("这个问题我不会回答"), eq(1)))
+        when(agentClient.reply(eq(scenario), any(), any(), eq("这个问题我不会回答"), eq(0)))
                 .thenReturn(new SpeakingAgentReply(
-                        "Let me explain it.",
-                        "Let me explain it.",
-                        "You can say: I am not sure."
+                        "这是中文求助的解释。",
+                        null,
+                        "可以说：I am not sure how to answer this question。"
                 ));
         when(sessionRepository.save(session)).thenReturn(session);
 
@@ -295,8 +293,17 @@ class SpeakingServiceImplTest {
         );
 
         assertThat(response.userMessage().pronunciationScore()).isNull();
+        assertThat(response.userMessage().turnIndex()).isZero();
+        assertThat(response.agentMessage().turnIndex()).isZero();
+        assertThat(response.agentMessage().content()).isEqualTo("这是中文求助的解释。");
+        assertThat(response.agentMessage().spokenText()).isNull();
+        assertThat(response.agentMessage().audioPending()).isFalse();
+        assertThat(response.session().currentTurn()).isZero();
+        assertThat(session.getCurrentTurn()).isZero();
         verify(iseService, never()).evaluate(any(), any());
         verify(pronunciationEvaluationService, never()).evaluateUserMessageAsync(any(), any(), any());
+        verify(agentClient).reply(eq(scenario), any(), any(), eq("这个问题我不会回答"), eq(0));
+        verify(agentAudioSynthesisService, never()).synthesizeAgentMessageAsync(any());
     }
 
     @Test
