@@ -3,6 +3,7 @@ package com.englishlearningcopilot.backend.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -29,7 +30,6 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -58,6 +58,9 @@ class GrammarServiceImplTest {
     @Mock
     private ReviewService reviewService;
 
+    @Mock
+    private LearningProgressOutboxService learningProgressOutboxService;
+
     @InjectMocks
     private GrammarServiceImpl grammarService;
 
@@ -76,20 +79,16 @@ class GrammarServiceImplTest {
     }
 
     @Test
-    void submitPracticeResultCreatesGrammarbookRowAndRecordsProgress() {
+    void submitPracticeResultAtomicallyUpsertsGrammarbookAndRecordsProgress() {
         AppUser user = user(7L, "learner");
         when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
         when(grammarQuestionRepository.existsById(1)).thenReturn(true);
-        when(userGrammarbookRepository.findByUserIdAndGrammarQuestionId(7L, 1)).thenReturn(Optional.empty());
 
         grammarService.submitPracticeResult("learner", new GrammarPracticeResultRequest(1, true));
 
-        ArgumentCaptor<UserGrammarbook> captor = ArgumentCaptor.forClass(UserGrammarbook.class);
-        verify(userGrammarbookRepository).save(captor.capture());
-        assertThat(captor.getValue().getUserId()).isEqualTo(7L);
-        assertThat(captor.getValue().getGrammarQuestionId()).isEqualTo(1);
-        assertThat(captor.getValue().isIncorrect()).isTrue();
-        verify(learningPlanService).recordGrammarPractice(7L, 1);
+        verify(userGrammarbookRepository).upsertPracticeResult(7L, 1, true);
+        verify(userGrammarbookRepository, never()).findByUserIdAndGrammarQuestionId(7L, 1);
+        verify(learningProgressOutboxService).enqueueGrammarPractice(7L, 1);
     }
 
     @Test
@@ -105,8 +104,8 @@ class GrammarServiceImplTest {
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Grammar question was not found.");
 
-        verify(userGrammarbookRepository, never()).save(any());
-        verify(learningPlanService, never()).recordGrammarPractice(any(), anyInt());
+        verify(userGrammarbookRepository, never()).upsertPracticeResult(any(), anyInt(), anyBoolean());
+        verify(learningProgressOutboxService, never()).enqueueGrammarPractice(any(), anyInt());
     }
 
     @Test
@@ -117,7 +116,7 @@ class GrammarServiceImplTest {
 
         grammarService.submitRating("learner", new GrammarRatingRequest(1, 4));
 
-        verify(reviewService).submitGrammarRating(7L, 1, 4);
+        verify(reviewService).submitValidatedGrammarRating(7L, 1, 4);
     }
 
     @Test

@@ -5,6 +5,7 @@ import com.englishlearningcopilot.backend.dto.DailyPracticeProgressResponse;
 import com.englishlearningcopilot.backend.dto.LearningPlanRequest;
 import com.englishlearningcopilot.backend.dto.LearningPlanResponse;
 import com.englishlearningcopilot.backend.dto.ProfileSnapshotResponse;
+import java.time.LocalDate;
 
 public interface LearningPlanService {
 
@@ -23,4 +24,6 @@ public interface LearningPlanService {
     void recordVocabularyPractice(Long userId, Long vocabularyId);
 
     void recordGrammarPractice(Long userId, Integer grammarQuestionId);
+
+    void recordOutboxPractice(Long userId, LocalDate planDate, String practiceType, String itemId);
 }

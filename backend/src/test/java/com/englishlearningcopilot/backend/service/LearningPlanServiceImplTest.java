@@ -2,6 +2,8 @@ package com.englishlearningcopilot.backend.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.englishlearningcopilot.backend.dto.ProfileSnapshotResponse;
 import com.englishlearningcopilot.backend.entity.AppUser;
@@ -93,6 +95,11 @@ class LearningPlanServiceImplTest {
                 new ProfileSnapshotResponse.ProgressMetric("fluency", "口语流利度", 87, "default"),
                 new ProfileSnapshotResponse.ProgressMetric("vocabulary-retention", "词汇留存率", 100, "teal"),
                 new ProfileSnapshotResponse.ProgressMetric("grammar-retention", "语法留存率", 100, "gold")
+        );
+        verify(userLearningPlanRepository, never()).insertDefaultIfAbsent(
+                org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyInt(),
+                org.mockito.ArgumentMatchers.anyInt()
         );
     }
 

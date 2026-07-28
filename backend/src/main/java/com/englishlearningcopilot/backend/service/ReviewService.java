@@ -46,7 +46,11 @@ public class ReviewService {
         if (!vocabularyRepository.existsById(parseVocabularyId(questionId))) {
             throw new ResourceNotFoundException("Vocabulary word was not found.");
         }
+        submitValidatedVocabularyRating(userId, questionId, rating);
+    }
 
+    @Transactional
+    public void submitValidatedVocabularyRating(Long userId, String questionId, int rating) {
         UserWordProgress progress = userWordProgressRepository
                 .findByUserIdAndQuestionIdAndQuestionType(userId, questionId, QUESTION_TYPE_VOCABULARY)
                 .orElseGet(() -> newProgress(userId, questionId));
@@ -62,7 +66,11 @@ public class ReviewService {
         if (!grammarQuestionRepository.existsById(grammarQuestionId)) {
             throw new ResourceNotFoundException("Grammar question was not found.");
         }
+        submitValidatedGrammarRating(userId, grammarQuestionId, rating);
+    }
 
+    @Transactional
+    public void submitValidatedGrammarRating(Long userId, Integer grammarQuestionId, int rating) {
         String questionId = String.valueOf(grammarQuestionId);
         UserWordProgress progress = userWordProgressRepository
                 .findByUserIdAndQuestionIdAndQuestionType(userId, questionId, QUESTION_TYPE_GRAMMAR)
