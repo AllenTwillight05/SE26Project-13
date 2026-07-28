@@ -15,7 +15,7 @@ const { Title, Text } = Typography;
 
 const weeklyOverviewItems = [
   { key: "speakingDuration", label: "本周开口时长", icon: "microphone" },
-  { key: "pronunciationAccuracy", label: "发音准确率", icon: "waveform" },
+  { key: "pronunciationReference", label: "发音参考分", icon: "waveform" },
   { key: "learningDays", label: "学习天数", icon: "streak" },
   { key: "vocabularyLearned", label: "本周学习词汇", icon: "vocabulary" },
   { key: "grammarPracticed", label: "本周学习语法", icon: "grammar" }

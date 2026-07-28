@@ -131,10 +131,6 @@ function createMockStudyPlan() {
 
 function createMockProfileSnapshot() {
   const status = createMockDailyStatus();
-  const percent = (progress) => progress.total > 0
-    ? Math.min(100, Math.round((progress.completed / progress.total) * 100))
-    : 100;
-
   return {
     ...profileSnapshotMock,
     streak: `${status.streakDays} 天`,
@@ -162,20 +158,7 @@ function createMockProfileSnapshot() {
           done: status.grammar.done
         }
       ],
-      progress: [
-        {
-          id: "vocabulary",
-          label: "词汇",
-          value: percent(status.vocabulary),
-          tone: "teal"
-        },
-        {
-          id: "grammar",
-          label: "语法",
-          value: percent(status.grammar),
-          tone: "gold"
-        }
-      ]
+      progress: profileSnapshotMock.dailyPlan.progress
     }
   };
 }
@@ -463,7 +446,8 @@ export function createMockServices() {
             vocabulary: snapshot.dailyPlan.vocabulary,
             grammar: snapshot.dailyPlan.grammar,
             allDone: snapshot.dailyPlan.allDone,
-            items: snapshot.dailyPlan.items
+            items: snapshot.dailyPlan.items,
+            progress: snapshot.dailyPlan.progress
           }
         };
       },

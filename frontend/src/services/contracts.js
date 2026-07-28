@@ -63,7 +63,7 @@ export const contractShapes = {
   },
   dashboardWeeklyOverview: {
     speakingDuration: "string",
-    pronunciationAccuracy: "string",
+    pronunciationReference: "string",
     learningDays: "string",
     vocabularyLearned: "string",
     grammarPracticed: "string"
@@ -351,6 +351,7 @@ export const contractShapes = {
       pronunciation: 0,
       fluency: 0,
       integrity: 0,
+      speed: "string",
       issueSentence: "string"
     },
     dailyPlan: {
@@ -372,7 +373,11 @@ export const contractShapes = {
       },
       allDone: false,
       items: [{ id: "string", time: "string", task: "string", meta: "string", done: false }],
-      progress: [{ id: "string", label: "string", value: 0, tone: "default" }]
+      progress: [
+        { id: "fluency", label: "口语流利度", value: 0, tone: "default" },
+        { id: "vocabulary-retention", label: "词汇留存率", value: 0, tone: "teal" },
+        { id: "grammar-retention", label: "语法留存率", value: 0, tone: "gold" }
+      ]
     }
   },
   learningPlanRequest: {

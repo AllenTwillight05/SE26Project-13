@@ -11,17 +11,22 @@ import com.englishlearningcopilot.backend.entity.SpeakingMessageSender;
 import com.englishlearningcopilot.backend.entity.SpeakingSession;
 import com.englishlearningcopilot.backend.entity.UserDailyLearningProgress;
 import com.englishlearningcopilot.backend.entity.UserLearningPlan;
+import com.englishlearningcopilot.backend.entity.UserWordProgress;
 import com.englishlearningcopilot.backend.exception.ResourceNotFoundException;
+import com.englishlearningcopilot.backend.fsrs.FsrsRetention;
 import com.englishlearningcopilot.backend.repository.SpeakingMessageRepository;
 import com.englishlearningcopilot.backend.repository.SpeakingSessionRepository;
 import com.englishlearningcopilot.backend.repository.UserDailyLearningProgressRepository;
 import com.englishlearningcopilot.backend.repository.UserDailyPracticeLogRepository;
 import com.englishlearningcopilot.backend.repository.UserLearningPlanRepository;
 import com.englishlearningcopilot.backend.repository.UserRepository;
+import com.englishlearningcopilot.backend.repository.UserWordProgressRepository;
 import com.englishlearningcopilot.backend.service.LearningPlanService;
+import com.englishlearningcopilot.backend.service.speech.OpenSpeakingMetrics;
 import com.englishlearningcopilot.backend.service.speech.PronunciationScore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -35,6 +40,9 @@ public class LearningPlanServiceImpl implements LearningPlanService {
 
     private static final String PRACTICE_TYPE_VOCABULARY = "VOCABULARY";
     private static final String PRACTICE_TYPE_GRAMMAR = "GRAMMAR";
+    private static final String QUESTION_TYPE_VOCABULARY = "vocabulary";
+    private static final String QUESTION_TYPE_GRAMMAR = "grammar";
+    private static final int REVIEW_STATE = 1;
 
     private final UserRepository userRepository;
     private final UserLearningPlanRepository userLearningPlanRepository;
@@ -42,6 +50,7 @@ public class LearningPlanServiceImpl implements LearningPlanService {
     private final UserDailyPracticeLogRepository userDailyPracticeLogRepository;
     private final SpeakingSessionRepository speakingSessionRepository;
     private final SpeakingMessageRepository speakingMessageRepository;
+    private final UserWordProgressRepository userWordProgressRepository;
     private final ObjectMapper objectMapper;
 
     public LearningPlanServiceImpl(
@@ -51,6 +60,7 @@ public class LearningPlanServiceImpl implements LearningPlanService {
             UserDailyPracticeLogRepository userDailyPracticeLogRepository,
             SpeakingSessionRepository speakingSessionRepository,
             SpeakingMessageRepository speakingMessageRepository,
+            UserWordProgressRepository userWordProgressRepository,
             ObjectMapper objectMapper
     ) {
         this.userRepository = userRepository;
@@ -59,6 +69,7 @@ public class LearningPlanServiceImpl implements LearningPlanService {
         this.userDailyPracticeLogRepository = userDailyPracticeLogRepository;
         this.speakingSessionRepository = speakingSessionRepository;
         this.speakingMessageRepository = speakingMessageRepository;
+        this.userWordProgressRepository = userWordProgressRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -135,17 +146,24 @@ public class LearningPlanServiceImpl implements LearningPlanService {
                 )
         );
 
+        Instant now = Instant.now();
         List<ProfileSnapshotResponse.ProgressMetric> progress = List.of(
                 new ProfileSnapshotResponse.ProgressMetric(
-                        "vocabulary",
-                        "Vocabulary",
-                        toPercent(status.vocabulary()),
+                        "fluency",
+                        "口语流利度",
+                        weeklySpeakingReferenceScore(user.getId()),
+                        "default"
+                ),
+                new ProfileSnapshotResponse.ProgressMetric(
+                        "vocabulary-retention",
+                        "词汇留存率",
+                        fsrsRetentionRate(user.getId(), QUESTION_TYPE_VOCABULARY, now),
                         "teal"
                 ),
                 new ProfileSnapshotResponse.ProgressMetric(
-                        "grammar",
-                        "Grammar",
-                        toPercent(status.grammar()),
+                        "grammar-retention",
+                        "语法留存率",
+                        fsrsRetentionRate(user.getId(), QUESTION_TYPE_GRAMMAR, now),
                         "gold"
                 )
         );
@@ -303,12 +321,34 @@ public class LearningPlanServiceImpl implements LearningPlanService {
                 .orElse(today().minusDays(1));
     }
 
-    private int toPercent(DailyPracticeProgressResponse progress) {
-        if (progress.total() <= 0) {
-            return 100;
-        }
+    private int weeklySpeakingReferenceScore(Long userId) {
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDate weekStart = LocalDate.now(zone).with(DayOfWeek.MONDAY);
+        Instant weekStartInstant = weekStart.atStartOfDay(zone).toInstant();
+        Instant weekEndExclusiveInstant = weekStart.plusDays(7).atStartOfDay(zone).toInstant();
 
-        return Math.min(100, Math.round((progress.completed() * 100f) / progress.total()));
+        return toDisplayScore(speakingMessageRepository
+                .findBySessionUserIdAndSenderAndCreatedAtBetween(
+                        userId,
+                        SpeakingMessageSender.USER,
+                        weekStartInstant,
+                        weekEndExclusiveInstant
+                )
+                .stream()
+                .filter(message -> message.getPronunciationScore() != null)
+                .map(this::readPronunciationScore)
+                .mapToDouble(OpenSpeakingMetrics::referenceScore)
+                .average()
+                .orElse(0));
+    }
+
+    private int fsrsRetentionRate(Long userId, String questionType, Instant now) {
+        List<UserWordProgress> reviewCards = userWordProgressRepository
+                .findByUserIdAndQuestionType(userId, questionType)
+                .stream()
+                .filter(progress -> progress.getState() != null && progress.getState() == REVIEW_STATE)
+                .toList();
+        return FsrsRetention.averagePercent(reviewCards, now);
     }
 
     private ProfileSnapshotResponse.FeedbackSummary latestSpeakingFeedback(String username) {
@@ -328,7 +368,7 @@ public class LearningPlanServiceImpl implements LearningPlanService {
                     .map(this::readPronunciationScore)
                     .toList();
             String issueSentence = userMessages.stream()
-                    .filter(message -> readPronunciationScore(message).totalScore() < 60)
+                    .filter(message -> OpenSpeakingMetrics.referenceScore(readPronunciationScore(message)) < 60)
                     .map(SpeakingMessage::getContent)
                     .filter(content -> content != null && !content.isBlank())
                     .findFirst()
@@ -341,10 +381,11 @@ public class LearningPlanServiceImpl implements LearningPlanService {
                     List.of(),
                     session.getScenario().getTitle(),
                     feedbackTime(session),
-                    toDisplayScore(scores.stream().mapToDouble(PronunciationScore::totalScore).average().orElse(0)),
+                    toDisplayScore(scores.stream().mapToDouble(OpenSpeakingMetrics::referenceScore).average().orElse(0)),
                     toDisplayScore(scores.stream().mapToDouble(PronunciationScore::accuracy).average().orElse(0)),
                     toDisplayScore(scores.stream().mapToDouble(PronunciationScore::fluency).average().orElse(0)),
                     toDisplayScore(scores.stream().mapToDouble(PronunciationScore::integrity).average().orElse(0)),
+                    formatSpeed(OpenSpeakingMetrics.wordsPerMinute(userMessages)),
                     issueSentence
             );
         }
@@ -356,6 +397,7 @@ public class LearningPlanServiceImpl implements LearningPlanService {
                 List.of(),
                 "暂无口语练习",
                 "",
+                null,
                 null,
                 null,
                 null,
@@ -378,6 +420,13 @@ public class LearningPlanServiceImpl implements LearningPlanService {
 
     private int toDisplayScore(double value) {
         return (int) Math.round(value);
+    }
+
+    private String formatSpeed(double speed) {
+        if (speed <= 0) {
+            return "暂无";
+        }
+        return Math.round(speed) + " WPM";
     }
 
     private String feedbackTime(SpeakingSession session) {
