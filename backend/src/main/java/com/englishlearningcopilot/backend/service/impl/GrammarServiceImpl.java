@@ -21,6 +21,7 @@ import com.englishlearningcopilot.backend.repository.UserWordProgressRepository;
 import com.englishlearningcopilot.backend.repository.UserRepository;
 import com.englishlearningcopilot.backend.service.GrammarService;
 import com.englishlearningcopilot.backend.service.LearningPlanService;
+import com.englishlearningcopilot.backend.service.LearningProgressOutboxService;
 import com.englishlearningcopilot.backend.service.ReviewService;
 import java.time.Instant;
 import java.util.Comparator;
@@ -47,6 +48,7 @@ public class GrammarServiceImpl implements GrammarService {
     private final UserRepository userRepository;
     private final LearningPlanService learningPlanService;
     private final ReviewService reviewService;
+    private final LearningProgressOutboxService learningProgressOutboxService;
 
     public GrammarServiceImpl(
             GrammarQuestionRepository grammarQuestionRepository,
@@ -54,7 +56,8 @@ public class GrammarServiceImpl implements GrammarService {
             UserWordProgressRepository userWordProgressRepository,
             UserRepository userRepository,
             ReviewService reviewService,
-            LearningPlanService learningPlanService
+            LearningPlanService learningPlanService,
+            LearningProgressOutboxService learningProgressOutboxService
     ) {
         this.grammarQuestionRepository = grammarQuestionRepository;
         this.userGrammarbookRepository = userGrammarbookRepository;
@@ -62,6 +65,7 @@ public class GrammarServiceImpl implements GrammarService {
         this.userRepository = userRepository;
         this.learningPlanService = learningPlanService;
         this.reviewService = reviewService;
+        this.learningProgressOutboxService = learningProgressOutboxService;
     }
 
     @Override
@@ -178,10 +182,8 @@ public class GrammarServiceImpl implements GrammarService {
         Integer questionId = request.grammarQuestionId();
         validateQuestionExists(questionId);
 
-        UserGrammarbook grammarbook = getOrCreateGrammarbook(user.getId(), questionId);
-        grammarbook.setIncorrect(request.incorrect());
-        userGrammarbookRepository.save(grammarbook);
-        learningPlanService.recordGrammarPractice(user.getId(), questionId);
+        userGrammarbookRepository.upsertPracticeResult(user.getId(), questionId, request.incorrect());
+        learningProgressOutboxService.enqueueGrammarPractice(user.getId(), questionId);
     }
 
     @Override
@@ -189,7 +191,7 @@ public class GrammarServiceImpl implements GrammarService {
     public void submitRating(String username, GrammarRatingRequest request) {
         AppUser user = getCurrentUser(username);
         validateQuestionExists(request.grammarQuestionId());
-        reviewService.submitGrammarRating(user.getId(), request.grammarQuestionId(), request.score());
+        reviewService.submitValidatedGrammarRating(user.getId(), request.grammarQuestionId(), request.score());
     }
 
     @Override

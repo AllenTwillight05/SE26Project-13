@@ -17,6 +17,7 @@ import com.englishlearningcopilot.backend.repository.UserWordProgressRepository;
 import com.englishlearningcopilot.backend.repository.UserWordbookRepository;
 import com.englishlearningcopilot.backend.repository.VocabularyRepository;
 import com.englishlearningcopilot.backend.service.LearningPlanService;
+import com.englishlearningcopilot.backend.service.LearningProgressOutboxService;
 import com.englishlearningcopilot.backend.service.ReviewService;
 import com.englishlearningcopilot.backend.service.VocabularyService;
 import java.time.Instant;
@@ -43,6 +44,7 @@ public class VocabularyServiceImpl implements VocabularyService {
     private final UserWordbookRepository userWordbookRepository;
     private final ReviewService reviewService;
     private final LearningPlanService learningPlanService;
+    private final LearningProgressOutboxService learningProgressOutboxService;
 
     public VocabularyServiceImpl(
             VocabularyRepository vocabularyRepository,
@@ -50,7 +52,8 @@ public class VocabularyServiceImpl implements VocabularyService {
             UserWordProgressRepository userWordProgressRepository,
             UserWordbookRepository userWordbookRepository,
             ReviewService reviewService,
-            LearningPlanService learningPlanService
+            LearningPlanService learningPlanService,
+            LearningProgressOutboxService learningProgressOutboxService
     ) {
         this.vocabularyRepository = vocabularyRepository;
         this.userRepository = userRepository;
@@ -58,6 +61,7 @@ public class VocabularyServiceImpl implements VocabularyService {
         this.userWordbookRepository = userWordbookRepository;
         this.reviewService = reviewService;
         this.learningPlanService = learningPlanService;
+        this.learningProgressOutboxService = learningProgressOutboxService;
     }
 
     @Override
@@ -164,15 +168,9 @@ public class VocabularyServiceImpl implements VocabularyService {
             throw new ResourceNotFoundException("Vocabulary word was not found.");
         }
 
-        if (userWordbookRepository.findByUserIdAndVocabularyId(user.getId(), vocabularyId).isEmpty()) {
-            UserWordbook wordbook = new UserWordbook();
-            wordbook.setUserId(user.getId());
-            wordbook.setVocabularyId(vocabularyId);
-            userWordbookRepository.save(wordbook);
-        }
-
-        reviewService.submitRating(user.getId(), String.valueOf(vocabularyId), request.score());
-        learningPlanService.recordVocabularyPractice(user.getId(), vocabularyId);
+        userWordbookRepository.insertIfAbsent(user.getId(), vocabularyId);
+        reviewService.submitValidatedVocabularyRating(user.getId(), String.valueOf(vocabularyId), request.score());
+        learningProgressOutboxService.enqueueVocabularyPractice(user.getId(), vocabularyId);
     }
 
     @Override

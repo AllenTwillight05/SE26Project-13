@@ -194,21 +194,26 @@ public class LearningPlanServiceImpl implements LearningPlanService {
     @Override
     @Transactional
     public void recordVocabularyPractice(Long userId, Long vocabularyId) {
-        recordPractice(userId, PRACTICE_TYPE_VOCABULARY, String.valueOf(vocabularyId));
+        recordPractice(userId, today(), PRACTICE_TYPE_VOCABULARY, String.valueOf(vocabularyId));
     }
 
     @Override
     @Transactional
     public void recordGrammarPractice(Long userId, Integer grammarQuestionId) {
-        recordPractice(userId, PRACTICE_TYPE_GRAMMAR, String.valueOf(grammarQuestionId));
+        recordPractice(userId, today(), PRACTICE_TYPE_GRAMMAR, String.valueOf(grammarQuestionId));
     }
 
-    private void recordPractice(Long userId, String practiceType, String itemId) {
-        LocalDate today = today();
+    @Override
+    @Transactional
+    public void recordOutboxPractice(Long userId, LocalDate planDate, String practiceType, String itemId) {
+        recordPractice(userId, planDate, practiceType, itemId);
+    }
+
+    private void recordPractice(Long userId, LocalDate planDate, String practiceType, String itemId) {
 
         if (userDailyPracticeLogRepository.insertIfAbsent(
                 userId,
-                today,
+                planDate,
                 practiceType,
                 itemId
         ) == 0) {
@@ -216,12 +221,12 @@ public class LearningPlanServiceImpl implements LearningPlanService {
         }
 
         UserLearningPlan plan = getOrCreatePlan(userId);
-        getOrCreateTodayProgress(userId, plan);
+        getOrCreateProgress(userId, plan, planDate);
 
         if (PRACTICE_TYPE_VOCABULARY.equals(practiceType)) {
-            userDailyLearningProgressRepository.incrementVocabularyCompletion(userId, today);
+            userDailyLearningProgressRepository.incrementVocabularyCompletion(userId, planDate);
         } else if (PRACTICE_TYPE_GRAMMAR.equals(practiceType)) {
-            userDailyLearningProgressRepository.incrementGrammarCompletion(userId, today);
+            userDailyLearningProgressRepository.incrementGrammarCompletion(userId, planDate);
         }
     }
 
@@ -239,6 +244,11 @@ public class LearningPlanServiceImpl implements LearningPlanService {
     }
 
     private UserLearningPlan getOrCreatePlan(Long userId) {
+        return userLearningPlanRepository.findByUserId(userId)
+                .orElseGet(() -> createDefaultPlan(userId));
+    }
+
+    private UserLearningPlan createDefaultPlan(Long userId) {
         userLearningPlanRepository.insertDefaultIfAbsent(
                 userId,
                 UserLearningPlan.DEFAULT_VOCABULARY_GOAL,
@@ -249,15 +259,18 @@ public class LearningPlanServiceImpl implements LearningPlanService {
     }
 
     private UserDailyLearningProgress getOrCreateTodayProgress(Long userId, UserLearningPlan plan) {
-        LocalDate today = today();
+        return getOrCreateProgress(userId, plan, today());
+    }
+
+    private UserDailyLearningProgress getOrCreateProgress(Long userId, UserLearningPlan plan, LocalDate planDate) {
         userDailyLearningProgressRepository.insertIfAbsent(
                 userId,
-                today,
+                planDate,
                 plan.getDailyVocabularyGoal(),
                 plan.getDailyGrammarGoal()
         );
-        return userDailyLearningProgressRepository.findByUserIdAndPlanDate(userId, today)
-                .orElseThrow(() -> new IllegalStateException("Today's learning progress was not created."));
+        return userDailyLearningProgressRepository.findByUserIdAndPlanDate(userId, planDate)
+                .orElseThrow(() -> new IllegalStateException("Learning progress was not created."));
     }
 
     private void refreshCompletion(UserDailyLearningProgress progress) {
