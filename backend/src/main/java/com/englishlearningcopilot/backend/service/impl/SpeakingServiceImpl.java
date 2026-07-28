@@ -28,6 +28,7 @@ import com.englishlearningcopilot.backend.service.agent.SpeakingAgentReply;
 import com.englishlearningcopilot.backend.service.speech.AsrService;
 import com.englishlearningcopilot.backend.service.speech.EnglishSpeechText;
 import com.englishlearningcopilot.backend.service.speech.IseService;
+import com.englishlearningcopilot.backend.service.speech.OpenSpeakingMetrics;
 import com.englishlearningcopilot.backend.service.speech.PronunciationScore;
 import com.englishlearningcopilot.backend.service.speech.xfyun.XfyunAsrException;
 import com.englishlearningcopilot.backend.service.speech.xfyun.XfyunIseException;
@@ -50,6 +51,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class SpeakingServiceImpl implements SpeakingService {
 
     private static final Logger log = LoggerFactory.getLogger(SpeakingServiceImpl.class);
+    private static final double ISSUE_REFERENCE_SCORE_THRESHOLD = 60.0;
 
     private final SpeakingScenarioRepository scenarioRepository;
     private final SpeakingSessionRepository sessionRepository;
@@ -345,26 +347,8 @@ public class SpeakingServiceImpl implements SpeakingService {
                 .filter(m -> m.getSender() == SpeakingMessageSender.USER)
                 .toList();
 
-        // Issue sentences from low-scoring user turns.
         List<String> issueSentences = new ArrayList<>();
-        for (SpeakingMessage userMessage : userMessages) {
-            if (userMessage.getPronunciationScore() == null || userMessage.getContent() == null
-                    || userMessage.getContent().isBlank()) {
-                continue;
-            }
-            PronunciationScore score = readPronunciationScore(userMessage);
-            if (score.totalScore() < 60) {
-                issueSentences.add(userMessage.getContent());
-            }
-        }
 
-        List<String> suggestions = List.of(
-                "Try adding more detail to make your responses fuller and more natural.",
-                "Pay attention to sentence stress — emphasize key words for clearer communication.",
-                "Practice linking words together to improve your overall fluency."
-        );
-
-        // Per-turn feedback
         List<TurnFeedback> turns = new ArrayList<>();
         List<PronunciationScore> turnScores = new ArrayList<>();
 
@@ -384,14 +368,20 @@ public class SpeakingServiceImpl implements SpeakingService {
             PronunciationScore ps;
             if (userMsg != null && userMsg.getPronunciationScore() != null) {
                 ps = readPronunciationScore(userMsg);
-                turnScores.add(ps);
             } else if (userMsg != null) {
                 ps = evaluateMissingPronunciation(userMsg);
-                if (ps != null) {
-                    turnScores.add(ps);
-                }
             } else {
                 ps = null;
+            }
+
+            if (ps != null && userMsg != null) {
+                ps = toConversationReferenceScore(ps, userMsg);
+                turnScores.add(ps);
+                if (ps.totalScore() < ISSUE_REFERENCE_SCORE_THRESHOLD
+                        && userMsg.getContent() != null
+                        && !userMsg.getContent().isBlank()) {
+                    issueSentences.add(userMsg.getContent());
+                }
             }
 
             turns.add(new TurnFeedback(
@@ -418,10 +408,8 @@ public class SpeakingServiceImpl implements SpeakingService {
                 .mapToDouble(PronunciationScore::integrity)
                 .average()
                 .orElse(averagePronunciationScore));
-        String speed = formatSpeed(turnScores.stream()
-                .mapToDouble(PronunciationScore::speed)
-                .average()
-                .orElse(0));
+        String speed = formatSpeed(OpenSpeakingMetrics.wordsPerMinute(userMessages));
+        List<String> suggestions = buildSuggestions(pronunciation, fluency, speed);
 
         return new SpeakingFeedbackResponse(
                 totalScore,
@@ -435,8 +423,43 @@ public class SpeakingServiceImpl implements SpeakingService {
                 session.getCurrentTurn(),
                 averagePronunciationScore,
                 turns,
-                "Keep practicing! Focus on clarity and natural pacing."
+                "Use the low-score recordings to focus your next practice."
         );
+    }
+
+    /**
+     * ISE's integrity is reference-text coverage. In open speaking, that reference is the ASR
+     * transcript, so it must not contribute to a learner-facing score.
+     */
+    private PronunciationScore toConversationReferenceScore(PronunciationScore rawScore, SpeakingMessage message) {
+        double referenceScore = OpenSpeakingMetrics.referenceScore(rawScore);
+        return new PronunciationScore(
+                referenceScore,
+                rawScore.accuracy(),
+                rawScore.fluency(),
+                rawScore.integrity(),
+                round1(OpenSpeakingMetrics.wordsPerMinute(message))
+        );
+    }
+
+    private List<String> buildSuggestions(int pronunciation, int fluency, String speed) {
+        List<String> suggestions = new ArrayList<>(3);
+        if (pronunciation < 70) {
+            suggestions.add("优先回听建议片段，放慢语速并把容易含混的单词说完整。");
+        } else {
+            suggestions.add("发音清晰度保持得不错，继续留意长词中的重读音节。");
+        }
+        if (fluency < 70) {
+            suggestions.add("按意群组织表达，在短语之间停顿，避免逐词切开说。");
+        } else {
+            suggestions.add("表达较连贯，可以继续练习连读和句子重音，让语流更自然。");
+        }
+        if ("暂无".equals(speed)) {
+            suggestions.add("下次录音保留完整时长，系统才能给出准确的平均语速。");
+        } else {
+            suggestions.add("结合平均语速回听录音：保持清楚比单纯加快更重要。");
+        }
+        return suggestions;
     }
 
     private PronunciationScore readPronunciationScore(SpeakingMessage message) {
@@ -478,7 +501,7 @@ public class SpeakingServiceImpl implements SpeakingService {
 
     private String formatSpeed(double value) {
         if (value <= 0) {
-            return "0 WPM";
+            return "暂无";
         }
         return toDisplayScore(value) + " WPM";
     }

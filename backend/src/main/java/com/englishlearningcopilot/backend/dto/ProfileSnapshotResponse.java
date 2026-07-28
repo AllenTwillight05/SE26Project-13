@@ -21,6 +21,7 @@ public record ProfileSnapshotResponse(
             Integer pronunciation,
             Integer fluency,
             Integer integrity,
+            String speed,
             String issueSentence
     ) {
     }

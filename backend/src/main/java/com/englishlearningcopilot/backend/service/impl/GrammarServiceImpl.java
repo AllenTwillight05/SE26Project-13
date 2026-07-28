@@ -13,7 +13,7 @@ import com.englishlearningcopilot.backend.entity.AppUser;
 import com.englishlearningcopilot.backend.entity.GrammarQuestion;
 import com.englishlearningcopilot.backend.entity.UserGrammarbook;
 import com.englishlearningcopilot.backend.entity.UserWordProgress;
-import com.englishlearningcopilot.backend.fsrs.FSRS;
+import com.englishlearningcopilot.backend.fsrs.FsrsRetention;
 import com.englishlearningcopilot.backend.exception.ResourceNotFoundException;
 import com.englishlearningcopilot.backend.repository.GrammarQuestionRepository;
 import com.englishlearningcopilot.backend.repository.UserGrammarbookRepository;
@@ -22,7 +22,6 @@ import com.englishlearningcopilot.backend.repository.UserRepository;
 import com.englishlearningcopilot.backend.service.GrammarService;
 import com.englishlearningcopilot.backend.service.LearningPlanService;
 import com.englishlearningcopilot.backend.service.ReviewService;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -41,8 +40,6 @@ public class GrammarServiceImpl implements GrammarService {
 
     private static final String QUESTION_TYPE_GRAMMAR = "grammar";
     private static final int REVIEW_STATE = 1;
-    private static final double FSRS_DECAY = -FSRS.defaultParams()[20];
-    private static final double FSRS_FACTOR = Math.pow(0.9, 1.0 / FSRS_DECAY) - 1;
 
     private final GrammarQuestionRepository grammarQuestionRepository;
     private final UserGrammarbookRepository userGrammarbookRepository;
@@ -293,26 +290,7 @@ public class GrammarServiceImpl implements GrammarService {
     }
 
     private int averageRetentionRate(List<UserWordProgress> reviewCards, Instant now) {
-        if (reviewCards.isEmpty()) {
-            return 0;
-        }
-
-        double average = reviewCards.stream()
-                .mapToDouble(progress -> retention(progress, now))
-                .average()
-                .orElse(0);
-        return (int) Math.round(average * 100);
-    }
-
-    private double retention(UserWordProgress progress, Instant now) {
-        Instant lastReview = progress.getLastReview() == null ? progress.getUpdatedAt() : progress.getLastReview();
-        double elapsedDays = lastReview == null
-                ? 0
-                : Math.max(0, Duration.between(lastReview, now).toDays());
-        double stability = progress.getStability() == null || progress.getStability() <= 0
-                ? 0.1
-                : progress.getStability();
-        return Math.pow(1 + FSRS_FACTOR * elapsedDays / stability, FSRS_DECAY);
+        return FsrsRetention.averagePercent(reviewCards, now);
     }
 
     private UserGrammarbook getOrCreateGrammarbook(Long userId, Integer questionId) {

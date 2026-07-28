@@ -41,7 +41,7 @@ export const dashboardStudyPlanMock = {
 
 export const dashboardWeeklyOverviewMock = {
   speakingDuration: "148 min",
-  pronunciationAccuracy: "92%",
+  pronunciationReference: "88 / 100",
   learningDays: "5 days",
   vocabularyLearned: "36 词",
   grammarPracticed: "18 题"
@@ -351,6 +351,7 @@ export const feedbackSummaryMock = {
   pronunciation: 91,
   fluency: 84,
   integrity: 89,
+  speed: "136 WPM",
   issueSentence: "Could we confirm whether Friday is still realistic for delivery?"
 };
 
@@ -742,8 +743,8 @@ export const dailyPlanMock = {
   ],
   progress: [
     { id: "fluency", label: "口语流利度", value: 78, tone: "default" },
-    { id: "coverage", label: "场景覆盖度", value: 64, tone: "teal" },
-    { id: "retention", label: "词汇留存率", value: 83, tone: "gold" }
+    { id: "vocabulary-retention", label: "词汇留存率", value: 83, tone: "teal" },
+    { id: "grammar-retention", label: "语法留存率", value: 76, tone: "gold" }
   ]
 };
 

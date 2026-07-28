@@ -9,14 +9,14 @@ function formatScore(value, fallback = "-") {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
-function TurnScoreMetric({ label, value }) {
+function TurnScoreMetric({ label, value, unit = "/100" }) {
   return (
     <div className="turn-score-metric">
       <Text type="secondary" className="turn-score-metric__label">{label}</Text>
       <div className="turn-score-metric__value-row">
         <Text strong className="turn-score-metric__value">{formatScore(value)}</Text>
-        {value !== null && value !== undefined ? (
-          <Text type="secondary" className="turn-score-metric__unit">/100</Text>
+        {value !== null && value !== undefined && unit ? (
+          <Text type="secondary" className="turn-score-metric__unit">{unit}</Text>
         ) : null}
       </div>
     </div>
@@ -52,10 +52,10 @@ export function SpeakingTurnFeedbackCard({ turn }) {
 
       {score ? (
         <div className="turn-score-grid">
-          <TurnScoreMetric label="总分" value={score.totalScore} />
+          <TurnScoreMetric label="参考分" value={score.totalScore} />
           <TurnScoreMetric label="准确度" value={score.accuracy} />
           <TurnScoreMetric label="流利度" value={score.fluency} />
-          <TurnScoreMetric label="完整度" value={score.integrity} />
+          {score.speed > 0 ? <TurnScoreMetric label="语速" value={score.speed} unit="WPM" /> : null}
         </div>
       ) : null}
     </div>
