@@ -25,10 +25,10 @@ function scoreValue(value) {
 
 export function FeedbackPanel({ feedback }) {
   const metrics = [
-    { key: "totalScore", label: "总评分", value: scoreValue(feedback.totalScore) },
+    { key: "totalScore", label: "发音参考分", value: scoreValue(feedback.totalScore) },
     { key: "pronunciation", label: "发音准确性", value: scoreValue(feedback.pronunciation) },
     { key: "fluency", label: "流畅度", value: scoreValue(feedback.fluency) },
-    { key: "integrity", label: "完整度", value: scoreValue(feedback.integrity) }
+    { key: "speed", label: "平均语速", value: feedback.speed || "暂无" }
   ];
   const subtitle = [feedback.scenarioTitle, formatFeedbackTime(feedback.completedAt)]
     .filter(Boolean)
@@ -50,8 +50,8 @@ export function FeedbackPanel({ feedback }) {
         ))}
       </div>
       <div style={{ display: "grid", gap: 6, marginTop: 12 }}>
-        <Text strong className="panel-title">问题句子</Text>
-        <Text>{feedback.issueSentence || "无"}</Text>
+        <Text strong className="panel-title">建议回听的片段</Text>
+        <Text>{feedback.issueSentence || "本次没有需要优先回听的片段"}</Text>
       </div>
     </section>
   );

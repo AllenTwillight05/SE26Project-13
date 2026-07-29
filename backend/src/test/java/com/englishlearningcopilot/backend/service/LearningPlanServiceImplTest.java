@@ -3,6 +3,8 @@ package com.englishlearningcopilot.backend.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -18,6 +20,7 @@ import com.englishlearningcopilot.backend.entity.SpeakingSession;
 import com.englishlearningcopilot.backend.entity.UserDailyLearningProgress;
 import com.englishlearningcopilot.backend.entity.UserLearningPlan;
 import com.englishlearningcopilot.backend.entity.UserRole;
+import com.englishlearningcopilot.backend.entity.UserWordProgress;
 import com.englishlearningcopilot.backend.exception.ResourceNotFoundException;
 import com.englishlearningcopilot.backend.repository.SpeakingMessageRepository;
 import com.englishlearningcopilot.backend.repository.SpeakingSessionRepository;
@@ -25,6 +28,7 @@ import com.englishlearningcopilot.backend.repository.UserDailyLearningProgressRe
 import com.englishlearningcopilot.backend.repository.UserDailyPracticeLogRepository;
 import com.englishlearningcopilot.backend.repository.UserLearningPlanRepository;
 import com.englishlearningcopilot.backend.repository.UserRepository;
+import com.englishlearningcopilot.backend.repository.UserWordProgressRepository;
 import com.englishlearningcopilot.backend.service.impl.LearningPlanServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
@@ -60,6 +64,9 @@ class LearningPlanServiceImplTest {
     @Mock
     private SpeakingMessageRepository speakingMessageRepository;
 
+    @Mock
+    private UserWordProgressRepository userWordProgressRepository;
+
     private LearningPlanServiceImpl learningPlanService;
 
     @BeforeEach
@@ -71,6 +78,7 @@ class LearningPlanServiceImplTest {
                 userDailyPracticeLogRepository,
                 speakingSessionRepository,
                 speakingMessageRepository,
+                userWordProgressRepository,
                 new ObjectMapper()
         );
     }
@@ -80,7 +88,9 @@ class LearningPlanServiceImplTest {
         AppUser user = user(7L, "learner", "");
         UserLearningPlan plan = plan(7L, 20, 12);
         when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
-        when(userLearningPlanRepository.findByUserId(7L)).thenReturn(Optional.of(plan));
+        when(userLearningPlanRepository.findByUserId(7L))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(plan));
 
         var response = learningPlanService.getLearningPlan("learner");
 
@@ -158,6 +168,38 @@ class LearningPlanServiceImplTest {
     }
 
     @Test
+    void profileSnapshotUsesWeeklySpeakingAverageAndFsrsRetentionRates() {
+        AppUser user = user(7L, "learner", "Learner");
+        UserLearningPlan plan = plan(7L, 20, 12);
+        UserDailyLearningProgress todayProgress = progress(7L, 2, 1, 20, 12, false);
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(userLearningPlanRepository.findByUserId(7L)).thenReturn(Optional.of(plan));
+        when(userDailyLearningProgressRepository.findByUserIdAndPlanDate(eq(7L), any(LocalDate.class)))
+                .thenReturn(Optional.of(todayProgress));
+        when(userDailyLearningProgressRepository.findByUserIdAndCompletedTrueOrderByPlanDateDesc(7L))
+                .thenReturn(List.of());
+        when(speakingSessionRepository.findByUserUsernameOrderByStartedAtDesc("learner")).thenReturn(List.of());
+        when(speakingMessageRepository.findBySessionUserIdAndSenderAndCreatedAtBetween(
+                eq(7L),
+                eq(SpeakingMessageSender.USER),
+                any(Instant.class),
+                any(Instant.class)
+        )).thenReturn(List.of(scoredMessage(90, 80)));
+        when(userWordProgressRepository.findByUserIdAndQuestionType(7L, "vocabulary"))
+                .thenReturn(List.of(reviewCard()));
+        when(userWordProgressRepository.findByUserIdAndQuestionType(7L, "grammar"))
+                .thenReturn(List.of(reviewCard()));
+
+        ProfileSnapshotResponse snapshot = learningPlanService.getProfileSnapshot("learner");
+
+        assertThat(snapshot.dailyPlan().progress()).extracting(ProfileSnapshotResponse.ProgressMetric::id)
+                .containsExactly("fluency", "vocabulary-retention", "grammar-retention");
+        assertThat(snapshot.dailyPlan().progress()).extracting(ProfileSnapshotResponse.ProgressMetric::value)
+                .containsExactly(87, 100, 100);
+        verify(userLearningPlanRepository, never()).insertDefaultIfAbsent(anyLong(), anyInt(), anyInt());
+    }
+
+    @Test
     void getProfileSnapshotUsesLatestSpeakingFeedbackAndFallbackDisplayName() {
         AppUser user = user(7L, "learner", " ");
         UserLearningPlan plan = plan(7L, 1, 1);
@@ -175,6 +217,13 @@ class LearningPlanServiceImplTest {
                 .thenReturn(Optional.of(progress));
         when(userDailyLearningProgressRepository.findByUserIdAndCompletedTrueOrderByPlanDateDesc(7L))
                 .thenReturn(List.of(progress));
+        when(speakingMessageRepository.findBySessionUserIdAndSenderAndCreatedAtBetween(
+                eq(7L),
+                eq(SpeakingMessageSender.USER),
+                any(Instant.class),
+                any(Instant.class)
+        )).thenReturn(List.of());
+        when(userWordProgressRepository.findByUserIdAndQuestionType(eq(7L), any())).thenReturn(List.of());
         when(speakingSessionRepository.findByUserUsernameOrderByStartedAtDesc("learner"))
                 .thenReturn(List.of(session));
         when(speakingMessageRepository.findBySessionIdOrderByTurnIndexAscCreatedAtAsc(99L))
@@ -184,7 +233,7 @@ class LearningPlanServiceImplTest {
 
         assertThat(snapshot.learnerName()).isEqualTo("learner");
         assertThat(snapshot.feedback().scenarioTitle()).isEqualTo("Airport");
-        assertThat(snapshot.feedback().totalScore()).isEqualTo(70);
+        assertThat(snapshot.feedback().totalScore()).isEqualTo(72);
         assertThat(snapshot.feedback().pronunciation()).isEqualTo(75);
         assertThat(snapshot.feedback().fluency()).isEqualTo(65);
         assertThat(snapshot.feedback().integrity()).isEqualTo(78);
@@ -202,6 +251,13 @@ class LearningPlanServiceImplTest {
                 .thenReturn(Optional.of(progress));
         when(userDailyLearningProgressRepository.findByUserIdAndCompletedTrueOrderByPlanDateDesc(7L))
                 .thenReturn(List.of(progress));
+        when(speakingMessageRepository.findBySessionUserIdAndSenderAndCreatedAtBetween(
+                eq(7L),
+                eq(SpeakingMessageSender.USER),
+                any(Instant.class),
+                any(Instant.class)
+        )).thenReturn(List.of());
+        when(userWordProgressRepository.findByUserIdAndQuestionType(eq(7L), any())).thenReturn(List.of());
         when(speakingSessionRepository.findByUserUsernameOrderByStartedAtDesc("learner")).thenReturn(List.of());
 
         ProfileSnapshotResponse snapshot = learningPlanService.getProfileSnapshot("learner");
@@ -285,5 +341,23 @@ class LearningPlanServiceImplTest {
         message.setPronunciationScore(storedScore);
         message.setPronunciationDetail(detail);
         return message;
+    }
+
+    private static SpeakingMessage scoredMessage(double accuracy, double fluency) {
+        SpeakingMessage message = new SpeakingMessage();
+        message.setSender(SpeakingMessageSender.USER);
+        message.setPronunciationScore(accuracy);
+        message.setPronunciationDetail("""
+                {"totalScore":%s,"accuracy":%s,"fluency":%s,"integrity":100,"speed":0}
+                """.formatted(accuracy, accuracy, fluency));
+        return message;
+    }
+
+    private static UserWordProgress reviewCard() {
+        UserWordProgress progress = new UserWordProgress();
+        progress.setState(1);
+        progress.setStability(2.5);
+        progress.setLastReview(Instant.now());
+        return progress;
     }
 }

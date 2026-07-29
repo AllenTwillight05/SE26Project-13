@@ -25,6 +25,7 @@ import com.englishlearningcopilot.backend.repository.VocabularyLeaderboardProjec
 import com.englishlearningcopilot.backend.repository.VocabularyRepository;
 import com.englishlearningcopilot.backend.service.DashboardService;
 import com.englishlearningcopilot.backend.service.LearningPlanService;
+import com.englishlearningcopilot.backend.service.speech.OpenSpeakingMetrics;
 import com.englishlearningcopilot.backend.service.speech.PronunciationScore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -155,15 +156,18 @@ public class DashboardServiceImpl implements DashboardService {
                 .filter(durationMs -> durationMs != null && durationMs > 0)
                 .mapToLong(Long::longValue)
                 .sum();
-        double averageAccuracy = weeklyUserMessages.stream()
+        List<PronunciationScore> pronunciationScores = weeklyUserMessages.stream()
                 .filter(message -> message.getPronunciationScore() != null)
-                .mapToDouble(this::readAccuracy)
+                .map(this::readPronunciationScore)
+                .toList();
+        double averageReferenceScore = pronunciationScores.stream()
+                .mapToDouble(OpenSpeakingMetrics::referenceScore)
                 .average()
                 .orElse(Double.NaN);
 
         return new DashboardWeeklyOverviewResponse(
                 formatDurationMinutes(speakingDurationMs),
-                formatAccuracy(averageAccuracy),
+                formatScore(averageReferenceScore),
                 learningDates.size() + " 天",
                 vocabularyLearned + " 词",
                 grammarPracticed + " 题"
@@ -240,15 +244,16 @@ public class DashboardServiceImpl implements DashboardService {
         return value == null ? "" : value;
     }
 
-    private double readAccuracy(SpeakingMessage message) {
+    private PronunciationScore readPronunciationScore(SpeakingMessage message) {
         if (message.getPronunciationDetail() != null && !message.getPronunciationDetail().isBlank()) {
             try {
-                return objectMapper.readValue(message.getPronunciationDetail(), PronunciationScore.class).accuracy();
+                return objectMapper.readValue(message.getPronunciationDetail(), PronunciationScore.class);
             } catch (JsonProcessingException ignored) {
                 // Fall back to stored total score below.
             }
         }
-        return message.getPronunciationScore() != null ? message.getPronunciationScore() : Double.NaN;
+        double total = message.getPronunciationScore() != null ? message.getPronunciationScore() : 0;
+        return new PronunciationScore(total, total, total, total, 0);
     }
 
     private String formatDurationMinutes(long durationMs) {
@@ -259,11 +264,11 @@ public class DashboardServiceImpl implements DashboardService {
         return Math.max(minutes, 1) + " min";
     }
 
-    private String formatAccuracy(double accuracy) {
-        if (Double.isNaN(accuracy)) {
+    private String formatScore(double score) {
+        if (Double.isNaN(score)) {
             return "-";
         }
-        return Math.round(accuracy) + "%";
+        return Math.round(score) + " / 100";
     }
 
     private AppUser getCurrentUser(String username) {

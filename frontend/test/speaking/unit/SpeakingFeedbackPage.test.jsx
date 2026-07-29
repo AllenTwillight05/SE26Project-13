@@ -31,6 +31,7 @@ function createFeedbackServices(session, feedbackOverrides = {}) {
           pronunciation: 91,
           fluency: 84,
           integrity: 86,
+          speed: "136 WPM",
           issueSentences: ["I want to review my meeting opening."],
           suggestions: [
             "Try adding more detail to make your responses fuller.",
@@ -147,15 +148,14 @@ describe("SpeakingFeedbackPage", () => {
     expect(await screen.findAllByText("88")).not.toHaveLength(0);
     expect(screen.getAllByText("91")).not.toHaveLength(0);
     expect(screen.getAllByText("84")).not.toHaveLength(0);
-    expect(screen.getAllByText("86")).not.toHaveLength(0);
-    expect(screen.getByText(/总评分/)).toBeInTheDocument();
+    expect(screen.getByText(/发音参考分/)).toBeInTheDocument();
     expect(screen.getByText(/发音准确性/)).toBeInTheDocument();
     expect(screen.getByText(/流畅度/)).toBeInTheDocument();
-    expect(screen.getByText(/每轮发音明细/)).toBeInTheDocument();
+    expect(screen.getByText(/每轮发音参考/)).toBeInTheDocument();
     expect(screen.getByText(/第 1 轮/)).toBeInTheDocument();
-    expect(screen.getAllByText(/完整度/)).not.toHaveLength(0);
-    expect(screen.queryByText("136 WPM")).not.toBeInTheDocument();
-    expect(screen.queryByText(/语速/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/完整度/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("136 WPM")).not.toHaveLength(0);
+    expect(screen.getByText(/语速/)).toBeInTheDocument();
   });
 
   it("shows feedback missing message when no feedback available", async () => {
@@ -177,8 +177,8 @@ describe("SpeakingFeedbackPage", () => {
       services: createFeedbackServices(session, { issueSentences: [] })
     });
 
-    expect(await screen.findByText(/问题句子/)).toBeInTheDocument();
-    expect(screen.getByText("无")).toBeInTheDocument();
+    expect(await screen.findByText(/建议回听的片段/)).toBeInTheDocument();
+    expect(screen.getByText("本次没有需要优先回听的片段")).toBeInTheDocument();
   });
 
   it("plays stored user recording audio during replay", async () => {

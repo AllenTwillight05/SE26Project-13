@@ -7,7 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.englishlearningcopilot.backend.entity.AppUser;
-import com.englishlearningcopilot.backend.entity.UserDailyLearningProgress;
+import com.englishlearningcopilot.backend.entity.LearningProgressOutboxEvent;
+import com.englishlearningcopilot.backend.repository.LearningProgressOutboxEventRepository;
 import com.englishlearningcopilot.backend.entity.Vocabulary;
 import com.englishlearningcopilot.backend.repository.SpeakingMessageRepository;
 import com.englishlearningcopilot.backend.repository.SpeakingSessionRepository;
@@ -44,6 +45,9 @@ class VocabularyPracticeIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private LearningProgressOutboxEventRepository learningProgressOutboxEventRepository;
+
+    @Autowired
     private VocabularyRepository vocabularyRepository;
 
     @Autowired
@@ -71,6 +75,7 @@ class VocabularyPracticeIntegrationTest {
     void setUp() {
         speakingMessageRepository.deleteAll();
         speakingSessionRepository.deleteAll();
+        learningProgressOutboxEventRepository.deleteAll();
         userDailyPracticeLogRepository.deleteAll();
         userDailyLearningProgressRepository.deleteAll();
         userLearningPlanRepository.deleteAll();
@@ -121,17 +126,14 @@ class VocabularyPracticeIntegrationTest {
                 String.valueOf(vocabulary.getId()),
                 "vocabulary"
         )).isPresent();
-        assertThat(userDailyPracticeLogRepository.countByUserIdAndPlanDateAndPracticeTypeAndItemId(
-                user.getId(),
-                LocalDate.now(),
-                "VOCABULARY",
-                String.valueOf(vocabulary.getId())
-        )).isEqualTo(1);
-
-        UserDailyLearningProgress progress = userDailyLearningProgressRepository
-                .findByUserIdAndPlanDate(user.getId(), LocalDate.now())
-                .orElseThrow();
-        assertThat(progress.getVocabularyCompleted()).isEqualTo(1);
+        assertThat(learningProgressOutboxEventRepository.findAll())
+                .anySatisfy(event -> {
+                    assertThat(event.getUserId()).isEqualTo(user.getId());
+                    assertThat(event.getPlanDate()).isEqualTo(LocalDate.now());
+                    assertThat(event.getPracticeType()).isEqualTo("VOCABULARY");
+                    assertThat(event.getItemId()).isEqualTo(String.valueOf(vocabulary.getId()));
+                    assertThat(event.getStatus()).isEqualTo(LearningProgressOutboxEvent.STATUS_PENDING);
+                });
 
         mockMvc.perform(get("/api/vocabulary/wordbook-words")
                         .header("Authorization", "Bearer " + token))

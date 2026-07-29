@@ -124,7 +124,7 @@ class DashboardServiceImplTest {
     }
 
     @Test
-    void getWeeklyOverviewUsesSpeakingDurationAndAccuracyFromCurrentWeekMessages() {
+    void getWeeklyOverviewUsesOpenSpeakingMetricsFromCurrentWeekMessages() {
         DashboardServiceImpl service = service();
         AppUser user = user(7L, "learner");
         when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
@@ -147,7 +147,7 @@ class DashboardServiceImplTest {
         DashboardWeeklyOverviewResponse overview = service.getWeeklyOverview("learner");
 
         assertThat(overview.speakingDuration()).isEqualTo("2 min");
-        assertThat(overview.pronunciationAccuracy()).isEqualTo("90%");
+        assertThat(overview.pronunciationReference()).isEqualTo("87 / 100");
         assertThat(overview.learningDays()).isEqualTo("2 天");
         assertThat(overview.vocabularyLearned()).isEqualTo("3 词");
         assertThat(overview.grammarPracticed()).isEqualTo("4 题");
@@ -171,7 +171,7 @@ class DashboardServiceImplTest {
         DashboardWeeklyOverviewResponse overview = service.getWeeklyOverview("learner");
 
         assertThat(overview.speakingDuration()).isEqualTo("0 min");
-        assertThat(overview.pronunciationAccuracy()).isEqualTo("-");
+        assertThat(overview.pronunciationReference()).isEqualTo("-");
         assertThat(overview.learningDays()).contains("0");
     }
 
@@ -203,7 +203,7 @@ class DashboardServiceImplTest {
         DashboardWeeklyOverviewResponse overview = service.getWeeklyOverview("learner");
 
         assertThat(overview.speakingDuration()).isEqualTo("1 min");
-        assertThat(overview.pronunciationAccuracy()).isEqualTo("76%");
+        assertThat(overview.pronunciationReference()).isEqualTo("76 / 100");
     }
 
     @Test
@@ -244,6 +244,7 @@ class DashboardServiceImplTest {
         SpeakingMessage message = new SpeakingMessage();
         message.setSender(SpeakingMessageSender.USER);
         message.setDurationMs(durationMs);
+        message.setContent("I would like to discuss the project plan.");
         message.setPronunciationScore(totalScore);
         message.setPronunciationDetail("""
                 {"totalScore":%s,"accuracy":%s,"fluency":80,"integrity":80,"speed":0}

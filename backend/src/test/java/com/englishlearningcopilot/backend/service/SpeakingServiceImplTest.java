@@ -329,6 +329,8 @@ class SpeakingServiceImplTest {
                 new PronunciationScore(90, 80, 70, 100, 130)
         );
         SpeakingMessage agentTurn2 = agentMessage(session, 5L, 2, "What is the main risk?", null);
+        userTurn1.setDurationMs(3000L);
+        userTurn2.setDurationMs(3500L);
         when(sessionRepository.findById(99L)).thenReturn(Optional.of(session));
         when(messageRepository.findBySessionIdOrderByTurnIndexAscCreatedAtAsc(99L))
                 .thenReturn(List.of(opening, userTurn1, agentTurn1, userTurn2, agentTurn2));
@@ -339,16 +341,16 @@ class SpeakingServiceImplTest {
 
         SpeakingFeedbackResponse feedback = speakingService.getFeedback("learner", 99L);
 
-        assertThat(feedback.totalScore()).isEqualTo(85);
+        assertThat(feedback.totalScore()).isEqualTo(72);
         assertThat(feedback.pronunciation()).isEqualTo(75);
         assertThat(feedback.fluency()).isEqualTo(65);
         assertThat(feedback.integrity()).isEqualTo(95);
         assertThat(feedback.speed()).isEqualTo("120 WPM");
         assertThat(feedback.issueSentences()).isEmpty();
-        assertThat(feedback.averagePronunciationScore()).isEqualTo(85.0);
+        assertThat(feedback.averagePronunciationScore()).isEqualTo(71.5);
         assertThat(feedback.turns()).hasSize(2);
-        assertThat(feedback.turns().get(0).score().integrity()).isEqualTo(90);
-        assertThat(feedback.turns().get(1).score().integrity()).isEqualTo(100);
+        assertThat(feedback.turns().get(0).score().totalScore()).isEqualTo(66.5);
+        assertThat(feedback.turns().get(1).score().totalScore()).isEqualTo(76.5);
     }
 
     @Test

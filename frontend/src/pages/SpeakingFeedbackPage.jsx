@@ -146,7 +146,7 @@ export function SpeakingFeedbackPage() {
           <section className="glass-panel">
             <PageSectionHeader
               eyebrow=""
-              title="评分结果"
+              title="发音反馈"
               description=""
             />
 
@@ -156,7 +156,7 @@ export function SpeakingFeedbackPage() {
                   {/* Total score card */}
                   <div className="glass-panel score-card">
                     <div className="score-card__main">
-                      <Text type="secondary" className="score-card__label">总评分</Text>
+                      <Text type="secondary" className="score-card__label">发音参考分</Text>
                       <div className="score-card__score-row">
                         <Title level={2} className="score-card__value" style={{ margin: 0 }}>
                           {feedback.totalScore}
@@ -188,12 +188,11 @@ export function SpeakingFeedbackPage() {
                       </div>
                     </div>
                     <div className="glass-panel feedback-metric-item">
-                      <Text type="secondary" className="metric-label">完整度</Text>
+                      <Text type="secondary" className="metric-label">平均语速</Text>
                       <div className="metric-score-row">
                         <Title level={4} className="metric-value" style={{ margin: 0 }}>
-                          {feedback.integrity}
+                          {feedback.speed || "暂无"}
                         </Title>
-                        <Text type="secondary" className="metric-unit">/ 100</Text>
                       </div>
                     </div>
                   </div>
@@ -201,9 +200,9 @@ export function SpeakingFeedbackPage() {
 
                 {/* Issue sentences */}
                 <div className="feedback-list glass-panel" style={{ marginBottom: 12 }}>
-                  <Text strong className="panel-title">问题句子</Text>
+                  <Text strong className="panel-title">建议回听的片段</Text>
                   <ul className="feedback-issue-list">
-                    {(feedback.issueSentences?.length ? feedback.issueSentences : ["无"]).map((sentence, idx) => (
+                    {(feedback.issueSentences?.length ? feedback.issueSentences : ["本次没有需要优先回听的片段"]).map((sentence, idx) => (
                       <li key={idx} className="feedback-issue-item">
                         <span className="feedback-bullet" aria-hidden="true" />
                         <Text>{sentence}</Text>
@@ -229,7 +228,7 @@ export function SpeakingFeedbackPage() {
 
                 {feedback.turns && feedback.turns.length > 0 && (
                   <div className="feedback-turns">
-                    <Text strong className="panel-title">每轮发音明细</Text>
+                    <Text strong className="panel-title">每轮发音参考</Text>
                     <div className="feedback-turn-list">
                       {feedback.turns.map((turn) => (
                         <SpeakingTurnFeedbackCard turn={turn} key={turn.turnIndex} />

@@ -115,7 +115,7 @@ class DashboardProfileIntegrationTest {
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.speakingDuration").value("1 min"))
-                .andExpect(jsonPath("$.pronunciationAccuracy").value("74%"))
+                .andExpect(jsonPath("$.pronunciationReference").value("71 / 100"))
                 .andExpect(jsonPath("$.vocabularyLearned").value("1 词"))
                 .andExpect(jsonPath("$.grammarPracticed").value("1 题"));
 
@@ -124,7 +124,7 @@ class DashboardProfileIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.learnerName").value("profile-user"))
                 .andExpect(jsonPath("$.feedback.scenarioTitle").value("Daily Chat"))
-                .andExpect(jsonPath("$.feedback.totalScore").value(70))
+                .andExpect(jsonPath("$.feedback.totalScore").value(71))
                 .andExpect(jsonPath("$.feedback.pronunciation").value(74))
                 .andExpect(jsonPath("$.feedback.fluency").value(66))
                 .andExpect(jsonPath("$.feedback.integrity").value(76))

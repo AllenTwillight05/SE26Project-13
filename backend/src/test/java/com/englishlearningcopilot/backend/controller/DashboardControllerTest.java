@@ -73,12 +73,12 @@ class DashboardControllerTest {
     @Test
     void getWeeklyOverviewUsesPrincipalName() throws Exception {
         when(dashboardService.getWeeklyOverview("learner"))
-                .thenReturn(new DashboardWeeklyOverviewResponse("8 min", "88%", "3 days", "12", "5"));
+                .thenReturn(new DashboardWeeklyOverviewResponse("8 min", "86 / 100", "3 days", "12", "5"));
 
         mockMvc.perform(get("/api/dashboard/weekly-overview").principal(() -> "learner"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.speakingDuration").value("8 min"))
-                .andExpect(jsonPath("$.pronunciationAccuracy").value("88%"));
+                .andExpect(jsonPath("$.pronunciationReference").value("86 / 100"));
 
         verify(dashboardService).getWeeklyOverview("learner");
     }

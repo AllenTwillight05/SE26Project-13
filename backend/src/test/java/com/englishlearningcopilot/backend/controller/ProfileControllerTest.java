@@ -146,6 +146,7 @@ class ProfileControllerTest {
                         88,
                         85,
                         87,
+                        "128 WPM",
                         "无"
                 ),
                 new ProfileSnapshotResponse.ProfileDailyPlan(

@@ -8,8 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.englishlearningcopilot.backend.entity.AppUser;
 import com.englishlearningcopilot.backend.entity.GrammarQuestion;
-import com.englishlearningcopilot.backend.entity.UserDailyLearningProgress;
+import com.englishlearningcopilot.backend.entity.LearningProgressOutboxEvent;
 import com.englishlearningcopilot.backend.repository.GrammarQuestionRepository;
+import com.englishlearningcopilot.backend.repository.LearningProgressOutboxEventRepository;
 import com.englishlearningcopilot.backend.repository.SpeakingMessageRepository;
 import com.englishlearningcopilot.backend.repository.SpeakingSessionRepository;
 import com.englishlearningcopilot.backend.repository.UserDailyLearningProgressRepository;
@@ -48,6 +49,9 @@ class GrammarPracticeIntegrationTest {
     private GrammarQuestionRepository grammarQuestionRepository;
 
     @Autowired
+    private LearningProgressOutboxEventRepository learningProgressOutboxEventRepository;
+
+    @Autowired
     private UserGrammarbookRepository userGrammarbookRepository;
 
     @Autowired
@@ -75,6 +79,7 @@ class GrammarPracticeIntegrationTest {
     void setUp() {
         speakingMessageRepository.deleteAll();
         speakingSessionRepository.deleteAll();
+        learningProgressOutboxEventRepository.deleteAll();
         userDailyPracticeLogRepository.deleteAll();
         userDailyLearningProgressRepository.deleteAll();
         userLearningPlanRepository.deleteAll();
@@ -143,17 +148,14 @@ class GrammarPracticeIntegrationTest {
                 String.valueOf(question.getId()),
                 "grammar"
         )).isPresent();
-        assertThat(userDailyPracticeLogRepository.countByUserIdAndPlanDateAndPracticeTypeAndItemId(
-                user.getId(),
-                LocalDate.now(),
-                "GRAMMAR",
-                String.valueOf(question.getId())
-        )).isEqualTo(1);
-
-        UserDailyLearningProgress progress = userDailyLearningProgressRepository
-                .findByUserIdAndPlanDate(user.getId(), LocalDate.now())
-                .orElseThrow();
-        assertThat(progress.getGrammarCompleted()).isEqualTo(1);
+        assertThat(learningProgressOutboxEventRepository.findAll())
+                .anySatisfy(event -> {
+                    assertThat(event.getUserId()).isEqualTo(user.getId());
+                    assertThat(event.getPlanDate()).isEqualTo(LocalDate.now());
+                    assertThat(event.getPracticeType()).isEqualTo("GRAMMAR");
+                    assertThat(event.getItemId()).isEqualTo(String.valueOf(question.getId()));
+                    assertThat(event.getStatus()).isEqualTo(LearningProgressOutboxEvent.STATUS_PENDING);
+                });
 
         mockMvc.perform(get("/api/grammar/notebook-questions")
                         .header("Authorization", "Bearer " + token))

@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -60,6 +59,9 @@ class VocabularyServiceImplTest {
 
     @Mock
     private LearningPlanService learningPlanService;
+
+    @Mock
+    private LearningProgressOutboxService learningProgressOutboxService;
 
     @InjectMocks
     private VocabularyServiceImpl vocabularyService;
@@ -167,34 +169,29 @@ class VocabularyServiceImplTest {
     }
 
     @Test
-    void submitRatingCreatesWordbookRowWhenWordIsNew() {
+    void submitRatingAtomicallyRegistersWordbookAndUpdatesFsrs() {
         AppUser user = user(7L, "learner");
         when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
         when(vocabularyRepository.existsById(10L)).thenReturn(true);
-        when(userWordbookRepository.findByUserIdAndVocabularyId(7L, 10L)).thenReturn(Optional.empty());
 
         vocabularyService.submitRating("learner", new VocabularyRatingRequest(10L, 3));
 
-        ArgumentCaptor<UserWordbook> captor = ArgumentCaptor.forClass(UserWordbook.class);
-        verify(userWordbookRepository).save(captor.capture());
-        assertThat(captor.getValue().getUserId()).isEqualTo(7L);
-        assertThat(captor.getValue().getVocabularyId()).isEqualTo(10L);
-        verify(reviewService).submitRating(7L, "10", 3);
-        verify(learningPlanService).recordVocabularyPractice(7L, 10L);
+        verify(userWordbookRepository).insertIfAbsent(7L, 10L);
+        verify(userWordbookRepository, never()).findByUserIdAndVocabularyId(7L, 10L);
+        verify(reviewService).submitValidatedVocabularyRating(7L, "10", 3);
+        verify(learningProgressOutboxService).enqueueVocabularyPractice(7L, 10L);
     }
 
     @Test
-    void submitRatingDoesNotCreateDuplicateWordbookRow() {
+    void submitRatingUsesAtomicWordbookRegistrationForExistingWords() {
         AppUser user = user(7L, "learner");
         when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
         when(vocabularyRepository.existsById(10L)).thenReturn(true);
-        when(userWordbookRepository.findByUserIdAndVocabularyId(7L, 10L))
-                .thenReturn(Optional.of(wordbook(7L, 10L, false)));
 
         vocabularyService.submitRating("learner", new VocabularyRatingRequest(10L, 4));
 
-        verify(userWordbookRepository, never()).save(any(UserWordbook.class));
-        verify(reviewService).submitRating(7L, "10", 4);
+        verify(userWordbookRepository).insertIfAbsent(7L, 10L);
+        verify(reviewService).submitValidatedVocabularyRating(7L, "10", 4);
     }
 
     @Test
@@ -208,6 +205,8 @@ class VocabularyServiceImplTest {
                 .hasMessage("Vocabulary word was not found.");
 
         verify(reviewService, never()).submitRating(any(), any(), anyInt());
+        verify(reviewService, never()).submitValidatedVocabularyRating(any(), any(), anyInt());
+        verify(userWordbookRepository, never()).insertIfAbsent(any(), any());
     }
 
     @Test
