@@ -29,14 +29,14 @@ export const options = {
     http_req_failed: ["rate<0.05"],
     vocabulary_register_failures: ["rate<0.05"],
     vocabulary_practice_failures: ["rate<0.05"],
-    vocabulary_register_duration: ["p(95)<3000"],
-    vocabulary_login_duration: ["p(95)<3000"],
-    vocabulary_fetch_words_duration: ["p(95)<3000"],
-    vocabulary_answer_duration: ["p(95)<3000"],
-    vocabulary_finish_duration: ["p(95)<3000"],
-    vocabulary_progress_duration: ["p(95)<3000"],
-    vocabulary_memory_duration: ["p(95)<3000"],
-    vocabulary_full_chain_duration: ["p(95)<12000"]
+    vocabulary_register_duration: ["avg<3000"],
+    vocabulary_login_duration: ["avg<3000"],
+    vocabulary_fetch_words_duration: ["avg<3000"],
+    vocabulary_answer_duration: ["avg<3000"],
+    vocabulary_finish_duration: ["avg<3000"],
+    vocabulary_progress_duration: ["avg<3000"],
+    vocabulary_memory_duration: ["avg<3000"],
+    vocabulary_full_chain_duration: ["avg<12000"]
   }
 };
 

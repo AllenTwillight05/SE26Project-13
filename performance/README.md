@@ -146,3 +146,32 @@ ACCOUNTS       Comma-separated account:password list. Default: test1:test1passwo
 CATEGORY       Grammar category. Default: Tense
 QUESTION_COUNT Number of fetched questions to answer per iteration. Default: 3
 ```
+
+## Grammar practice chain with registration
+
+Script:
+
+```powershell
+k6 run -e BASE_URL=http://10.119.4.34 -e REGISTER_USERS=false -e PARALLEL_RATINGS=true --vus 100 --iterations 100 performance/k6/grammar-register-practice-chain.js
+```
+
+It simulates: register the VU-owned user, login, fetch grammar practice
+questions, submit practice results and ratings, then request grammar progress
+and overview data. Usernames follow the fixed pattern `test1`, `test2`, etc.
+The matching email, password, and display name are `test1@example.com`,
+`test1password`, and `test1`.
+
+The script accepts `201 Created` and `409 Conflict` for registration, so it can
+be rerun when the same generated users already exist. Set `REGISTER_USERS=false`
+to skip registration and directly login generated users.
+
+Optional variables:
+
+```text
+BASE_URL         Backend base URL. Default: http://localhost:8080
+REGISTER_USERS  Whether to register generated users before login. Default: true
+PARALLEL_RATINGS Whether to submit grammar results and ratings in batches. Default: false
+USER_PREFIX      Generated username prefix. Default: test
+CATEGORY         Grammar category. Default: Tense
+QUESTION_COUNT   Number of fetched questions to answer per iteration. Default: 1
+```

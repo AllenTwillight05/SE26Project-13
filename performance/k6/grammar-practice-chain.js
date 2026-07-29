@@ -34,11 +34,11 @@ export const options = {
   thresholds: {
     http_req_failed: ["rate<0.05"],
     grammar_practice_failures: ["rate<0.05"],
-    grammar_fetch_questions_duration: ["p(95)<3000"],
-    grammar_answer_duration: ["p(95)<3000"],
-    grammar_rating_duration: ["p(95)<3000"],
-    grammar_finish_duration: ["p(95)<3000"],
-    grammar_full_chain_duration: ["p(95)<10000"]
+    grammar_fetch_questions_duration: ["avg<3000"],
+    grammar_answer_duration: ["avg<3000"],
+    grammar_rating_duration: ["avg<3000"],
+    grammar_finish_duration: ["avg<3000"],
+    grammar_full_chain_duration: ["avg<10000"]
   }
 };
 

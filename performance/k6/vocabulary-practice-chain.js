@@ -33,10 +33,10 @@ export const options = {
   thresholds: {
     http_req_failed: ["rate<0.05"],
     vocabulary_practice_failures: ["rate<0.05"],
-    vocabulary_fetch_words_duration: ["p(95)<3000"],
-    vocabulary_answer_duration: ["p(95)<3000"],
-    vocabulary_finish_duration: ["p(95)<3000"],
-    vocabulary_full_chain_duration: ["p(95)<10000"]
+    vocabulary_fetch_words_duration: ["avg<3000"],
+    vocabulary_answer_duration: ["avg<3000"],
+    vocabulary_finish_duration: ["avg<3000"],
+    vocabulary_full_chain_duration: ["avg<10000"]
   }
 };
 

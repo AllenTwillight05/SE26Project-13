@@ -24,6 +24,7 @@ server_service="${DEPLOY_SERVICE:-english-learning-copilot}"
 ref="origin/main"
 with_tests=false
 temporary_bundle=""
+temporary_ref=""
 
 usage() {
   cat <<'EOF'
@@ -55,6 +56,9 @@ require_command() {
 cleanup() {
   if [[ -n "$temporary_bundle" ]]; then
     rm -f -- "$temporary_bundle"
+  fi
+  if [[ -n "$temporary_ref" ]]; then
+    git -C "$repo_root" update-ref -d "$temporary_ref" >/dev/null 2>&1 || true
   fi
 }
 trap cleanup EXIT
@@ -102,10 +106,12 @@ commit="$(git -C "$repo_root" rev-parse --verify "${ref}^{commit}")" || {
 short_commit="${commit:0:12}"
 target="${server_user}@${server_host}"
 temporary_bundle="$(mktemp "${TMPDIR:-/tmp}/english-learning-copilot-${short_commit}.XXXXXX.bundle")"
+temporary_ref="refs/deployments/bundle-${short_commit}"
 remote_bundle="/tmp/english-learning-copilot-${short_commit}.bundle"
 
 printf '==> Creating source bundle for %s (%s)\n' "$short_commit" "$ref"
-git -C "$repo_root" bundle create "$temporary_bundle" "$commit"
+git -C "$repo_root" update-ref "$temporary_ref" "$commit"
+git -C "$repo_root" bundle create "$temporary_bundle" "$temporary_ref"
 git -C "$repo_root" bundle verify "$temporary_bundle" >/dev/null
 
 printf '==> Uploading bundle to %s\n' "$target"

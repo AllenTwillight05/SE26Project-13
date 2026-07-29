@@ -17,6 +17,7 @@ import com.englishlearningcopilot.backend.dto.VocabularyRatingRequest;
 import com.englishlearningcopilot.backend.dto.VocabularyWordbookWordResponse;
 import com.englishlearningcopilot.backend.entity.AppUser;
 import com.englishlearningcopilot.backend.entity.UserRole;
+import com.englishlearningcopilot.backend.entity.UserWordProgress;
 import com.englishlearningcopilot.backend.entity.UserWordbook;
 import com.englishlearningcopilot.backend.entity.Vocabulary;
 import com.englishlearningcopilot.backend.exception.ResourceNotFoundException;
@@ -25,7 +26,9 @@ import com.englishlearningcopilot.backend.repository.UserWordProgressRepository;
 import com.englishlearningcopilot.backend.repository.UserWordbookRepository;
 import com.englishlearningcopilot.backend.repository.VocabularyRepository;
 import com.englishlearningcopilot.backend.service.impl.VocabularyServiceImpl;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -91,6 +94,60 @@ class VocabularyServiceImplTest {
         assertThatThrownBy(() -> vocabularyService.getPracticeWords(null, "unknown"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Unsupported vocabulary practice level: unknown");
+    }
+
+    @Test
+    void getMemoryForAnonymousUserReturnsEmptyStats() {
+        Map<String, Object> memory = vocabularyService.getMemory(null);
+
+        assertThat(memory.get("retentionRate")).isEqualTo(0);
+        assertThat(memory.get("stats").toString()).contains("0");
+        verify(userWordProgressRepository, never()).findByUserIdAndQuestionType(any(), any());
+    }
+
+    @Test
+    void getMemoryForUnknownUserReturnsEmptyStats() {
+        when(userRepository.findByUsername("missing")).thenReturn(Optional.empty());
+
+        Map<String, Object> memory = vocabularyService.getMemory("missing");
+
+        assertThat(memory.get("retentionRate")).isEqualTo(0);
+        assertThat(memory.get("stats").toString()).contains("0");
+        verify(userWordProgressRepository, never()).findByUserIdAndQuestionType(any(), any());
+    }
+
+    @Test
+    void getMemoryCountsOnlyReviewCardsAndDueItems() {
+        AppUser user = user(7L, "learner");
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(userWordProgressRepository.findByUserIdAndQuestionType(7L, "vocabulary"))
+                .thenReturn(List.of(
+                        progress(1, Instant.now().minusSeconds(60), 2.5),
+                        progress(1, Instant.now().plusSeconds(60), 5.0),
+                        progress(0, Instant.now().minusSeconds(60), 2.5)
+                ));
+
+        Map<String, Object> memory = vocabularyService.getMemory("learner");
+
+        assertThat((Integer) memory.get("retentionRate")).isBetween(1, 100);
+        assertThat(memory.get("stats").toString()).contains("2");
+        assertThat(memory.get("stats").toString()).contains("1");
+    }
+
+    @Test
+    void getMemoryUsesUpdatedAtAndMinimumStabilityWhenReviewMetadataIsPartial() {
+        AppUser user = user(7L, "learner");
+        UserWordProgress progress = progress(1, Instant.now().minusSeconds(60), null);
+        progress.setLastReview(null);
+        progress.setUpdatedAt(null);
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(userWordProgressRepository.findByUserIdAndQuestionType(7L, "vocabulary"))
+                .thenReturn(List.of(progress));
+
+        Map<String, Object> memory = vocabularyService.getMemory("learner");
+
+        assertThat((Integer) memory.get("retentionRate")).isBetween(1, 100);
+        assertThat(memory.get("stats").toString()).contains("1");
     }
 
     @Test
@@ -172,6 +229,31 @@ class VocabularyServiceImplTest {
     }
 
     @Test
+    void toggleFavoriteCreatesWordbookRowWhenMissing() {
+        AppUser user = user(7L, "learner");
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(vocabularyRepository.existsById(10L)).thenReturn(true);
+        when(userWordbookRepository.findByUserIdAndVocabularyId(7L, 10L)).thenReturn(Optional.empty());
+        when(userWordbookRepository.save(any(UserWordbook.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        VocabularyFavoriteResponse response = vocabularyService.toggleFavorite(
+                "learner",
+                new VocabularyFavoriteRequest(10L)
+        );
+
+        assertThat(response.favorited()).isTrue();
+    }
+
+    @Test
+    void getWordbookWordsRejectsUnknownUser() {
+        when(userRepository.findByUsername("missing")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> vocabularyService.getWordbookWords("missing"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Current user was not found.");
+    }
+
+    @Test
     void toggleFavoriteRequiresAuthentication() {
         assertThatThrownBy(() -> vocabularyService.toggleFavorite(null, new VocabularyFavoriteRequest(10L)))
                 .isInstanceOf(BadCredentialsException.class)
@@ -223,5 +305,17 @@ class VocabularyServiceImplTest {
         wordbook.setVocabularyId(vocabularyId);
         wordbook.setFavorited(favorited);
         return wordbook;
+    }
+
+    private static UserWordProgress progress(Integer state, Instant due, Double stability) {
+        UserWordProgress progress = new UserWordProgress();
+        progress.setQuestionType("vocabulary");
+        progress.setQuestionId("10");
+        progress.setState(state);
+        progress.setDue(due);
+        progress.setLastReview(Instant.now().minusSeconds(86_400));
+        progress.setUpdatedAt(Instant.now().minusSeconds(86_400));
+        progress.setStability(stability);
+        return progress;
     }
 }

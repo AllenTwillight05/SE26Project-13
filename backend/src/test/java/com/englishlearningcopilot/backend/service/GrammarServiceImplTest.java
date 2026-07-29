@@ -15,9 +15,12 @@ import com.englishlearningcopilot.backend.dto.GrammarFavoriteResponse;
 import com.englishlearningcopilot.backend.dto.GrammarPracticeQuestionResponse;
 import com.englishlearningcopilot.backend.dto.GrammarPracticeResultRequest;
 import com.englishlearningcopilot.backend.dto.GrammarRatingRequest;
+import com.englishlearningcopilot.backend.dto.GrammarOverviewResponse;
+import com.englishlearningcopilot.backend.dto.GrammarTopicResponse;
 import com.englishlearningcopilot.backend.entity.AppUser;
 import com.englishlearningcopilot.backend.entity.GrammarQuestion;
 import com.englishlearningcopilot.backend.entity.UserGrammarbook;
+import com.englishlearningcopilot.backend.entity.UserWordProgress;
 import com.englishlearningcopilot.backend.entity.UserRole;
 import com.englishlearningcopilot.backend.exception.ResourceNotFoundException;
 import com.englishlearningcopilot.backend.repository.GrammarQuestionRepository;
@@ -25,6 +28,7 @@ import com.englishlearningcopilot.backend.repository.UserGrammarbookRepository;
 import com.englishlearningcopilot.backend.repository.UserRepository;
 import com.englishlearningcopilot.backend.repository.UserWordProgressRepository;
 import com.englishlearningcopilot.backend.service.impl.GrammarServiceImpl;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -76,6 +80,71 @@ class GrammarServiceImplTest {
     }
 
     @Test
+    void getOverviewForAnonymousUserUsesCompletedQuestionFallback() {
+        when(grammarQuestionRepository.findAll()).thenReturn(List.of(
+                question(1, "Tense"),
+                question(2, "Clause")
+        ));
+
+        GrammarOverviewResponse response = grammarService.getOverview(null);
+
+        assertThat(response.masteryRate()).isZero();
+        assertThat(response.stats()).hasSize(3);
+        verify(userWordProgressRepository, never()).findByUserIdAndQuestionType(any(), any());
+    }
+
+    @Test
+    void getOverviewForReviewCardsUsesRetentionAndDueCount() {
+        AppUser user = user(7L, "learner");
+        UserWordProgress dueReview = progress("1", 1, 1, Instant.now().minusSeconds(3600), 2.5);
+        UserWordProgress futureReview = progress("2", 1, 1, Instant.now().plusSeconds(3600), 5.0);
+        when(grammarQuestionRepository.findAll()).thenReturn(List.of(question(1, "Tense"), question(2, "Tense")));
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(userWordProgressRepository.findByUserIdAndQuestionType(7L, "grammar"))
+                .thenReturn(List.of(dueReview, futureReview));
+
+        GrammarOverviewResponse response = grammarService.getOverview("learner");
+
+        assertThat(response.masteryRate()).isBetween(1, 100);
+        assertThat(response.stats().get(0).value()).contains("2");
+        assertThat(response.stats().get(1).value()).contains("1");
+    }
+
+    @Test
+    void getTopicsReturnsSortedCategoriesWithCompletedProgressAndExamples() {
+        AppUser user = user(7L, "learner");
+        UserWordProgress completed = progress("2", 1, 0, Instant.now(), 2.5);
+        UserWordProgress invalidQuestionId = progress("not-a-number", 1, 0, Instant.now(), 2.5);
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(userWordProgressRepository.findByUserIdAndQuestionType(7L, "grammar"))
+                .thenReturn(List.of(completed, invalidQuestionId));
+        when(grammarQuestionRepository.findAll()).thenReturn(List.of(
+                question(2, "B Category"),
+                question(1, "A Category"),
+                question(3, "B Category")
+        ));
+
+        List<GrammarTopicResponse> topics = grammarService.getTopics("learner");
+
+        assertThat(topics).extracting(GrammarTopicResponse::id)
+                .containsExactly("A Category", "B Category");
+        assertThat(topics.get(0).progress()).isZero();
+        assertThat(topics.get(1).progress()).isEqualTo(50);
+        assertThat(topics.get(1).examples()).hasSize(2);
+    }
+
+    @Test
+    void getReviewQuestionsDelegatesToReviewServiceForCurrentUser() {
+        AppUser user = user(7L, "learner");
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(reviewService.getDueGrammar(7L)).thenReturn(List.of(GrammarPracticeQuestionResponse.from(question(1, "Tense"))));
+
+        List<GrammarPracticeQuestionResponse> response = grammarService.getReviewQuestions("learner");
+
+        assertThat(response).extracting(GrammarPracticeQuestionResponse::id).containsExactly(1);
+    }
+
+    @Test
     void submitPracticeResultCreatesGrammarbookRowAndRecordsProgress() {
         AppUser user = user(7L, "learner");
         when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
@@ -89,6 +158,21 @@ class GrammarServiceImplTest {
         assertThat(captor.getValue().getUserId()).isEqualTo(7L);
         assertThat(captor.getValue().getGrammarQuestionId()).isEqualTo(1);
         assertThat(captor.getValue().isIncorrect()).isTrue();
+        verify(learningPlanService).recordGrammarPractice(7L, 1);
+    }
+
+    @Test
+    void submitPracticeResultUpdatesExistingGrammarbookRow() {
+        AppUser user = user(7L, "learner");
+        UserGrammarbook existing = grammarbook(7L, 1, false, true);
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(grammarQuestionRepository.existsById(1)).thenReturn(true);
+        when(userGrammarbookRepository.findByUserIdAndGrammarQuestionId(7L, 1)).thenReturn(Optional.of(existing));
+
+        grammarService.submitPracticeResult("learner", new GrammarPracticeResultRequest(1, true));
+
+        assertThat(existing.isIncorrect()).isTrue();
+        verify(userGrammarbookRepository).save(existing);
         verify(learningPlanService).recordGrammarPractice(7L, 1);
     }
 
@@ -151,6 +235,19 @@ class GrammarServiceImplTest {
     }
 
     @Test
+    void getNotebookQuestionsSkipsRowsWhoseQuestionNoLongerExists() {
+        AppUser user = user(7L, "learner");
+        UserGrammarbook missing = grammarbook(7L, 99, true, false);
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(userGrammarbookRepository.findNotebookRowsByUserId(7L)).thenReturn(List.of(missing));
+        when(grammarQuestionRepository.findAllById(List.of(99))).thenReturn(List.of());
+
+        var questions = grammarService.getNotebookQuestions("learner");
+
+        assertThat(questions).isEmpty();
+    }
+
+    @Test
     void getProgressDelegatesToLearningPlanService() {
         when(learningPlanService.getGrammarProgress("learner"))
                 .thenReturn(new DailyPracticeProgressResponse(2, 5, 3, false));
@@ -166,6 +263,15 @@ class GrammarServiceImplTest {
         assertThatThrownBy(() -> grammarService.toggleFavorite(null, new GrammarFavoriteRequest(1)))
                 .isInstanceOf(BadCredentialsException.class)
                 .hasMessage("Authentication is required.");
+    }
+
+    @Test
+    void getPracticeQuestionsRejectsUnknownUser() {
+        when(userRepository.findByUsername("missing")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> grammarService.getPracticeQuestions("missing", "Tense"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Current user was not found.");
     }
 
     private static AppUser user(Long id, String username) {
@@ -192,6 +298,26 @@ class GrammarServiceImplTest {
         question.setAnswer("A");
         question.setExplanation("Because.");
         return question;
+    }
+
+    private static UserWordProgress progress(
+            String questionId,
+            Integer reps,
+            Integer state,
+            Instant due,
+            Double stability
+    ) {
+        UserWordProgress progress = new UserWordProgress();
+        progress.setUserId(7L);
+        progress.setQuestionType("grammar");
+        progress.setQuestionId(questionId);
+        progress.setReps(reps);
+        progress.setState(state);
+        progress.setDue(due);
+        progress.setLastReview(Instant.now().minusSeconds(86_400));
+        progress.setUpdatedAt(Instant.now().minusSeconds(86_400));
+        progress.setStability(stability);
+        return progress;
     }
 
     private static UserGrammarbook grammarbook(Long userId, Integer questionId, boolean incorrect, boolean favorited) {
