@@ -3,6 +3,7 @@ package com.englishlearningcopilot.backend.service;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -52,6 +53,15 @@ class LearningProgressOutboxProcessorTest {
         processor.processEvent(12L);
 
         verify(outboxService).reschedule(eq(12L), eq(3), eq("database unavailable"), any(Instant.class));
+    }
+
+    @Test
+    void skipsEventWhenLeaseCannotBeClaimed() {
+        when(outboxService.claimReadyEvent(eq(12L), any(Instant.class))).thenReturn(null);
+
+        processor.processEvent(12L);
+
+        verify(learningPlanService, never()).recordOutboxPractice(any(), any(), any(), any());
     }
 
     private static LearningProgressOutboxService.PracticeEvent event(Long id, int attempts) {

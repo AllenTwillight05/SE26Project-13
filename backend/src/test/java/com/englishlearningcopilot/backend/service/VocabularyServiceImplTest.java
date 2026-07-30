@@ -79,6 +79,17 @@ class VocabularyServiceImplTest {
     }
 
     @Test
+    void getPracticeWordsDefaultsNullLevelToStarter() {
+        when(vocabularyRepository.findRandomPracticeWordsByTags(
+                eq("zk"), eq("gk"), any(String.class), any(String.class), any(Pageable.class)
+        )).thenReturn(List.of(vocabulary(10L, "accept", "zk gk")));
+
+        List<VocabularyPracticeWordResponse> words = vocabularyService.getPracticeWords(null, null);
+
+        assertThat(words).extracting(VocabularyPracticeWordResponse::word).containsExactly("accept");
+    }
+
+    @Test
     void getPracticeWordsForLoggedInUserExcludesLearnedWords() {
         AppUser user = user(7L, "learner");
         when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
@@ -126,14 +137,19 @@ class VocabularyServiceImplTest {
                 .thenReturn(List.of(
                         progress(1, Instant.now().minusSeconds(60), 2.5),
                         progress(1, Instant.now().plusSeconds(60), 5.0),
+                        progress(1, null, 5.0),
+                        progress(null, Instant.now().minusSeconds(60), 2.5),
                         progress(0, Instant.now().minusSeconds(60), 2.5)
                 ));
 
         Map<String, Object> memory = vocabularyService.getMemory("learner");
 
         assertThat((Integer) memory.get("retentionRate")).isBetween(1, 100);
-        assertThat(memory.get("stats").toString()).contains("2");
-        assertThat(memory.get("stats").toString()).contains("1");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> stats = (List<Map<String, Object>>) memory.get("stats");
+        assertThat(stats)
+                .extracting(stat -> stat.get("value"))
+                .containsExactly("3 词", "1 词", "0 词");
     }
 
     @Test
@@ -166,6 +182,18 @@ class VocabularyServiceImplTest {
         assertThat(words).hasSize(1);
         assertThat(words.get(0).word()).isEqualTo("accept");
         assertThat(words.get(0).favorited()).isTrue();
+    }
+
+    @Test
+    void getWordbookWordsSkipsRowsWhoseVocabularyNoLongerExists() {
+        AppUser user = user(7L, "learner");
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(userWordbookRepository.findByUserIdOrderByIdDesc(7L)).thenReturn(List.of(wordbook(7L, 99L, true)));
+        when(vocabularyRepository.findAllById(List.of(99L))).thenReturn(List.of());
+
+        List<VocabularyWordbookWordResponse> words = vocabularyService.getWordbookWords("learner");
+
+        assertThat(words).isEmpty();
     }
 
     @Test
@@ -225,6 +253,36 @@ class VocabularyServiceImplTest {
 
         assertThat(response.favorited()).isTrue();
         verify(userWordbookRepository).save(wordbook);
+    }
+
+    @Test
+    void toggleFavoriteCanTurnOffExistingFavorite() {
+        AppUser user = user(7L, "learner");
+        UserWordbook wordbook = wordbook(7L, 10L, true);
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(vocabularyRepository.existsById(10L)).thenReturn(true);
+        when(userWordbookRepository.findByUserIdAndVocabularyId(7L, 10L)).thenReturn(Optional.of(wordbook));
+        when(userWordbookRepository.save(wordbook)).thenReturn(wordbook);
+
+        VocabularyFavoriteResponse response = vocabularyService.toggleFavorite(
+                "learner",
+                new VocabularyFavoriteRequest(10L)
+        );
+
+        assertThat(response.favorited()).isFalse();
+    }
+
+    @Test
+    void toggleFavoriteRejectsMissingVocabulary() {
+        AppUser user = user(7L, "learner");
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(vocabularyRepository.existsById(10L)).thenReturn(false);
+
+        assertThatThrownBy(() -> vocabularyService.toggleFavorite("learner", new VocabularyFavoriteRequest(10L)))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Vocabulary word was not found.");
+
+        verify(userWordbookRepository, never()).save(any());
     }
 
     @Test

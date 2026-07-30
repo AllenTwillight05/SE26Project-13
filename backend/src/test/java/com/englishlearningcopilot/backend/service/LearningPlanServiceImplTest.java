@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,7 +31,9 @@ import com.englishlearningcopilot.backend.repository.UserLearningPlanRepository;
 import com.englishlearningcopilot.backend.repository.UserRepository;
 import com.englishlearningcopilot.backend.repository.UserWordProgressRepository;
 import com.englishlearningcopilot.backend.service.impl.LearningPlanServiceImpl;
+import com.englishlearningcopilot.backend.service.speech.PronunciationScore;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -39,6 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -67,6 +71,9 @@ class LearningPlanServiceImplTest {
     @Mock
     private UserWordProgressRepository userWordProgressRepository;
 
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     private LearningPlanServiceImpl learningPlanService;
 
     @BeforeEach
@@ -79,7 +86,7 @@ class LearningPlanServiceImplTest {
                 speakingSessionRepository,
                 speakingMessageRepository,
                 userWordProgressRepository,
-                new ObjectMapper()
+                objectMapper
         );
     }
 
@@ -168,6 +175,22 @@ class LearningPlanServiceImplTest {
     }
 
     @Test
+    void recordOutboxPracticeIgnoresUnknownPracticeTypeAfterCreatingProgress() {
+        UserLearningPlan plan = plan(7L, 20, 12);
+        UserDailyLearningProgress progress = progress(7L, 0, 0, 20, 12, false);
+        when(userDailyPracticeLogRepository.insertIfAbsent(7L, LocalDate.of(2026, 7, 28), "SPEAKING", "1"))
+                .thenReturn(1);
+        when(userLearningPlanRepository.findByUserId(7L)).thenReturn(Optional.of(plan));
+        when(userDailyLearningProgressRepository.findByUserIdAndPlanDate(7L, LocalDate.of(2026, 7, 28)))
+                .thenReturn(Optional.of(progress));
+
+        learningPlanService.recordOutboxPractice(7L, LocalDate.of(2026, 7, 28), "SPEAKING", "1");
+
+        verify(userDailyLearningProgressRepository, never()).incrementVocabularyCompletion(anyLong(), any());
+        verify(userDailyLearningProgressRepository, never()).incrementGrammarCompletion(anyLong(), any());
+    }
+
+    @Test
     void profileSnapshotUsesWeeklySpeakingAverageAndFsrsRetentionRates() {
         AppUser user = user(7L, "learner", "Learner");
         UserLearningPlan plan = plan(7L, 20, 12);
@@ -238,6 +261,65 @@ class LearningPlanServiceImplTest {
         assertThat(snapshot.feedback().fluency()).isEqualTo(65);
         assertThat(snapshot.feedback().integrity()).isEqualTo(78);
         assertThat(snapshot.feedback().issueSentence()).isEqualTo("I am go airport.");
+    }
+
+    @Test
+    void getProfileSnapshotSkipsEmptySpeakingSessionsAndFallsBackToStoredScores() throws Exception {
+        AppUser user = user(7L, "learner", null);
+        UserLearningPlan plan = plan(7L, 1, 1);
+        UserDailyLearningProgress progress = progress(7L, 1, 1, 1, 1, true);
+        SpeakingSession emptySession = speakingSession(98L, "Empty", Instant.parse("2026-01-02T10:00:00Z"));
+        SpeakingSession fallbackSession = speakingSession(99L, "Fallback", Instant.parse("2026-01-01T10:00:00Z"));
+        SpeakingMessage noScore = userMessage("No score yet.", 0, "");
+        noScore.setPronunciationScore(null);
+        SpeakingMessage fallbackScore = userMessage("   ", 58, "not-json");
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(userLearningPlanRepository.findByUserId(7L)).thenReturn(Optional.of(plan));
+        when(userDailyLearningProgressRepository.findByUserIdAndPlanDate(eq(7L), any(LocalDate.class)))
+                .thenReturn(Optional.of(progress));
+        when(userDailyLearningProgressRepository.findByUserIdAndCompletedTrueOrderByPlanDateDesc(7L))
+                .thenReturn(List.of(progress));
+        when(speakingMessageRepository.findBySessionUserIdAndSenderAndCreatedAtBetween(
+                eq(7L), eq(SpeakingMessageSender.USER), any(Instant.class), any(Instant.class)
+        )).thenReturn(List.of(fallbackScore, noScore));
+        when(userWordProgressRepository.findByUserIdAndQuestionType(eq(7L), any())).thenReturn(List.of());
+        when(speakingSessionRepository.findByUserUsernameOrderByStartedAtDesc("learner"))
+                .thenReturn(List.of(emptySession, fallbackSession));
+        when(speakingMessageRepository.findBySessionIdOrderByTurnIndexAscCreatedAtAsc(98L))
+                .thenReturn(List.of(noScore));
+        when(speakingMessageRepository.findBySessionIdOrderByTurnIndexAscCreatedAtAsc(99L))
+                .thenReturn(List.of(fallbackScore));
+        doThrow(new JsonProcessingException("bad json") {})
+                .when(objectMapper)
+                .readValue("not-json", PronunciationScore.class);
+
+        ProfileSnapshotResponse snapshot = learningPlanService.getProfileSnapshot("learner");
+
+        assertThat(snapshot.learnerName()).isEqualTo("learner");
+        assertThat(snapshot.feedback().scenarioTitle()).isEqualTo("Fallback");
+        assertThat(snapshot.feedback().totalScore()).isEqualTo(58);
+        assertThat(snapshot.feedback().issueSentence()).isEqualTo("无");
+    }
+
+    @Test
+    void getDailyStatusCountsConsecutiveCompletedDaysUntilGap() {
+        AppUser user = user(7L, "learner", "Learner");
+        UserLearningPlan plan = plan(7L, 1, 1);
+        UserDailyLearningProgress today = progress(7L, 1, 1, 1, 1, true);
+        UserDailyLearningProgress yesterday = progress(7L, 1, 1, 1, 1, true);
+        yesterday.setPlanDate(LocalDate.now().minusDays(1));
+        UserDailyLearningProgress older = progress(7L, 1, 1, 1, 1, true);
+        older.setPlanDate(LocalDate.now().minusDays(3));
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(userLearningPlanRepository.findByUserId(7L)).thenReturn(Optional.of(plan));
+        when(userDailyLearningProgressRepository.findByUserIdAndPlanDate(eq(7L), any(LocalDate.class)))
+                .thenReturn(Optional.of(today));
+        when(userDailyLearningProgressRepository.findByUserIdAndCompletedTrueOrderByPlanDateDesc(7L))
+                .thenReturn(List.of(today, yesterday, older));
+
+        var status = learningPlanService.getDailyStatus("learner");
+
+        assertThat(status.streakDays()).isEqualTo(2);
     }
 
     @Test

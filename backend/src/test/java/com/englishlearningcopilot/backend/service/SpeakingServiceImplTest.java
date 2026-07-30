@@ -307,6 +307,108 @@ class SpeakingServiceImplTest {
     }
 
     @Test
+    void submitRecordingEvaluatesPronunciationSynchronouslyForEligibleEnglishSpeech() throws Exception {
+        AppUser user = user(7L, "learner");
+        SpeakingScenario scenario = scenario("business-opening");
+        SpeakingSession session = session(99L, user, scenario);
+        AtomicLong ids = new AtomicLong(100);
+        PronunciationScore score = new PronunciationScore(88, 90, 86, 95, 0);
+        when(sessionRepository.findById(99L)).thenReturn(Optional.of(session));
+        when(messageRepository.save(any(SpeakingMessage.class))).thenAnswer(invocation -> {
+            SpeakingMessage message = invocation.getArgument(0);
+            if (message.getId() == null) {
+                ReflectionTestUtils.setField(message, "id", ids.getAndIncrement());
+            }
+            return message;
+        });
+        when(audioStorageService.save(eq(99L), any(), any())).thenReturn("/audio/turn.webm");
+        when(asrService.transcribe(any(), any())).thenReturn("This is my answer.");
+        when(iseService.evaluate(any(), eq("This is my answer."))).thenReturn(score);
+        when(objectMapper.writeValueAsString(score)).thenReturn("{\"totalScore\":88}");
+        when(messageRepository.findBySessionIdOrderByTurnIndexAscCreatedAtAsc(99L)).thenReturn(List.of());
+        when(agentClient.reply(eq(scenario), any(), any(), eq("This is my answer."), eq(1)))
+                .thenReturn(new SpeakingAgentReply("Good answer.", " ", null));
+        when(sessionRepository.save(session)).thenReturn(session);
+
+        speakingService = new SpeakingServiceImpl(
+                scenarioRepository,
+                sessionRepository,
+                messageRepository,
+                userRepository,
+                agentClient,
+                asrService,
+                iseService,
+                audioStorageService,
+                agentAudioSynthesisService,
+                pronunciationEvaluationService,
+                objectMapper,
+                true,
+                true
+        );
+
+        SpeakingTurnResponse response = speakingService.submitRecording(
+                "learner",
+                99L,
+                new MockMultipartFile("audio", "turn.webm", "audio/webm", new byte[] {1, 2, 3}),
+                null
+        );
+
+        assertThat(response.pronunciationScore()).isEqualTo(score);
+        assertThat(response.userMessage().pronunciationScore()).isEqualTo(88.0);
+        assertThat(response.agentMessage().spokenText()).isEqualTo("Good answer.");
+        verify(pronunciationEvaluationService, never()).evaluateUserMessageAsync(any(), any(), any());
+    }
+
+    @Test
+    void submitRecordingSchedulesAsyncPronunciationWhenTurnScoreIsMissing() throws Exception {
+        AppUser user = user(7L, "learner");
+        SpeakingScenario scenario = scenario("business-opening");
+        SpeakingSession session = session(99L, user, scenario);
+        AtomicLong ids = new AtomicLong(100);
+        when(sessionRepository.findById(99L)).thenReturn(Optional.of(session));
+        when(messageRepository.save(any(SpeakingMessage.class))).thenAnswer(invocation -> {
+            SpeakingMessage message = invocation.getArgument(0);
+            if (message.getId() == null) {
+                ReflectionTestUtils.setField(message, "id", ids.getAndIncrement());
+            }
+            return message;
+        });
+        when(audioStorageService.save(eq(99L), any(), any())).thenReturn("/audio/turn.webm");
+        when(asrService.transcribe(any(), any())).thenReturn("This is an eligible answer.");
+        when(messageRepository.findBySessionIdOrderByTurnIndexAscCreatedAtAsc(99L)).thenReturn(List.of());
+        when(agentClient.reply(eq(scenario), any(), any(), eq("This is an eligible answer."), eq(1)))
+                .thenReturn(new SpeakingAgentReply("Thanks.", null, null));
+        when(sessionRepository.save(session)).thenReturn(session);
+
+        speakingService = new SpeakingServiceImpl(
+                scenarioRepository,
+                sessionRepository,
+                messageRepository,
+                userRepository,
+                agentClient,
+                asrService,
+                iseService,
+                audioStorageService,
+                agentAudioSynthesisService,
+                pronunciationEvaluationService,
+                objectMapper,
+                false,
+                true
+        );
+
+        SpeakingTurnResponse response = speakingService.submitRecording(
+                "learner",
+                99L,
+                new MockMultipartFile("audio", "turn.webm", "audio/webm", new byte[] {1, 2, 3}),
+                0L
+        );
+
+        assertThat(response.userMessage().pronunciationScore()).isNull();
+        verify(pronunciationEvaluationService)
+                .evaluateUserMessageAsync(eq(100L), any(), eq("This is an eligible answer."));
+    }
+
+    @Test
     void getFeedbackUsesAverageStoredPronunciationScoresForSummary() throws Exception {
         AppUser user = user(7L, "learner");
         SpeakingScenario scenario = scenario("business-opening");
@@ -390,6 +492,54 @@ class SpeakingServiceImplTest {
         SpeakingFeedbackResponse feedback = speakingService.getFeedback("learner", 99L);
 
         assertThat(feedback.issueSentences()).containsExactly("I need book room.");
+    }
+
+    @Test
+    void getFeedbackEvaluatesMissingPronunciationAndHandlesEmptyTurns() {
+        AppUser user = user(7L, "learner");
+        SpeakingScenario scenario = scenario("business-opening");
+        SpeakingSession session = session(99L, user, scenario);
+        session.setCurrentTurn(2);
+        SpeakingMessage userTurn1 = message(session, 2L, 1, SpeakingMessageSender.USER, " ");
+        userTurn1.setAudioUrl("/audio/turn.webm");
+        userTurn1.setTranscribedText("This answer needs review.");
+        userTurn1.setDurationMs(2_000L);
+        when(sessionRepository.findById(99L)).thenReturn(Optional.of(session));
+        when(messageRepository.findBySessionIdOrderByTurnIndexAscCreatedAtAsc(99L))
+                .thenReturn(List.of(userTurn1));
+        when(audioStorageService.load("/audio/turn.webm")).thenReturn(new byte[] {1, 2, 3});
+        when(pronunciationEvaluationService.evaluateUserMessage(
+                eq(2L),
+                any(),
+                eq("This answer needs review.")
+        )).thenReturn(Optional.of(new PronunciationScore(50, 55, 45, 70, 0)));
+
+        SpeakingFeedbackResponse feedback = speakingService.getFeedback("learner", 99L);
+
+        assertThat(feedback.turns()).hasSize(2);
+        assertThat(feedback.turns().get(0).score()).isNotNull();
+        assertThat(feedback.turns().get(0).agentText()).isEmpty();
+        assertThat(feedback.turns().get(1).userText()).isEmpty();
+        assertThat(feedback.issueSentences()).isEmpty();
+    }
+
+    @Test
+    void getFeedbackFallsBackToStoredTotalWhenPronunciationDetailIsBlank() {
+        AppUser user = user(7L, "learner");
+        SpeakingScenario scenario = scenario("business-opening");
+        SpeakingSession session = session(99L, user, scenario);
+        session.setCurrentTurn(1);
+        SpeakingMessage userTurn = message(session, 2L, 1, SpeakingMessageSender.USER, "A short answer.");
+        userTurn.setPronunciationScore(72.0);
+        userTurn.setPronunciationDetail(" ");
+        when(sessionRepository.findById(99L)).thenReturn(Optional.of(session));
+        when(messageRepository.findBySessionIdOrderByTurnIndexAscCreatedAtAsc(99L))
+                .thenReturn(List.of(userTurn));
+
+        SpeakingFeedbackResponse feedback = speakingService.getFeedback("learner", 99L);
+
+        assertThat(feedback.totalScore()).isEqualTo(72);
+        assertThat(feedback.pronunciation()).isEqualTo(72);
     }
 
     private static AppUser user(Long id, String username) {

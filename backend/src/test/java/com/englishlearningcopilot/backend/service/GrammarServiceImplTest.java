@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -111,6 +113,99 @@ class GrammarServiceImplTest {
         assertThat(response.masteryRate()).isBetween(1, 100);
         assertThat(response.stats().get(0).value()).contains("2");
         assertThat(response.stats().get(1).value()).contains("1");
+    }
+
+    @Test
+    void getOverviewHandlesIncompleteRowsAndEmptyQuestionBank() {
+        AppUser user = user(7L, "learner");
+        UserWordProgress incomplete = progress("1", null, null, null, null);
+        incomplete.setLastReview(null);
+        UserWordProgress futureReview = progress("2", 1, 1, Instant.now().plusSeconds(3600), 5.0);
+        when(grammarQuestionRepository.findAll()).thenReturn(List.of());
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(userWordProgressRepository.findByUserIdAndQuestionType(7L, "grammar"))
+                .thenReturn(List.of(incomplete, futureReview));
+
+        GrammarOverviewResponse response = grammarService.getOverview("learner");
+
+        assertThat(response.masteryRate()).isBetween(0, 100);
+        assertThat(response.stats().get(0).value()).contains("1");
+        assertThat(response.stats().get(1).value()).contains("0");
+    }
+
+    @Test
+    void getOverviewCountsCompletedRowsFromRepsAndIgnoresNonReviewCards() {
+        AppUser user = user(7L, "learner");
+        UserWordProgress completedByReps = progress("1", 1, 0, Instant.now().minusSeconds(60), 2.5);
+        completedByReps.setLastReview(null);
+        UserWordProgress completedByLastReview = progress("3", null, 0, null, null);
+        UserWordProgress nullState = progress("2", 1, null, Instant.now().minusSeconds(60), 2.5);
+        when(grammarQuestionRepository.findAll()).thenReturn(List.of(
+                question(1, "Tense"),
+                question(2, "Tense"),
+                question(3, "Tense")
+        ));
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(userWordProgressRepository.findByUserIdAndQuestionType(7L, "grammar"))
+                .thenReturn(List.of(completedByReps, completedByLastReview, nullState));
+
+        GrammarOverviewResponse response = grammarService.getOverview("learner");
+
+        assertThat(response.masteryRate()).isEqualTo(100);
+        assertThat(response.stats().get(0).value()).contains("0");
+    }
+
+    @Test
+    void getTopicsForAnonymousUserIgnoresProgressAndBlankExamples() {
+        GrammarQuestion blankExample = question(1, "Topic");
+        blankExample.setQuestionText(" ");
+        GrammarQuestion nullExample = question(3, "Topic");
+        nullExample.setQuestionText(null);
+        GrammarQuestion namedExample = question(2, "Topic");
+        namedExample.setQuestionText("Useful example");
+        when(grammarQuestionRepository.findAll()).thenReturn(List.of(blankExample, nullExample, namedExample));
+
+        List<GrammarTopicResponse> topics = grammarService.getTopics(null);
+
+        assertThat(topics).hasSize(1);
+        assertThat(topics.get(0).progress()).isZero();
+        assertThat(topics.get(0).examples()).containsExactly("Useful example");
+    }
+
+    @Test
+    void getOverviewReturnsZeroProgressWhenNoQuestionsOrReviewCardsExist() {
+        AppUser user = user(7L, "learner");
+        UserWordProgress notCompleted = progress("1", null, 0, null, null);
+        notCompleted.setLastReview(null);
+        when(grammarQuestionRepository.findAll()).thenReturn(List.of());
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(userWordProgressRepository.findByUserIdAndQuestionType(7L, "grammar"))
+                .thenReturn(List.of(notCompleted));
+
+        GrammarOverviewResponse response = grammarService.getOverview("learner");
+
+        assertThat(response.masteryRate()).isZero();
+        assertThat(response.stats().get(1).value()).contains("0");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "从句",
+            "时态与语态",
+            "词汇与逻辑",
+            "非谓语动词",
+            "介词与固定搭配",
+            "代词与限定词",
+            "主谓一致",
+            "情态动词与虚拟语气"
+    })
+    void getTopicsReturnsSpecializedSummariesForKnownCategories(String category) {
+        when(grammarQuestionRepository.findAll()).thenReturn(List.of(question(1, category)));
+
+        List<GrammarTopicResponse> topics = grammarService.getTopics(null);
+
+        assertThat(topics).hasSize(1);
+        assertThat(topics.get(0).summary()).isNotBlank();
     }
 
     @Test
@@ -247,6 +342,19 @@ class GrammarServiceImplTest {
         assertThatThrownBy(() -> grammarService.toggleFavorite(null, new GrammarFavoriteRequest(1)))
                 .isInstanceOf(BadCredentialsException.class)
                 .hasMessage("Authentication is required.");
+    }
+
+    @Test
+    void submitRatingRejectsMissingQuestion() {
+        AppUser user = user(7L, "learner");
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(grammarQuestionRepository.existsById(1)).thenReturn(false);
+
+        assertThatThrownBy(() -> grammarService.submitRating("learner", new GrammarRatingRequest(1, 3)))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Grammar question was not found.");
+
+        verify(reviewService, never()).submitValidatedGrammarRating(any(), anyInt(), anyInt());
     }
 
     @Test

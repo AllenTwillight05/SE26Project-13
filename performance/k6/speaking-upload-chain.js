@@ -3,7 +3,7 @@ import { check, fail } from "k6";
 import { Trend, Rate } from "k6/metrics";
 
 const baseUrl = __ENV.BASE_URL || "http://localhost:8080";
-const accounts = (__ENV.ACCOUNTS || "test1:test1password,test2:test2password")
+const accounts = (__ENV.ACCOUNTS || "test2:test2password")
   .split(",")
   .map((entry) => entry.trim())
   .filter(Boolean)

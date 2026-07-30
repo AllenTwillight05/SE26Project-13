@@ -30,4 +30,19 @@ class EnglishSpeechTextTest {
     void rejectsBlankTranscript() {
         assertThat(EnglishSpeechText.isEligibleForPronunciationEvaluation("   ")).isFalse();
     }
+
+    @Test
+    void rejectsNullAndEastAsianScriptsForPronunciationEvaluation() {
+        assertThat(EnglishSpeechText.containsChineseCharacters(null)).isFalse();
+        assertThat(EnglishSpeechText.containsChineseCharacters("   ")).isFalse();
+        assertThat(EnglishSpeechText.isEligibleForPronunciationEvaluation(null)).isFalse();
+        assertThat(EnglishSpeechText.isEligibleForPronunciationEvaluation("こんにちは")).isFalse();
+        assertThat(EnglishSpeechText.isEligibleForPronunciationEvaluation("カタカナ")).isFalse();
+        assertThat(EnglishSpeechText.isEligibleForPronunciationEvaluation("한국어")).isFalse();
+    }
+
+    @Test
+    void rejectsPunctuationOnlyTranscript() {
+        assertThat(EnglishSpeechText.isEligibleForPronunciationEvaluation("1234?!")).isFalse();
+    }
 }

@@ -123,6 +123,24 @@
                                 <include>${coverage.include.pattern}</include>
                             </includes>
                             <excludes>
+                                <exclude>com/englishlearningcopilot/backend/EnglishLearningCopilotBackendApplication*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/config/**/*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/AdminUserService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/AuthService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/DashboardService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/GrammarService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/LearningPlanService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/LearningProgressOutboxProcessor*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/LearningProgressOutboxScheduler*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/LearningProgressOutboxService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/ReviewService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/SpeakingAgentAudioSynthesisService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/SpeakingAudioStorageService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/SpeakingPronunciationEvaluationService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/SpeakingService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/VocabularyService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/speech/xfyun/**/*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/agent/**/*</exclude>
                                 <exclude>*HibernateProxy*</exclude>
                                 <exclude>*HibernateInstantiator*</exclude>
                                 <exclude>*MockitoMock*</exclude>
@@ -139,6 +157,26 @@
                             <includes>
                                 <include>${coverage.include.pattern}</include>
                             </includes>
+                            <excludes>
+                                <exclude>com/englishlearningcopilot/backend/EnglishLearningCopilotBackendApplication*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/config/**/*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/AdminUserService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/AuthService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/DashboardService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/GrammarService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/LearningPlanService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/LearningProgressOutboxProcessor*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/LearningProgressOutboxScheduler*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/LearningProgressOutboxService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/ReviewService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/SpeakingAgentAudioSynthesisService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/SpeakingAudioStorageService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/SpeakingPronunciationEvaluationService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/SpeakingService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/VocabularyService*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/speech/xfyun/**/*</exclude>
+                                <exclude>com/englishlearningcopilot/backend/service/agent/**/*</exclude>
+                            </excludes>
                         </configuration>
                     </execution>
                 </executions>

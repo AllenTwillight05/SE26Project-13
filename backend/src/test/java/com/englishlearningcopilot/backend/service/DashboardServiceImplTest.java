@@ -207,6 +207,38 @@ class DashboardServiceImplTest {
     }
 
     @Test
+    void getWeeklyOverviewIgnoresNullMessageFieldsAndUsesFallbackScore() {
+        DashboardServiceImpl service = service();
+        AppUser user = user(7L, "learner");
+        SpeakingMessage nullFields = new SpeakingMessage();
+        nullFields.setSender(SpeakingMessageSender.USER);
+        nullFields.setDurationMs(null);
+        nullFields.setPronunciationScore(null);
+        SpeakingMessage fallbackScore = new SpeakingMessage();
+        fallbackScore.setSender(SpeakingMessageSender.USER);
+        fallbackScore.setDurationMs(-1L);
+        fallbackScore.setPronunciationScore(64.0);
+        fallbackScore.setPronunciationDetail(null);
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(userDailyLearningProgressRepository.findLearningDatesInRange(eq(7L), any(), any()))
+                .thenReturn(List.of());
+        when(userDailyPracticeLogRepository.countByUserIdAndPlanDateBetweenAndPracticeType(eq(7L), any(), any(), any()))
+                .thenReturn(0L);
+        when(speakingMessageRepository.findBySessionUserIdAndSenderAndCreatedAtBetween(
+                eq(7L),
+                eq(SpeakingMessageSender.USER),
+                any(Instant.class),
+                any(Instant.class)
+        )).thenReturn(List.of(nullFields, fallbackScore));
+
+        DashboardWeeklyOverviewResponse overview = service.getWeeklyOverview("learner");
+
+        assertThat(overview.speakingDuration()).isEqualTo("0 min");
+        assertThat(overview.pronunciationReference()).isEqualTo("64 / 100");
+        assertThat(overview.learningDays()).contains("0");
+    }
+
+    @Test
     void getWeeklyOverviewRequiresAuthentication() {
         DashboardServiceImpl service = service();
 

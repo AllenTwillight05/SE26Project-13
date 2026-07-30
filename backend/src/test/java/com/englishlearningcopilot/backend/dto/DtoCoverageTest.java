@@ -69,6 +69,13 @@ class DtoCoverageTest {
     }
 
     @Test
+    void grammarPracticeQuestionResponseSkipsMissingOptionE() {
+        GrammarPracticeQuestionResponse response = GrammarPracticeQuestionResponse.from(grammarQuestion());
+
+        assertThat(response.options()).containsExactly("A", "B", "C", "D");
+    }
+
+    @Test
     void grammarNotebookQuestionResponseSkipsBlankOptionE() {
         GrammarQuestion question = grammarQuestion();
         question.setOptionE(" ");
@@ -78,6 +85,29 @@ class DtoCoverageTest {
         assertThat(response.options()).containsExactly("A", "B", "C", "D");
         assertThat(response.wrong()).isTrue();
         assertThat(response.favorited()).isFalse();
+    }
+
+    @Test
+    void grammarNotebookQuestionResponseIncludesOptionalOptionEWhenPresent() {
+        GrammarQuestion question = grammarQuestion();
+        question.setOptionE("E");
+
+        GrammarNotebookQuestionResponse response = GrammarNotebookQuestionResponse.from(question, false, true);
+
+        assertThat(response.options()).containsExactly("A", "B", "C", "D", "E");
+        assertThat(response.favorited()).isTrue();
+    }
+
+    @Test
+    void vocabularyWordbookWordResponseMapsNullAndNonNullBriefTranslation() {
+        Vocabulary emptyBrief = vocabulary();
+        emptyBrief.setBriefTranslation(null);
+        Vocabulary fullBrief = vocabulary();
+        fullBrief.setBriefTranslation("brief");
+
+        assertThat(VocabularyWordbookWordResponse.from(emptyBrief, true).briefTranslation()).isEmpty();
+        assertThat(VocabularyWordbookWordResponse.from(fullBrief, false).briefTranslation()).isEqualTo("brief");
+        assertThat(VocabularyWordbookWordResponse.from(emptyBrief, true).favorited()).isTrue();
     }
 
     @Test
@@ -100,6 +130,32 @@ class DtoCoverageTest {
 
         assertThat(response.sender()).isEqualTo("USER");
         assertThat(response.audioUrl()).isEqualTo("/audio.webm");
+    }
+
+    @Test
+    void speakingMessageResponseMapsAgentAudioStates() {
+        SpeakingMessage pending = new SpeakingMessage();
+        pending.setSender(SpeakingMessageSender.AGENT);
+        pending.setContent("hello");
+        pending.setSpokenText("spoken");
+        pending.setAudioPending(true);
+
+        SpeakingMessage withAudio = new SpeakingMessage();
+        withAudio.setSender(SpeakingMessageSender.AGENT);
+        withAudio.setContent("hello");
+        withAudio.setSpokenText("spoken");
+        withAudio.setAudioUrl("/audio.mp3");
+
+        SpeakingMessage textOnly = new SpeakingMessage();
+        textOnly.setSender(SpeakingMessageSender.AGENT);
+        textOnly.setContent("hello");
+        textOnly.setSpokenText(" ");
+
+        assertThat(SpeakingMessageResponse.from(pending).audioPending()).isTrue();
+        assertThat(SpeakingMessageResponse.from(pending).autoPlay()).isTrue();
+        assertThat(SpeakingMessageResponse.from(withAudio).autoPlay()).isTrue();
+        assertThat(SpeakingMessageResponse.from(withAudio).textOnly()).isFalse();
+        assertThat(SpeakingMessageResponse.from(textOnly).textOnly()).isTrue();
     }
 
     private static Vocabulary vocabulary() {
