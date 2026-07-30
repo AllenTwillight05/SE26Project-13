@@ -1,6 +1,7 @@
 package com.englishlearningcopilot.backend.controller;
 
 import com.englishlearningcopilot.backend.dto.DashboardCommunityLearningTrendsResponse;
+import com.englishlearningcopilot.backend.dto.DashboardRecommendedTaskResponse;
 import com.englishlearningcopilot.backend.dto.DashboardStudyPlanResponse;
 import com.englishlearningcopilot.backend.dto.DashboardWeeklyOverviewResponse;
 import com.englishlearningcopilot.backend.service.DashboardService;
@@ -26,6 +27,11 @@ public class DashboardController {
     @GetMapping("/community-learning-trends")
     public DashboardCommunityLearningTrendsResponse getCommunityLearningTrends() {
         return dashboardService.getCommunityLearningTrends();
+    }
+
+    @GetMapping("/recommended-task")
+    public DashboardRecommendedTaskResponse getRecommendedTask(Principal principal) {
+        return dashboardService.getRecommendedTask(principal.getName());
     }
 
     @GetMapping("/study-plan")

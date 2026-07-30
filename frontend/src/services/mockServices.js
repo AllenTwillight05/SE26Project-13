@@ -284,7 +284,7 @@ export function createMockServices() {
     },
     dashboard: {
       getOverview: () => simulateLatency(dashboardOverviewMock),
-      getRecommendedTask: () => simulateLatency(dashboardRecommendedTaskMock),
+      getRecommendedTask: () => httpServices.dashboard.getRecommendedTask(),
       getStudyPlan: () => httpServices.dashboard.getStudyPlan(),
       getWeeklyOverview: () => httpServices.dashboard.getWeeklyOverview(),
       getCommunityLearningTrends: () => httpServices.dashboard.getCommunityLearningTrends()

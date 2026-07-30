@@ -13,12 +13,15 @@ import com.englishlearningcopilot.backend.dto.DashboardWeeklyOverviewResponse;
 import com.englishlearningcopilot.backend.entity.AppUser;
 import com.englishlearningcopilot.backend.entity.SpeakingMessage;
 import com.englishlearningcopilot.backend.entity.SpeakingMessageSender;
+import com.englishlearningcopilot.backend.entity.SpeakingScenario;
 import com.englishlearningcopilot.backend.entity.UserRole;
 import com.englishlearningcopilot.backend.entity.Vocabulary;
 import com.englishlearningcopilot.backend.exception.ResourceNotFoundException;
 import com.englishlearningcopilot.backend.repository.GrammarLeaderboardProjection;
 import com.englishlearningcopilot.backend.repository.SpeakingLeaderboardProjection;
 import com.englishlearningcopilot.backend.repository.SpeakingMessageRepository;
+import com.englishlearningcopilot.backend.repository.SpeakingScenarioRepository;
+import com.englishlearningcopilot.backend.repository.SpeakingScenarioScoreProjection;
 import com.englishlearningcopilot.backend.repository.SpeakingSessionRepository;
 import com.englishlearningcopilot.backend.repository.UserDailyLearningProgressRepository;
 import com.englishlearningcopilot.backend.repository.UserDailyPracticeLogRepository;
@@ -43,6 +46,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class DashboardServiceImplTest {
+
+    @Mock
+    private SpeakingScenarioRepository speakingScenarioRepository;
 
     @Mock
     private SpeakingSessionRepository speakingSessionRepository;
@@ -121,6 +127,62 @@ class DashboardServiceImplTest {
 
         assertThat(response.streakDays()).isEqualTo(3);
         assertThat(response.grammar().done()).isTrue();
+    }
+
+    @Test
+    void getRecommendedTaskReturnsWeakestPracticedDailyScenario() {
+        DashboardServiceImpl service = service();
+        AppUser user = user(7L, "learner");
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(speakingSessionRepository.findWeakestDailyScenarioByUserId(eq(7L), any(Pageable.class)))
+                .thenReturn(List.of(scoreProjection("G-10-phone-call", "电话沟通", null, null, 58.5)));
+
+        var response = service.getRecommendedTask("learner");
+
+        assertThat(response.scenarioId()).isEqualTo("G-10-phone-call");
+        assertThat(response.topic()).isEqualTo("电话沟通");
+        assertThat(response.suggestedDuration()).isEqualTo("12 min");
+        assertThat(response.intensity()).isEqualTo("Daily");
+        assertThat(response.score()).isEqualTo(58.5);
+        assertThat(response.route()).isEqualTo("/speaking/G-10-phone-call");
+    }
+
+    @Test
+    void getRecommendedTaskUsesStableDailyScenarioWhenUserHasNoScores() {
+        DashboardServiceImpl service = service();
+        AppUser user = user(7L, "learner");
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(speakingSessionRepository.findWeakestDailyScenarioByUserId(eq(7L), any(Pageable.class)))
+                .thenReturn(List.of());
+        List<SpeakingScenario> scenarios = List.of(
+                scenario("G-01-airport", "机场值机"),
+                scenario("G-02-restaurant", "餐厅点餐"),
+                scenario("G-10-phone-call", "电话沟通")
+        );
+        when(speakingScenarioRepository.findByActiveTrueAndIdStartingWithOrderByIdAsc("G-"))
+                .thenReturn(scenarios);
+
+        var first = service.getRecommendedTask("learner");
+        var second = service.getRecommendedTask("learner");
+
+        assertThat(first.scenarioId()).isEqualTo(second.scenarioId());
+        assertThat(scenarios).extracting(SpeakingScenario::getId).contains(first.scenarioId());
+        assertThat(first.score()).isNull();
+    }
+
+    @Test
+    void getRecommendedTaskRejectsMissingDailyScenarios() {
+        DashboardServiceImpl service = service();
+        AppUser user = user(7L, "learner");
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(speakingSessionRepository.findWeakestDailyScenarioByUserId(eq(7L), any(Pageable.class)))
+                .thenReturn(List.of());
+        when(speakingScenarioRepository.findByActiveTrueAndIdStartingWithOrderByIdAsc("G-"))
+                .thenReturn(List.of());
+
+        assertThatThrownBy(() -> service.getRecommendedTask("learner"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("No daily speaking scenario is available.");
     }
 
     @Test
@@ -259,6 +321,7 @@ class DashboardServiceImplTest {
 
     private DashboardServiceImpl service() {
         return new DashboardServiceImpl(
+                speakingScenarioRepository,
                 speakingSessionRepository,
                 speakingMessageRepository,
                 userGrammarbookRepository,
@@ -305,6 +368,25 @@ class DashboardServiceImplTest {
         return vocabulary;
     }
 
+    private static SpeakingScenario scenario(String id, String title) {
+        SpeakingScenario scenario = new SpeakingScenario();
+        scenario.setId(id);
+        scenario.setTitle(title);
+        scenario.setDescription(title + " description");
+        scenario.setDifficulty("B1");
+        scenario.setAccent("US");
+        scenario.setDuration("12 min");
+        scenario.setSummary(title + " summary");
+        scenario.setTone("friendly");
+        scenario.setGoal(title + " goal");
+        scenario.setKeywords("daily");
+        scenario.setRolePrompt("role");
+        scenario.setOpeningMessage("hello");
+        scenario.setTargetTurns(5);
+        scenario.setScoringRubric("rubric");
+        return scenario;
+    }
+
     private static SpeakingLeaderboardProjection speakingProjection(
             String scenarioId,
             String topic,
@@ -330,6 +412,41 @@ class DashboardServiceImplTest {
             @Override
             public Long getLearnerCount() {
                 return learnerCount;
+            }
+        };
+    }
+
+    private static SpeakingScenarioScoreProjection scoreProjection(
+            String scenarioId,
+            String title,
+            String duration,
+            String difficulty,
+            Double averageScore
+    ) {
+        return new SpeakingScenarioScoreProjection() {
+            @Override
+            public String getScenarioId() {
+                return scenarioId;
+            }
+
+            @Override
+            public String getTitle() {
+                return title;
+            }
+
+            @Override
+            public String getDuration() {
+                return duration;
+            }
+
+            @Override
+            public String getDifficulty() {
+                return difficulty;
+            }
+
+            @Override
+            public Double getAverageScore() {
+                return averageScore;
             }
         };
     }
