@@ -72,14 +72,15 @@ export VITE_API_MODE="${VITE_API_MODE:-mixed}"
 export VITE_API_BASE_URL="${VITE_API_BASE_URL:-}"
 export VITE_AUTH_API_MODE="${VITE_AUTH_API_MODE:-http}"
 export VITE_DASHBOARD_API_MODE="${VITE_DASHBOARD_API_MODE:-mock}"
-export VITE_SPEAKING_API_MODE="${VITE_SPEAKING_API_MODE:-mock}"
+export VITE_SPEAKING_API_MODE="${VITE_SPEAKING_API_MODE:-http}"
 export VITE_VOCABULARY_API_MODE="${VITE_VOCABULARY_API_MODE:-mock}"
 export VITE_GRAMMAR_API_MODE="${VITE_GRAMMAR_API_MODE:-mock}"
 export VITE_PROFILE_API_MODE="${VITE_PROFILE_API_MODE:-mock}"
 
 printf 'Building commit %s from %s\n' "$(git -C "$repo_root" rev-parse --short HEAD)" "$repo_root"
-printf 'Frontend API mode: %s (auth: %s, vocabulary: %s)\n' \
-  "$VITE_API_MODE" "$VITE_AUTH_API_MODE" "$VITE_VOCABULARY_API_MODE"
+printf 'Frontend API mode: %s (auth: %s, speaking: %s, vocabulary: %s)\n' \
+  "$VITE_API_MODE" "$VITE_AUTH_API_MODE" "$VITE_SPEAKING_API_MODE" \
+  "$VITE_VOCABULARY_API_MODE"
 
 if "$with_tests"; then
   printf '==> Building backend and running its tests\n'
