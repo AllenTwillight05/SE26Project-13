@@ -106,6 +106,31 @@ function getDefaultBackPath(scenarioId) {
   }
 }
 
+const QUEUED_TURN_POLL_INTERVAL_MS = 750;
+const QUEUED_TURN_TIMEOUT_MS = 120_000;
+
+function sleep(milliseconds) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+async function waitForQueuedTurn(speaking, sessionId, taskId) {
+  const deadline = Date.now() + QUEUED_TURN_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const task = await speaking.getTurnTask(sessionId, taskId);
+    if (task?.turn) {
+      return task.turn;
+    }
+    if (task?.errorCode) {
+      const message = task.errorCode === "TRANSCRIPTION_FAILED"
+        ? "语音识别失败，请检查录音后重试。"
+        : "回复生成失败，请稍后重试。";
+      throw new Error(message);
+    }
+    await sleep(QUEUED_TURN_POLL_INTERVAL_MS);
+  }
+  throw new Error("语音处理超时，请稍后查看会话记录或重新录音。");
+}
+
 export function SpeakingConversationPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -464,12 +489,15 @@ export function SpeakingConversationPage() {
         audioChunksRef.current = [];
 
         try {
-          const turn = await speaking.submitRecording(
+          let turn = await speaking.submitRecording(
             sessionId,
             audioBlob,
             durationMs,
             getRecordingFileName(recordingMimeType)
           );
+          if (turn?.taskId && typeof speaking.getTurnTask === "function") {
+            turn = await waitForQueuedTurn(speaking, sessionId, turn.taskId);
+          }
           if (!isMountedRef.current) {
             return;
           }

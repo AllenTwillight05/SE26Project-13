@@ -15,6 +15,8 @@ export const API_ENDPOINTS = {
   speakingSession: (sessionId) => `/api/speaking/sessions/${encodeURIComponent(sessionId)}`,
   speakingHistory: "/api/speaking/history",
   speakingSessionMessages: (sessionId) => `/api/speaking/sessions/${encodeURIComponent(sessionId)}/messages`,
+  speakingTurnTask: (sessionId, taskId) =>
+    `/api/speaking/sessions/${encodeURIComponent(sessionId)}/turn-tasks/${encodeURIComponent(taskId)}`,
   speakingSessionFeedback: (sessionId) => `/api/speaking/sessions/${encodeURIComponent(sessionId)}/feedback`,
   vocabularyMemory: "/api/vocabulary/memory",
   vocabularyPracticeProgress: "/api/vocabulary/practice-progress",

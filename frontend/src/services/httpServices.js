@@ -17,6 +17,13 @@ function toCreateSpeakingSessionPayload(input, selectedTopic) {
   };
 }
 
+export function createSpeakingAttemptId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `speaking-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
 // 真实接口服务实现，结构要和 mockServices 保持一致，页面才能只通过环境变量切换数据源。
 export function createHttpServices(baseUrl = "") {
   return {
@@ -46,9 +53,16 @@ export function createHttpServices(baseUrl = "") {
       getSession: (sessionId) =>
         getJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingSession(sessionId))),
       listHistory: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingHistory)),
-      submitRecording: (sessionId, audioBlob, durationMs, fileName = "recording.webm") => {
+      submitRecording: (
+        sessionId,
+        audioBlob,
+        durationMs,
+        fileName = "recording.webm",
+        attemptId = createSpeakingAttemptId()
+      ) => {
         const formData = new FormData();
         formData.append("audio", audioBlob, fileName);
+        formData.append("attemptId", attemptId);
         if (durationMs) {
           formData.append("durationMs", String(durationMs));
         }
@@ -59,6 +73,8 @@ export function createHttpServices(baseUrl = "") {
           body: formData
         });
       },
+      getTurnTask: (sessionId, taskId) =>
+        getJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingTurnTask(sessionId, taskId))),
       getFeedback: (sessionId) =>
         getJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingSessionFeedback(sessionId)))
     },
