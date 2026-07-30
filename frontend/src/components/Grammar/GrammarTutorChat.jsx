@@ -8,7 +8,7 @@ const MAX_TURNS = 5;
 const welcomeMessage = {
   id: "welcome",
   role: "assistant",
-  content: "还有哪里不明白？你可以问我为什么选这个答案、其他选项错在哪里，或者请我换一种方式讲解。",
+  content: "我是 LUMI，你的英语学习助手。还有哪里不明白？你可以问我为什么选这个答案、其他选项错在哪里，或者请我换一种方式讲解。",
   greeting: true
 };
 
@@ -66,7 +66,7 @@ export function GrammarTutorChat({ onSend, questionId, selectedAnswer }) {
       setError(
         requestError?.status === 401
           ? "登录状态已失效，请重新登录后继续提问。"
-          : "语法导师暂时没有回应，请稍后重试。"
+          : "LUMI 暂时没有回应，请稍后重试。"
       );
     } finally {
       setLoading(false);
@@ -84,7 +84,7 @@ export function GrammarTutorChat({ onSend, questionId, selectedAnswer }) {
     <section className="grammar-tutor" aria-labelledby="grammar-tutor-title">
       <Flex justify="space-between" align="start" gap={12} wrap>
         <div>
-          <Text className="eyebrow">AI Grammar Tutor</Text>
+          <Text className="eyebrow">LUMI · English Learning Assistant</Text>
           <Title id="grammar-tutor-title" level={4}>
             <RobotOutlined /> 对话讲解
           </Title>
@@ -100,13 +100,13 @@ export function GrammarTutorChat({ onSend, questionId, selectedAnswer }) {
             className={`grammar-tutor__message grammar-tutor__message--${message.role}`}
             key={message.id}
           >
-            <Text strong>{message.role === "assistant" ? "语法导师" : "你"}</Text>
+            <Text strong>{message.role === "assistant" ? "LUMI" : "你"}</Text>
             <Paragraph>{message.content}</Paragraph>
           </div>
         ))}
         {loading ? (
           <div className="grammar-tutor__message grammar-tutor__message--assistant">
-            <Text strong>语法导师</Text>
+            <Text strong>LUMI</Text>
             <Paragraph className="grammar-tutor__thinking">正在结合这道题思考…</Paragraph>
           </div>
         ) : null}
@@ -123,7 +123,7 @@ export function GrammarTutorChat({ onSend, questionId, selectedAnswer }) {
       ) : (
         <Flex gap={10} align="end" className="grammar-tutor__composer">
           <Input.TextArea
-            aria-label="向语法导师提问"
+            aria-label="向 LUMI 提问"
             autoSize={{ minRows: 2, maxRows: 4 }}
             maxLength={1000}
             onChange={(event) => setInput(event.target.value)}

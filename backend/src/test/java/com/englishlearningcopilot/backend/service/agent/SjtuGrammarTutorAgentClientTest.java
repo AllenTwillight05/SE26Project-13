@@ -26,7 +26,11 @@ class SjtuGrammarTutorAgentClientTest {
                 List.of(question(2, "Tense"))
         );
 
-        assertThat(messages.getFirst().get("content")).contains("语法导师");
+        assertThat(messages.getFirst().get("content"))
+                .contains("你叫 LUMI")
+                .contains("英语学习助手")
+                .contains("禁止使用任何 Markdown")
+                .contains("自然语言纯文本");
         assertThat(messages.get(1).get("content"))
                 .contains("Choose the answer.")
                 .contains("正确答案：A")

@@ -11,7 +11,8 @@ describe("GrammarTutorChat", () => {
     });
     render(<GrammarTutorChat onSend={onSend} questionId={12} selectedAnswer="B" />);
 
-    const input = screen.getByRole("textbox", { name: "向语法导师提问" });
+    expect(screen.getByText("LUMI · English Learning Assistant")).toBeInTheDocument();
+    const input = screen.getByRole("textbox", { name: "向 LUMI 提问" });
     await userEvent.type(input, "为什么不能选 B？");
     await userEvent.click(screen.getByRole("button", { name: "发送问题" }));
 

@@ -510,7 +510,7 @@ Authorization: Bearer <token>
 
 `POST /api/grammar/tutor/messages`
 
-用途：用户答题后，围绕当前题与 LLM 语法导师进行短对话。需要 Bearer token。
+用途：用户答题后，与英语学习助手 LUMI 围绕当前题进行短对话。LUMI 使用自然语言纯文本回答，不输出 Markdown。需要 Bearer token。
 
 请求结构：
 
