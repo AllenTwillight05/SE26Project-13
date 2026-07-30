@@ -1220,8 +1220,33 @@ a {
 }
 
 .grammar-tutor__message--assistant {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 10px;
+  width: min(92%, 738px);
+  padding: 0;
   justify-self: start;
+  align-items: start;
+  background: transparent;
+}
+
+.grammar-tutor__message--assistant .grammar-tutor__message-content {
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.82);
+}
+
+.grammar-tutor__avatar {
+  width: 48px;
+  height: 48px;
+  padding: 3px;
+  border: 1px solid rgba(106, 63, 209, 0.16);
+  border-radius: 15px;
+  background: linear-gradient(145deg, rgba(246, 242, 255, 0.96), rgba(255, 255, 255, 0.86));
+  box-shadow: 0 8px 18px rgba(73, 46, 129, 0.12);
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .grammar-tutor__message--user {
@@ -1258,6 +1283,16 @@ a {
 @media (max-width: 640px) {
   .grammar-tutor__message {
     width: 94%;
+  }
+
+  .grammar-tutor__message--assistant {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .grammar-tutor__avatar {
+    width: 42px;
+    height: 42px;
   }
 
   .grammar-tutor__composer {

@@ -4,6 +4,8 @@ import { Alert, Button, Flex, Input, Tag, Typography } from "antd";
 
 const { Paragraph, Text, Title } = Typography;
 const MAX_TURNS = 5;
+const LUMI_AVATAR = "/pet/clawd-happy.svg";
+const LUMI_THINKING_AVATAR = "/pet/clawd-working-thinking.svg";
 
 const welcomeMessage = {
   id: "welcome",
@@ -100,14 +102,32 @@ export function GrammarTutorChat({ onSend, questionId, selectedAnswer }) {
             className={`grammar-tutor__message grammar-tutor__message--${message.role}`}
             key={message.id}
           >
-            <Text strong>{message.role === "assistant" ? "LUMI" : "你"}</Text>
-            <Paragraph>{message.content}</Paragraph>
+            {message.role === "assistant" ? (
+              <img
+                alt=""
+                aria-hidden="true"
+                className="grammar-tutor__avatar"
+                src={LUMI_AVATAR}
+              />
+            ) : null}
+            <div className="grammar-tutor__message-content">
+              <Text strong>{message.role === "assistant" ? "LUMI" : "你"}</Text>
+              <Paragraph>{message.content}</Paragraph>
+            </div>
           </div>
         ))}
         {loading ? (
           <div className="grammar-tutor__message grammar-tutor__message--assistant">
-            <Text strong>LUMI</Text>
-            <Paragraph className="grammar-tutor__thinking">正在结合这道题思考…</Paragraph>
+            <img
+              alt=""
+              aria-hidden="true"
+              className="grammar-tutor__avatar"
+              src={LUMI_THINKING_AVATAR}
+            />
+            <div className="grammar-tutor__message-content">
+              <Text strong>LUMI</Text>
+              <Paragraph className="grammar-tutor__thinking">正在结合这道题思考…</Paragraph>
+            </div>
           </div>
         ) : null}
       </div>
