@@ -9,6 +9,8 @@ import com.englishlearningcopilot.backend.dto.GrammarPracticeResultRequest;
 import com.englishlearningcopilot.backend.dto.GrammarPracticeQuestionResponse;
 import com.englishlearningcopilot.backend.dto.GrammarRatingRequest;
 import com.englishlearningcopilot.backend.dto.GrammarTopicResponse;
+import com.englishlearningcopilot.backend.dto.GrammarTutorRequest;
+import com.englishlearningcopilot.backend.dto.GrammarTutorResponse;
 import com.englishlearningcopilot.backend.dto.MessageResponse;
 import com.englishlearningcopilot.backend.service.GrammarService;
 import jakarta.validation.Valid;
@@ -121,6 +123,18 @@ public class GrammarController {
             @Valid @RequestBody GrammarFavoriteRequest request
     ) {
         return grammarService.toggleFavorite(principal.getName(), request);
+    }
+
+    /**
+     * POST /api/grammar/tutor/messages
+     * Ask the LLM tutor a short follow-up question about the current grammar exercise.
+     */
+    @PostMapping("/tutor/messages")
+    public GrammarTutorResponse askTutor(
+            Principal principal,
+            @Valid @RequestBody GrammarTutorRequest request
+    ) {
+        return grammarService.askTutor(principal.getName(), request);
     }
 
     private String getUsername(Principal principal) {

@@ -9,6 +9,8 @@ import com.englishlearningcopilot.backend.dto.GrammarPracticeResultRequest;
 import com.englishlearningcopilot.backend.dto.GrammarPracticeQuestionResponse;
 import com.englishlearningcopilot.backend.dto.GrammarRatingRequest;
 import com.englishlearningcopilot.backend.dto.GrammarTopicResponse;
+import com.englishlearningcopilot.backend.dto.GrammarTutorRequest;
+import com.englishlearningcopilot.backend.dto.GrammarTutorResponse;
 import java.util.List;
 
 public interface GrammarService {
@@ -30,4 +32,6 @@ public interface GrammarService {
     void submitRating(String username, GrammarRatingRequest request);
 
     GrammarFavoriteResponse toggleFavorite(String username, GrammarFavoriteRequest request);
+
+    GrammarTutorResponse askTutor(String username, GrammarTutorRequest request);
 }
