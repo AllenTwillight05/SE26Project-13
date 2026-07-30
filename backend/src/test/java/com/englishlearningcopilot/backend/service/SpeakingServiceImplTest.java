@@ -542,6 +542,52 @@ class SpeakingServiceImplTest {
         assertThat(feedback.pronunciation()).isEqualTo(72);
     }
 
+    @Test
+    void evaluateMissingPronunciationSkipsInvalidOrUnsupportedMessages() {
+        SpeakingMessage noAudio = message(null, 1L, 1, SpeakingMessageSender.USER, "I feel sick.");
+        noAudio.setTranscribedText("I feel sick.");
+
+        SpeakingMessage blankAudio = message(null, 2L, 1, SpeakingMessageSender.USER, "I feel sick.");
+        blankAudio.setAudioUrl(" ");
+        blankAudio.setTranscribedText("I feel sick.");
+
+        SpeakingMessage noTranscript = message(null, 3L, 1, SpeakingMessageSender.USER, "");
+        noTranscript.setAudioUrl("/audio/one.webm");
+
+        SpeakingMessage blankTranscript = message(null, 4L, 1, SpeakingMessageSender.USER, "");
+        blankTranscript.setAudioUrl("/audio/two.webm");
+        blankTranscript.setTranscribedText(" ");
+
+        SpeakingMessage chineseTranscript = message(null, 5L, 1, SpeakingMessageSender.USER, "中文求助");
+        chineseTranscript.setAudioUrl("/audio/three.webm");
+        chineseTranscript.setTranscribedText("我想要中文帮助");
+
+        assertThat((PronunciationScore) ReflectionTestUtils.invokeMethod(
+                speakingService, "evaluateMissingPronunciation", noAudio)).isNull();
+        assertThat((PronunciationScore) ReflectionTestUtils.invokeMethod(
+                speakingService, "evaluateMissingPronunciation", blankAudio)).isNull();
+        assertThat((PronunciationScore) ReflectionTestUtils.invokeMethod(
+                speakingService, "evaluateMissingPronunciation", noTranscript)).isNull();
+        assertThat((PronunciationScore) ReflectionTestUtils.invokeMethod(
+                speakingService, "evaluateMissingPronunciation", blankTranscript)).isNull();
+        assertThat((PronunciationScore) ReflectionTestUtils.invokeMethod(
+                speakingService, "evaluateMissingPronunciation", chineseTranscript)).isNull();
+        verify(audioStorageService, never()).load(any());
+    }
+
+    @Test
+    void evaluateMissingPronunciationReturnsNullWhenEvaluatorHasNoScore() {
+        SpeakingMessage message = message(null, 6L, 1, SpeakingMessageSender.USER, "A valid English answer.");
+        message.setAudioUrl("/audio/four.webm");
+        message.setTranscribedText("A valid English answer.");
+        when(audioStorageService.load("/audio/four.webm")).thenReturn(new byte[] {4, 5, 6});
+        when(pronunciationEvaluationService.evaluateUserMessage(eq(6L), any(), eq("A valid English answer.")))
+                .thenReturn(Optional.empty());
+
+        assertThat((PronunciationScore) ReflectionTestUtils.invokeMethod(
+                speakingService, "evaluateMissingPronunciation", message)).isNull();
+    }
+
     private static AppUser user(Long id, String username) {
         AppUser user = new AppUser();
         ReflectionTestUtils.setField(user, "id", id);

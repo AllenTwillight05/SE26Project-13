@@ -2,6 +2,7 @@ package com.englishlearningcopilot.backend.service.impl;
 
 import com.englishlearningcopilot.backend.dto.DashboardCommunityLearningTrendsResponse;
 import com.englishlearningcopilot.backend.dto.DashboardGrammarTrendResponse;
+import com.englishlearningcopilot.backend.dto.DashboardRecommendedTaskResponse;
 import com.englishlearningcopilot.backend.dto.DashboardSpeakingTrendResponse;
 import com.englishlearningcopilot.backend.dto.DashboardStudyPlanResponse;
 import com.englishlearningcopilot.backend.dto.DashboardWeeklyOverviewResponse;
@@ -9,12 +10,15 @@ import com.englishlearningcopilot.backend.dto.DailyLearningStatusResponse;
 import com.englishlearningcopilot.backend.entity.AppUser;
 import com.englishlearningcopilot.backend.entity.SpeakingMessage;
 import com.englishlearningcopilot.backend.entity.SpeakingMessageSender;
+import com.englishlearningcopilot.backend.entity.SpeakingScenario;
 import com.englishlearningcopilot.backend.dto.VocabularyLeaderboardItemResponse;
 import com.englishlearningcopilot.backend.entity.Vocabulary;
 import com.englishlearningcopilot.backend.exception.ResourceNotFoundException;
 import com.englishlearningcopilot.backend.repository.GrammarLeaderboardProjection;
 import com.englishlearningcopilot.backend.repository.SpeakingMessageRepository;
 import com.englishlearningcopilot.backend.repository.SpeakingLeaderboardProjection;
+import com.englishlearningcopilot.backend.repository.SpeakingScenarioRepository;
+import com.englishlearningcopilot.backend.repository.SpeakingScenarioScoreProjection;
 import com.englishlearningcopilot.backend.repository.SpeakingSessionRepository;
 import com.englishlearningcopilot.backend.repository.UserDailyLearningProgressRepository;
 import com.englishlearningcopilot.backend.repository.UserDailyPracticeLogRepository;
@@ -37,6 +41,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -51,9 +56,11 @@ public class DashboardServiceImpl implements DashboardService {
     private static final int VOCABULARY_LEADERBOARD_LIMIT = 10;
     private static final int GRAMMAR_LEADERBOARD_LIMIT = 10;
     private static final int SPEAKING_LEADERBOARD_LIMIT = 10;
+    private static final int RECOMMENDED_TASK_LIMIT = 1;
     private static final String PRACTICE_TYPE_VOCABULARY = "VOCABULARY";
     private static final String PRACTICE_TYPE_GRAMMAR = "GRAMMAR";
 
+    private final SpeakingScenarioRepository speakingScenarioRepository;
     private final SpeakingSessionRepository speakingSessionRepository;
     private final SpeakingMessageRepository speakingMessageRepository;
     private final UserGrammarbookRepository userGrammarbookRepository;
@@ -66,6 +73,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final ObjectMapper objectMapper;
 
     public DashboardServiceImpl(
+            SpeakingScenarioRepository speakingScenarioRepository,
             SpeakingSessionRepository speakingSessionRepository,
             SpeakingMessageRepository speakingMessageRepository,
             UserGrammarbookRepository userGrammarbookRepository,
@@ -77,6 +85,7 @@ public class DashboardServiceImpl implements DashboardService {
             UserDailyPracticeLogRepository userDailyPracticeLogRepository,
             ObjectMapper objectMapper
     ) {
+        this.speakingScenarioRepository = speakingScenarioRepository;
         this.speakingSessionRepository = speakingSessionRepository;
         this.speakingMessageRepository = speakingMessageRepository;
         this.userGrammarbookRepository = userGrammarbookRepository;
@@ -97,6 +106,51 @@ public class DashboardServiceImpl implements DashboardService {
                 getVocabularyLeaderboard(),
                 getGrammarLeaderboard()
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DashboardRecommendedTaskResponse getRecommendedTask(String username) {
+        AppUser user = getCurrentUser(username);
+        List<SpeakingScenarioScoreProjection> weakScenarios = speakingSessionRepository
+                .findWeakestDailyScenarioByUserId(user.getId(), PageRequest.of(0, RECOMMENDED_TASK_LIMIT));
+
+        if (!weakScenarios.isEmpty()) {
+            SpeakingScenarioScoreProjection scenario = weakScenarios.get(0);
+            return new DashboardRecommendedTaskResponse(
+                    scenario.getScenarioId(),
+                    scenario.getTitle(),
+                    nullToDefault(scenario.getDuration(), "12 min"),
+                    nullToDefault(scenario.getDifficulty(), "Daily"),
+                    "该日常口语场景历史得分较低，建议优先复练。",
+                    scenario.getAverageScore(),
+                    "/speaking/" + scenario.getScenarioId()
+            );
+        }
+
+        SpeakingScenario scenario = selectStableDailyScenario(user);
+
+        return new DashboardRecommendedTaskResponse(
+                scenario.getId(),
+                scenario.getTitle(),
+                nullToDefault(scenario.getDuration(), "12 min"),
+                nullToDefault(scenario.getDifficulty(), "Daily"),
+                "还没有日常口语练习记录，先随机推荐一个场景开始。",
+                null,
+                "/speaking/" + scenario.getId()
+        );
+    }
+
+    private SpeakingScenario selectStableDailyScenario(AppUser user) {
+        List<SpeakingScenario> scenarios = speakingScenarioRepository
+                .findByActiveTrueAndIdStartingWithOrderByIdAsc("G-");
+        if (scenarios.isEmpty()) {
+            throw new ResourceNotFoundException("No daily speaking scenario is available.");
+        }
+
+        LocalDate today = LocalDate.now(ZoneId.systemDefault());
+        int index = Math.floorMod(Objects.hash(user.getId(), today), scenarios.size());
+        return scenarios.get(index);
     }
 
     @Override
@@ -242,6 +296,10 @@ public class DashboardServiceImpl implements DashboardService {
 
     private String nullToEmpty(String value) {
         return value == null ? "" : value;
+    }
+
+    private String nullToDefault(String value, String defaultValue) {
+        return value == null || value.isBlank() ? defaultValue : value;
     }
 
     private PronunciationScore readPronunciationScore(SpeakingMessage message) {
