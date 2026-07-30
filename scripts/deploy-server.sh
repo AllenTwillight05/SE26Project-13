@@ -187,9 +187,10 @@ run_as_root rsync -a --delete "$frontend_dist" "$web_root/"
 run_as_root install -o elc -g elc -m 640 "$backend_jar" "$jar_path"
 run_as_root systemctl restart "$service_name"
 
+auth_status="000"
 for _ in $(seq 1 30); do
   auth_status="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/api/auth/me || true)"
-  if [[ "$auth_status" != "000" ]]; then
+  if [[ "$auth_status" == "401" ]]; then
     break
   fi
   sleep 1
