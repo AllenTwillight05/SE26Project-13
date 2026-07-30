@@ -17,6 +17,7 @@ import com.englishlearningcopilot.backend.dto.GrammarPracticeQuestionResponse;
 import com.englishlearningcopilot.backend.dto.GrammarPracticeResultRequest;
 import com.englishlearningcopilot.backend.dto.GrammarRatingRequest;
 import com.englishlearningcopilot.backend.dto.GrammarTopicResponse;
+import com.englishlearningcopilot.backend.dto.GrammarTutorResponse;
 import com.englishlearningcopilot.backend.exception.GlobalExceptionHandler;
 import com.englishlearningcopilot.backend.service.GrammarService;
 import java.util.List;
@@ -161,6 +162,54 @@ class GrammarControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.grammarQuestionId").value(1))
                 .andExpect(jsonPath("$.favorited").value(true));
+    }
+
+    @Test
+    void askTutorValidatesAndReturnsReply() throws Exception {
+        when(grammarService.askTutor(org.mockito.Mockito.eq("learner"), any()))
+                .thenReturn(new GrammarTutorResponse("因为这里需要定语从句。", 2));
+
+        mockMvc.perform(post("/api/grammar/tutor/messages")
+                        .principal(() -> "learner")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "grammarQuestionId": 1,
+                                  "selectedAnswer": "B",
+                                  "message": "为什么？",
+                                  "history": []
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reply").value("因为这里需要定语从句。"))
+                .andExpect(jsonPath("$.relatedMistakeCount").value(2));
+    }
+
+    @Test
+    void askTutorRejectsTooManyHistoryMessages() throws Exception {
+        mockMvc.perform(post("/api/grammar/tutor/messages")
+                        .principal(() -> "learner")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "grammarQuestionId": 1,
+                                  "selectedAnswer": "A",
+                                  "message": "请解释",
+                                  "history": [
+                                    {"role":"user","content":"1"},
+                                    {"role":"assistant","content":"2"},
+                                    {"role":"user","content":"3"},
+                                    {"role":"assistant","content":"4"},
+                                    {"role":"user","content":"5"},
+                                    {"role":"assistant","content":"6"},
+                                    {"role":"user","content":"7"},
+                                    {"role":"assistant","content":"8"},
+                                    {"role":"user","content":"9"}
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.history").exists());
     }
 
     @Test

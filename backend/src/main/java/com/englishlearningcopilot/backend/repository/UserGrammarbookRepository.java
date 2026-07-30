@@ -1,6 +1,7 @@
 package com.englishlearningcopilot.backend.repository;
 
 import com.englishlearningcopilot.backend.entity.UserGrammarbook;
+import com.englishlearningcopilot.backend.entity.GrammarQuestion;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +33,22 @@ public interface UserGrammarbookRepository extends JpaRepository<UserGrammarbook
             ORDER BY grammarbook.id DESC
             """)
     List<UserGrammarbook> findNotebookRowsByUserId(@Param("userId") Long userId);
+
+    @Query("""
+            SELECT question FROM UserGrammarbook grammarbook
+            JOIN GrammarQuestion question ON question.id = grammarbook.grammarQuestionId
+            WHERE grammarbook.userId = :userId
+              AND grammarbook.incorrect = true
+              AND question.grammarCategory = :category
+              AND question.id <> :currentQuestionId
+            ORDER BY grammarbook.id DESC
+            """)
+    List<GrammarQuestion> findRecentIncorrectQuestionsByCategory(
+            @Param("userId") Long userId,
+            @Param("category") String category,
+            @Param("currentQuestionId") Integer currentQuestionId,
+            Pageable pageable
+    );
 
     @Query("""
             SELECT question.grammarCategory AS grammarCategory,

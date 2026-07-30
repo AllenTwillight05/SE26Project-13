@@ -33,8 +33,20 @@ mvn spring-boot:run
 export SPRING_DATASOURCE_USERNAME=root
 export SPRING_DATASOURCE_PASSWORD='你的密码'
 export APP_JWT_SECRET='dev-only-change-me-dev-only-change-me-32-bytes'
+export SJTU_AI_API_KEY='你的 SJTU AI API Key'
 
 mvn spring-boot:run
+```
+
+语法对话导师默认复用口语模块的 OpenAI-compatible SJTU 配置，也可以独立覆盖：
+
+```bash
+GRAMMAR_TUTOR_PROVIDER=sjtu       # 本地无 LLM 时可设为 mock
+GRAMMAR_TUTOR_API_KEY=你的Key
+GRAMMAR_TUTOR_ENDPOINT=https://models.sjtu.edu.cn/api/v1
+GRAMMAR_TUTOR_MODEL=deepseek-chat
+GRAMMAR_TUTOR_MAX_TOKENS=500
+GRAMMAR_TUTOR_TIMEOUT_MS=30000
 ```
 
 ## 数据库

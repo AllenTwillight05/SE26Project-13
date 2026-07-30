@@ -166,11 +166,6 @@
   gap: 8px;
 }
 
-.floating-pet__recommendations > .ant-typography-secondary {
-  font-size: 12px;
-  line-height: 1.55;
-}
-
 .floating-pet__recommendation {
   display: grid;
   gap: 4px;

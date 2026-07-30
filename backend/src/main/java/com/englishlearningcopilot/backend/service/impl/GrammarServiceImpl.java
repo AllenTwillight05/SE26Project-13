@@ -9,6 +9,8 @@ import com.englishlearningcopilot.backend.dto.GrammarPracticeResultRequest;
 import com.englishlearningcopilot.backend.dto.GrammarPracticeQuestionResponse;
 import com.englishlearningcopilot.backend.dto.GrammarRatingRequest;
 import com.englishlearningcopilot.backend.dto.GrammarTopicResponse;
+import com.englishlearningcopilot.backend.dto.GrammarTutorRequest;
+import com.englishlearningcopilot.backend.dto.GrammarTutorResponse;
 import com.englishlearningcopilot.backend.entity.AppUser;
 import com.englishlearningcopilot.backend.entity.GrammarQuestion;
 import com.englishlearningcopilot.backend.entity.UserGrammarbook;
@@ -23,6 +25,7 @@ import com.englishlearningcopilot.backend.service.GrammarService;
 import com.englishlearningcopilot.backend.service.LearningPlanService;
 import com.englishlearningcopilot.backend.service.LearningProgressOutboxService;
 import com.englishlearningcopilot.backend.service.ReviewService;
+import com.englishlearningcopilot.backend.service.agent.GrammarTutorAgentClient;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -49,6 +52,7 @@ public class GrammarServiceImpl implements GrammarService {
     private final LearningPlanService learningPlanService;
     private final ReviewService reviewService;
     private final LearningProgressOutboxService learningProgressOutboxService;
+    private final GrammarTutorAgentClient grammarTutorAgentClient;
 
     public GrammarServiceImpl(
             GrammarQuestionRepository grammarQuestionRepository,
@@ -57,7 +61,8 @@ public class GrammarServiceImpl implements GrammarService {
             UserRepository userRepository,
             ReviewService reviewService,
             LearningPlanService learningPlanService,
-            LearningProgressOutboxService learningProgressOutboxService
+            LearningProgressOutboxService learningProgressOutboxService,
+            GrammarTutorAgentClient grammarTutorAgentClient
     ) {
         this.grammarQuestionRepository = grammarQuestionRepository;
         this.userGrammarbookRepository = userGrammarbookRepository;
@@ -66,6 +71,7 @@ public class GrammarServiceImpl implements GrammarService {
         this.learningPlanService = learningPlanService;
         this.reviewService = reviewService;
         this.learningProgressOutboxService = learningProgressOutboxService;
+        this.grammarTutorAgentClient = grammarTutorAgentClient;
     }
 
     @Override
@@ -206,6 +212,28 @@ public class GrammarServiceImpl implements GrammarService {
         UserGrammarbook savedGrammarbook = userGrammarbookRepository.save(grammarbook);
 
         return new GrammarFavoriteResponse(questionId, savedGrammarbook.isFavorited());
+    }
+
+    @Override
+    public GrammarTutorResponse askTutor(String username, GrammarTutorRequest request) {
+        AppUser user = getCurrentUser(username);
+        GrammarQuestion question = grammarQuestionRepository.findById(request.grammarQuestionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Grammar question was not found."));
+        List<GrammarQuestion> relatedMistakes = userGrammarbookRepository
+                .findRecentIncorrectQuestionsByCategory(
+                        user.getId(),
+                        question.getGrammarCategory(),
+                        question.getId(),
+                        PageRequest.of(0, 3)
+                );
+        String reply = grammarTutorAgentClient.explain(
+                question,
+                request.selectedAnswer(),
+                request.history(),
+                request.message(),
+                relatedMistakes
+        );
+        return new GrammarTutorResponse(reply, relatedMistakes.size());
     }
 
     private List<UserWordProgress> getGrammarProgressRows(Long userId) {

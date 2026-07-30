@@ -428,6 +428,7 @@ export function createMockServices() {
         httpServices.grammar.submitGrammarPracticeResult(payload),
       submitGrammarRating: (payload) => httpServices.grammar.submitGrammarRating(payload),
       toggleGrammarFavorite: (payload) => httpServices.grammar.toggleGrammarFavorite(payload),
+      askGrammarTutor: (payload) => httpServices.grammar.askGrammarTutor(payload),
       getOverview: () => simulateLatency(grammarOverviewMock),
       getReviewGrammar: () => simulateLatency(reviewGrammarMock),
       getPracticeQuestions: (options) => httpServices.grammar.getPracticeQuestions(options),

@@ -30,6 +30,7 @@ export const API_ENDPOINTS = {
   grammarPracticeResults: "/api/grammar/practice-results",
   grammarPracticeRatings: "/api/grammar/practice-ratings",
   grammarNotebookFavorites: "/api/grammar/notebook-favorites",
+  grammarTutorMessages: "/api/grammar/tutor/messages",
   grammarOverview: "/api/grammar/overview",
   grammarPracticeQuestions: "/api/grammar/practice-questions",
   reviewGrammar: "/api/grammar/review-grammar",

@@ -61,7 +61,8 @@ public class SecurityConfig {
                                 HttpMethod.POST,
                                 "/api/grammar/practice-results",
                                 "/api/grammar/practice-ratings",
-                                "/api/grammar/notebook-favorites"
+                                "/api/grammar/notebook-favorites",
+                                "/api/grammar/tutor/messages"
                         ).authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/speaking/scenarios/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()

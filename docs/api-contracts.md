@@ -506,7 +506,40 @@ Authorization: Bearer <token>
 }
 ```
 
-后续可扩展接口：
+### 4.1 语法题对话讲解
+
+`POST /api/grammar/tutor/messages`
+
+用途：用户答题后，与英语学习助手 LUMI 围绕当前题进行短对话。LUMI 使用自然语言纯文本回答，不输出 Markdown。需要 Bearer token。
+
+请求结构：
+
+```js
+{
+  grammarQuestionId: 12,
+  selectedAnswer: "B",
+  message: "为什么这里不能用 which？",
+  history: [
+    { role: "user", content: "能换一种方式讲吗？" },
+    { role: "assistant", content: "可以，先找出先行词……" }
+  ]
+}
+```
+
+约束：`selectedAnswer` 为 `A-E`；`message` 最多 1000 字符；`history` 最多 8 条，单条最多 2000 字符，角色只能为 `user` 或 `assistant`。
+
+响应结构：
+
+```js
+{
+  reply: "这里需要 that，因为……",
+  relatedMistakeCount: 2
+}
+```
+
+题干、选项、正确答案和已有简析由后端根据题号读取，不信任前端传入的题目内容。后端还会加入当前用户同语法分类中最近最多 3 道历史错题作为薄弱点参考；不会发送整本错题本。对话不持久化、不做上下文压缩。
+
+其他语法接口：
 
 - `GET /api/grammar/topics/{id}`：查看语法主题详情。
 - `POST /api/grammar/exercises/{id}/submit`：提交语法练习结果。

@@ -1183,6 +1183,128 @@ a {
   color: var(--text-soft);
 }
 
+.grammar-tutor {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid rgba(106, 63, 209, 0.2);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(246, 242, 255, 0.84), rgba(255, 255, 255, 0.48)),
+    var(--surface-solid);
+  box-shadow: var(--shadow), var(--inner-glow);
+}
+
+.grammar-tutor h4.ant-typography {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+}
+
+.grammar-tutor__messages {
+  display: grid;
+  gap: 10px;
+  max-height: 360px;
+  padding: 14px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.grammar-tutor__message {
+  width: min(86%, 680px);
+  padding: 12px 14px;
+  border-radius: 16px;
+}
+
+.grammar-tutor__message--assistant {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 10px;
+  width: min(92%, 738px);
+  padding: 0;
+  justify-self: start;
+  align-items: start;
+  background: transparent;
+}
+
+.grammar-tutor__message--assistant .grammar-tutor__message-content {
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.grammar-tutor__avatar {
+  width: 48px;
+  height: 48px;
+  padding: 3px;
+  border: 1px solid rgba(106, 63, 209, 0.16);
+  border-radius: 15px;
+  background: linear-gradient(145deg, rgba(246, 242, 255, 0.96), rgba(255, 255, 255, 0.86));
+  box-shadow: 0 8px 18px rgba(73, 46, 129, 0.12);
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.grammar-tutor__message--user {
+  justify-self: end;
+  color: #fff;
+  background: linear-gradient(145deg, #7655d7, #5b35bd);
+}
+
+.grammar-tutor__message--user .ant-typography {
+  color: inherit;
+}
+
+.grammar-tutor__message p.ant-typography {
+  margin: 4px 0 0;
+  white-space: pre-line;
+}
+
+.grammar-tutor__thinking {
+  color: var(--text-soft);
+}
+
+.grammar-tutor__context-note {
+  font-size: 13px;
+}
+
+.grammar-tutor__composer textarea.ant-input {
+  resize: none;
+}
+
+.grammar-tutor__composer .ant-btn {
+  min-height: 54px;
+}
+
+@media (max-width: 640px) {
+  .grammar-tutor__message {
+    width: 94%;
+  }
+
+  .grammar-tutor__message--assistant {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .grammar-tutor__avatar {
+    width: 42px;
+    height: 42px;
+  }
+
+  .grammar-tutor__composer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .grammar-tutor__composer .ant-btn {
+    width: 100%;
+  }
+}
+
 .word-meta .ant-descriptions-item-label {
   color: var(--text-soft);
 }
