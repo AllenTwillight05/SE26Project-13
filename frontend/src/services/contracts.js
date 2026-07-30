@@ -300,6 +300,16 @@ export const contractShapes = {
     grammarQuestionId: 0,
     favorited: true
   },
+  grammarTutorRequest: {
+    grammarQuestionId: 0,
+    selectedAnswer: "B",
+    message: "string",
+    history: [{ role: "user", content: "string" }]
+  },
+  grammarTutorResponse: {
+    reply: "string",
+    relatedMistakeCount: 0
+  },
   grammarPracticeQuestions: [
     {
       id: 0,

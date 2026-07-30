@@ -42,6 +42,9 @@ export function createHttpServices(baseUrl = "") {
       getCommunityLearningTrends: () =>
         getJson(withBaseUrl(baseUrl, API_ENDPOINTS.dashboardCommunityLearningTrends))
     },
+    pet: {
+      chat: (payload) => postJson(withBaseUrl(baseUrl, API_ENDPOINTS.petChat), payload)
+    },
     speaking: {
       listScenarios: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingScenarios)),
       getScenario: (scenarioId) => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingScenario(scenarioId))),
@@ -107,6 +110,8 @@ export function createHttpServices(baseUrl = "") {
         postJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarPracticeRatings), payload),
       toggleGrammarFavorite: (payload) =>
         postJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarNotebookFavorites), payload),
+      askGrammarTutor: (payload) =>
+        postJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarTutorMessages), payload),
       getOverview: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.grammarOverview)),
       getReviewGrammar: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.reviewGrammar)),
       getPracticeQuestions: ({ category } = {}) => {

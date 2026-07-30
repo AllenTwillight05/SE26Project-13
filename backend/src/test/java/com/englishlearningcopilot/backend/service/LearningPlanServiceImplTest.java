@@ -365,6 +365,46 @@ class LearningPlanServiceImplTest {
                 .hasMessage("Current user was not found.");
     }
 
+    @Test
+    void feedbackTimeFallsBackFromUpdatedAtToStartedAtAndBlank() {
+        SpeakingSession completed = speakingSession(1L, "Clinic", Instant.parse("2026-07-21T10:00:00Z"));
+        assertThat((String) ReflectionTestUtils.invokeMethod(learningPlanService, "feedbackTime", completed))
+                .isEqualTo("2026-07-21T10:00:00Z");
+
+        SpeakingSession updated = new SpeakingSession();
+        ReflectionTestUtils.setField(updated, "id", 2L);
+        ReflectionTestUtils.setField(updated, "updatedAt", Instant.parse("2026-07-22T10:00:00Z"));
+        updated.setStartedAt(Instant.parse("2026-07-22T09:00:00Z"));
+        assertThat((String) ReflectionTestUtils.invokeMethod(learningPlanService, "feedbackTime", updated))
+                .isEqualTo("2026-07-22T10:00:00Z");
+
+        SpeakingSession started = new SpeakingSession();
+        ReflectionTestUtils.setField(started, "id", 3L);
+        started.setStartedAt(Instant.parse("2026-07-23T09:00:00Z"));
+        assertThat((String) ReflectionTestUtils.invokeMethod(learningPlanService, "feedbackTime", started))
+                .isEqualTo("2026-07-23T09:00:00Z");
+
+        SpeakingSession missingTimes = new SpeakingSession();
+        ReflectionTestUtils.setField(missingTimes, "id", 4L);
+        assertThat((String) ReflectionTestUtils.invokeMethod(learningPlanService, "feedbackTime", missingTimes))
+                .isEmpty();
+    }
+
+    @Test
+    void readPronunciationScoreFallsBackWhenDetailIsInvalidOrTotalIsMissing() {
+        SpeakingMessage invalidDetail = userMessage("Bad detail", 64, "{not-json");
+        PronunciationScore fallback = ReflectionTestUtils.invokeMethod(
+                learningPlanService, "readPronunciationScore", invalidDetail);
+        assertThat(fallback.totalScore()).isEqualTo(64);
+        assertThat(fallback.accuracy()).isEqualTo(64);
+
+        SpeakingMessage missingScore = userMessage("No score", 0, null);
+        missingScore.setPronunciationScore(null);
+        PronunciationScore zero = ReflectionTestUtils.invokeMethod(
+                learningPlanService, "readPronunciationScore", missingScore);
+        assertThat(zero.totalScore()).isZero();
+    }
+
     private static AppUser user(Long id, String username, String displayName) {
         AppUser user = new AppUser();
         ReflectionTestUtils.setField(user, "id", id);

@@ -14,7 +14,8 @@ const mixedModuleModes = {
   speaking: import.meta.env.VITE_SPEAKING_API_MODE ?? "mock",
   vocabulary: import.meta.env.VITE_VOCABULARY_API_MODE ?? "mock",
   grammar: import.meta.env.VITE_GRAMMAR_API_MODE ?? "mock",
-  profile: import.meta.env.VITE_PROFILE_API_MODE ?? "mock"
+  profile: import.meta.env.VITE_PROFILE_API_MODE ?? "mock",
+  pet: import.meta.env.VITE_PET_API_MODE ?? "http"
 };
 
 const mockServices = createMockServices();
@@ -38,7 +39,8 @@ export const appServices = (() => {
       speaking: pickService("speaking"),
       vocabulary: pickService("vocabulary"),
       grammar: pickService("grammar"),
-      profile: pickService("profile")
+      profile: pickService("profile"),
+      pet: pickService("pet")
     };
   }
 

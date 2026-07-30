@@ -284,10 +284,13 @@ export function createMockServices() {
     },
     dashboard: {
       getOverview: () => simulateLatency(dashboardOverviewMock),
-      getRecommendedTask: () => simulateLatency(dashboardRecommendedTaskMock),
+      getRecommendedTask: () => httpServices.dashboard.getRecommendedTask(),
       getStudyPlan: () => httpServices.dashboard.getStudyPlan(),
       getWeeklyOverview: () => httpServices.dashboard.getWeeklyOverview(),
       getCommunityLearningTrends: () => httpServices.dashboard.getCommunityLearningTrends()
+    },
+    pet: {
+      chat: (payload) => httpServices.pet.chat(payload)
     },
     speaking: {
       listScenarios: () => simulateLatency([
@@ -425,6 +428,7 @@ export function createMockServices() {
         httpServices.grammar.submitGrammarPracticeResult(payload),
       submitGrammarRating: (payload) => httpServices.grammar.submitGrammarRating(payload),
       toggleGrammarFavorite: (payload) => httpServices.grammar.toggleGrammarFavorite(payload),
+      askGrammarTutor: (payload) => httpServices.grammar.askGrammarTutor(payload),
       getOverview: () => simulateLatency(grammarOverviewMock),
       getReviewGrammar: () => simulateLatency(reviewGrammarMock),
       getPracticeQuestions: (options) => httpServices.grammar.getPracticeQuestions(options),

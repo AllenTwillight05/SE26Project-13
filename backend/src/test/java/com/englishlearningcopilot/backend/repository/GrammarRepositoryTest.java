@@ -55,6 +55,23 @@ class GrammarRepositoryTest {
         assertThat(rows).doesNotContain(normal);
     }
 
+    @Test
+    void findsOnlyRecentIncorrectQuestionsInTheSameCategory() {
+        AppUser user = userRepository.save(user("learner"));
+        GrammarQuestion current = grammarQuestionRepository.save(question(10, "Tense"));
+        GrammarQuestion sameCategory = grammarQuestionRepository.save(question(11, "Tense"));
+        GrammarQuestion differentCategory = grammarQuestionRepository.save(question(12, "Clause"));
+        userGrammarbookRepository.save(grammarbook(user.getId(), current.getId(), true, false));
+        userGrammarbookRepository.save(grammarbook(user.getId(), sameCategory.getId(), true, false));
+        userGrammarbookRepository.save(grammarbook(user.getId(), differentCategory.getId(), true, false));
+
+        List<GrammarQuestion> questions = userGrammarbookRepository.findRecentIncorrectQuestionsByCategory(
+                user.getId(), "Tense", current.getId(), PageRequest.of(0, 3)
+        );
+
+        assertThat(questions).extracting(GrammarQuestion::getId).containsExactly(sameCategory.getId());
+    }
+
     private static AppUser user(String username) {
         AppUser user = new AppUser();
         user.setUsername(username);

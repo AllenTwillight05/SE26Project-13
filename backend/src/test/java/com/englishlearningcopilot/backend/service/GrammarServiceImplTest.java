@@ -29,6 +29,10 @@ import com.englishlearningcopilot.backend.repository.UserGrammarbookRepository;
 import com.englishlearningcopilot.backend.repository.UserRepository;
 import com.englishlearningcopilot.backend.repository.UserWordProgressRepository;
 import com.englishlearningcopilot.backend.service.impl.GrammarServiceImpl;
+import com.englishlearningcopilot.backend.service.agent.GrammarTutorAgentClient;
+import com.englishlearningcopilot.backend.dto.GrammarTutorMessage;
+import com.englishlearningcopilot.backend.dto.GrammarTutorRequest;
+import com.englishlearningcopilot.backend.dto.GrammarTutorResponse;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -66,6 +70,9 @@ class GrammarServiceImplTest {
 
     @Mock
     private LearningProgressOutboxService learningProgressOutboxService;
+
+    @Mock
+    private GrammarTutorAgentClient grammarTutorAgentClient;
 
     @InjectMocks
     private GrammarServiceImpl grammarService;
@@ -364,6 +371,32 @@ class GrammarServiceImplTest {
         assertThatThrownBy(() -> grammarService.getPracticeQuestions("missing", "Tense"))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("Current user was not found.");
+    }
+
+    @Test
+    void askTutorBuildsAuthoritativeQuestionContextAndLimitsRelatedMistakes() {
+        AppUser user = user(7L, "learner");
+        GrammarQuestion current = question(1, "Tense");
+        List<GrammarQuestion> related = List.of(question(2, "Tense"), question(3, "Tense"));
+        GrammarTutorRequest request = new GrammarTutorRequest(
+                1,
+                "B",
+                "为什么不能选 B？",
+                List.of(new GrammarTutorMessage("user", "我看不懂"))
+        );
+        when(userRepository.findByUsername("learner")).thenReturn(Optional.of(user));
+        when(grammarQuestionRepository.findById(1)).thenReturn(Optional.of(current));
+        when(userGrammarbookRepository.findRecentIncorrectQuestionsByCategory(
+                eq(7L), eq("Tense"), eq(1), any(Pageable.class)
+        )).thenReturn(related);
+        when(grammarTutorAgentClient.explain(current, "B", request.history(), request.message(), related))
+                .thenReturn("因为这里考查时态。" );
+
+        GrammarTutorResponse response = grammarService.askTutor("learner", request);
+
+        assertThat(response.reply()).isEqualTo("因为这里考查时态。" );
+        assertThat(response.relatedMistakeCount()).isEqualTo(2);
+        verify(grammarTutorAgentClient).explain(current, "B", request.history(), request.message(), related);
     }
 
     private static AppUser user(Long id, String username) {

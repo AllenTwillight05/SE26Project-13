@@ -1,0 +1,18 @@
+{
+  "G-01-airport": "机场 值机 改签 登机 托运行李 座位 登机牌 护照 航班 延误 reschedule check in boarding pass luggage aisle seat airport flight",
+  "G-02-restaurant": "餐厅 点餐 订位 预约 过敏 推荐 菜单 买单 结账 reservation order allergy bill restaurant menu",
+  "G-03-hotel": "酒店 入住 前台 房间 设施 服务 投诉 预订 住宿 reception room booking amenities hotel check in",
+  "G-04-shopping": "购物 退货 换货 尺码 价格 折扣 收据 商品 exchange return size discount receipt shopping",
+  "G-05-clinic": "医院 诊所 生病 看病 症状 药 处方 药房 预约 过敏 国外生病 不舒服 clinic hospital sick illness symptom prescription pharmacy appointment medicine",
+  "G-06-job-interview": "求职 面试 自我介绍 经历 优势 项目 岗位 职业 interview job role experience strength career",
+  "G-07-business-meeting": "商务 会议 对接业务 客户沟通 推进项目 确认议程 时间线 跟进 决策 交付 business meeting client agenda clarify timeline follow up delivery",
+  "G-08-small-talk": "日常 寒暄 闲聊 破冰 接话 聊周末 普通交流 社交 casual chat small talk weekend natural conversation",
+  "G-09-presentation": "演讲 展示 汇报 数据 观点 问答 介绍项目 用户研究 presentation overview data question audience",
+  "G-10-phone-call": "电话 打电话 电话沟通 国外用户 客户电话 业务电话 说明来意 确认信息 留言 改约 phone call calling about confirm message available reschedule",
+  "G-11-directions": "问路 指路 路线 交通 地铁 车站 左转 直走 多久 到达 directions route station turn left minutes",
+  "G-12-renting-apartment": "租房 看房 房租 押金 合同 水电 维修 公寓 campus apartment rent deposit lease maintenance utilities housing",
+  "IELTS-mock-test": "雅思 口语 模考 完整考试 part1 part2 part3 fluency coherence IELTS speaking mock test",
+  "IELTS-P1-practice": "雅思 part1 短问短答 家乡 学习 工作 hometown short answers IELTS speaking part 1",
+  "IELTS-P2-practice": "雅思 part2 cue card 个人陈述 长回答 旅行 经历 描述 long turn IELTS speaking part 2",
+  "IELTS-P3-practice": "雅思 part3 深入讨论 抽象观点 社会 教育 对比 预测 discussion opinion IELTS speaking part 3"
+}

@@ -4,6 +4,7 @@ import { Button, Flex, Space, Tag, Typography } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
 import { GrammarExplanationCard } from "../components/Grammar/GrammarExplanationCard";
 import { GrammarQuestionCard } from "../components/Grammar/GrammarQuestionCard";
+import { GrammarTutorChat } from "../components/Grammar/GrammarTutorChat";
 import { AsyncPage } from "../components/common/AsyncPage";
 import { useAsyncData } from "../hooks/useAsyncData";
 import { useAppServices } from "../services/ServiceContext";
@@ -72,6 +73,13 @@ export function GrammarPracticePage() {
   useEffect(() => {
     function handleRatingShortcut(event) {
       const rating = ratingShortcuts[event.key];
+
+      if (
+        event.target instanceof HTMLElement
+        && (event.target.matches("input, textarea, select") || event.target.isContentEditable)
+      ) {
+        return;
+      }
 
       if (!answered || !rating) {
         return;
@@ -234,15 +242,23 @@ export function GrammarPracticePage() {
           </section>
 
           {answered ? (
-            <GrammarExplanationCard
-              correctAnswer={correctAnswer}
-              explanation={currentQuestion.explanation}
-              favorited={currentQuestion.favorited}
-              isCorrect={isCorrect}
-              onRate={handleRateCurrentQuestion}
-              onToggleFavorite={handleToggleFavorite}
-              questionId={currentQuestion.id}
-            />
+            <>
+              <GrammarExplanationCard
+                correctAnswer={correctAnswer}
+                explanation={currentQuestion.explanation}
+                favorited={currentQuestion.favorited}
+                isCorrect={isCorrect}
+                onRate={handleRateCurrentQuestion}
+                onToggleFavorite={handleToggleFavorite}
+                questionId={currentQuestion.id}
+              />
+              <GrammarTutorChat
+                key={currentQuestion.id}
+                onSend={grammar.askGrammarTutor}
+                questionId={currentQuestion.id}
+                selectedAnswer={selectedAnswer}
+              />
+            </>
           ) : null}
 
           <Flex justify="end" gap={12} wrap>

@@ -90,7 +90,7 @@ export function DashboardPage() {
           <DashboardHeroCard
             recommendedTask={data.recommendedTask}
             studyPlan={data.studyPlan}
-            onStartSpeaking={() => navigate("/speaking")}
+            onStartSpeaking={() => navigate(data.recommendedTask?.route ?? "/speaking")}
             onViewPlan={() => navigate("/profile")}
           />
 

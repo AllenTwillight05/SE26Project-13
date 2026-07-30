@@ -142,6 +142,73 @@
   line-height: 1;
 }
 
+.floating-pet__chat {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid rgba(109, 143, 237, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.floating-pet__chat textarea.ant-input {
+  resize: none;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.floating-pet__chat .ant-typography-danger {
+  font-size: 12px;
+}
+
+.floating-pet__recommendations {
+  display: grid;
+  gap: 8px;
+}
+
+.floating-pet__recommendation {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 10px;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid rgba(109, 143, 237, 0.16);
+  border-radius: 10px;
+  background: rgba(109, 143, 237, 0.08);
+  color: #24304f;
+  transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+
+.floating-pet__recommendation:hover,
+.floating-pet__recommendation:focus-visible {
+  outline: none;
+  border-color: rgba(109, 143, 237, 0.34);
+  background: rgba(109, 143, 237, 0.14);
+  transform: translateY(-1px);
+}
+
+.floating-pet__recommendation span {
+  width: max-content;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #526eb5;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.floating-pet__recommendation strong {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.floating-pet__recommendation small {
+  color: #65708e;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .floating-pet--right .floating-pet__panel {
   right: 0;
   left: auto;
