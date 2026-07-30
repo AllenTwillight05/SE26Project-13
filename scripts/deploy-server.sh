@@ -105,7 +105,7 @@ temporary_bundle="$(mktemp "${TMPDIR:-/tmp}/english-learning-copilot-${short_com
 remote_bundle="/tmp/english-learning-copilot-${short_commit}.bundle"
 
 printf '==> Creating source bundle for %s (%s)\n' "$short_commit" "$ref"
-git -C "$repo_root" bundle create "$temporary_bundle" "$commit"
+git -C "$repo_root" bundle create "$temporary_bundle" "$ref"
 git -C "$repo_root" bundle verify "$temporary_bundle" >/dev/null
 
 printf '==> Uploading bundle to %s\n' "$target"
