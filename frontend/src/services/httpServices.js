@@ -35,6 +35,9 @@ export function createHttpServices(baseUrl = "") {
       getCommunityLearningTrends: () =>
         getJson(withBaseUrl(baseUrl, API_ENDPOINTS.dashboardCommunityLearningTrends))
     },
+    pet: {
+      chat: (payload) => postJson(withBaseUrl(baseUrl, API_ENDPOINTS.petChat), payload)
+    },
     speaking: {
       listScenarios: () => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingScenarios)),
       getScenario: (scenarioId) => getJson(withBaseUrl(baseUrl, API_ENDPOINTS.speakingScenario(scenarioId))),

@@ -9,6 +9,7 @@ export const API_ENDPOINTS = {
   dashboardStudyPlan: "/api/dashboard/study-plan",
   dashboardWeeklyOverview: "/api/dashboard/weekly-overview",
   dashboardCommunityLearningTrends: "/api/dashboard/community-learning-trends",
+  petChat: "/api/pet/chat",
   speakingScenarios: "/api/speaking/scenarios",
   speakingScenario: (scenarioId) => `/api/speaking/scenarios/${encodeURIComponent(scenarioId)}`,
   speakingSessions: "/api/speaking/sessions",

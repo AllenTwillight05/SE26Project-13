@@ -289,6 +289,9 @@ export function createMockServices() {
       getWeeklyOverview: () => httpServices.dashboard.getWeeklyOverview(),
       getCommunityLearningTrends: () => httpServices.dashboard.getCommunityLearningTrends()
     },
+    pet: {
+      chat: (payload) => httpServices.pet.chat(payload)
+    },
     speaking: {
       listScenarios: () => simulateLatency([
         ...catalogSpeakingScenarios,

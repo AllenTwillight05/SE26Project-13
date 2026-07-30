@@ -2,9 +2,11 @@ import {
   BulbOutlined,
   CalendarOutlined,
   CloseOutlined,
-  LoginOutlined
+  LoginOutlined,
+  MessageOutlined,
+  SendOutlined
 } from "@ant-design/icons";
-import { Button, Progress, Typography } from "antd";
+import { Button, Input, Progress, Typography } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
@@ -14,6 +16,7 @@ import "./FloatingPetCompanion.css";
 import "./FloatingPetWelcome.css";
 
 const { Text, Title } = Typography;
+const { TextArea } = Input;
 const PLAN_AREAS = ["speaking", "vocabulary", "grammar"];
 const EDGE_GAP = 16;
 const PET_SIZE = 144;
@@ -117,11 +120,15 @@ function clamp(value, min, max) {
 export function FloatingPetCompanion() {
   const navigate = useNavigate();
   const auth = useAuth();
-  const { dashboard } = useAppServices();
+  const { dashboard, pet: petService } = useAppServices();
   const [position, setPosition] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [advice, setAdvice] = useState(null);
+  const [chatInput, setChatInput] = useState("");
+  const [chatResult, setChatResult] = useState(null);
+  const [chatError, setChatError] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
   const [planVersion, setPlanVersion] = useState(0);
   const dragRef = useRef(null);
   const suppressClickRef = useRef(false);
@@ -258,6 +265,27 @@ export function FloatingPetCompanion() {
     setIsPinned(true);
   }
 
+  async function submitPetChat() {
+    const message = chatInput.trim();
+    if (!message) {
+      setChatError("请先告诉我你的学习需求。");
+      return;
+    }
+
+    setChatLoading(true);
+    setChatError("");
+    try {
+      const result = await petService.chat({ message });
+      setChatResult(result);
+      setAdvice(null);
+      setIsPinned(true);
+    } catch (error) {
+      setChatError(error.message || "推荐失败，请稍后再试。");
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
   function openRoute(route) {
     closePanel();
     navigate(route);
@@ -353,6 +381,61 @@ export function FloatingPetCompanion() {
                 今天学什么？
               </Button>
             )}
+
+            <div className="floating-pet__chat">
+              <Text strong>
+                <MessageOutlined /> 需求推荐
+              </Text>
+              <TextArea
+                autoSize={{ minRows: 2, maxRows: 3 }}
+                maxLength={300}
+                onChange={(event) => setChatInput(event.target.value)}
+                onPressEnter={(event) => {
+                  if (!event.shiftKey) {
+                    event.preventDefault();
+                    submitPetChat();
+                  }
+                }}
+                placeholder="例如：我要去国外留学 / 下个月去旅游 / 准备英语面试"
+                value={chatInput}
+              />
+              {chatError ? <Text type="danger">{chatError}</Text> : null}
+              <Button
+                block
+                icon={<SendOutlined />}
+                loading={chatLoading}
+                onClick={submitPetChat}
+                type="primary"
+              >
+                生成练习推荐
+              </Button>
+
+              {chatResult ? (
+                <div className="floating-pet__recommendations">
+                  <Text type="secondary">{chatResult.reply}</Text>
+                  {chatResult.speaking ? (
+                    <button
+                      className="floating-pet__recommendation"
+                      onClick={() => openRoute(chatResult.speaking.route)}
+                      type="button"
+                    >
+                      <span>口语</span>
+                      <strong>{chatResult.speaking.title}</strong>
+                      <small>{chatResult.speaking.reason}</small>
+                    </button>
+                  ) : null}
+                  <button
+                    className="floating-pet__recommendation"
+                    onClick={() => openRoute(chatResult.vocabulary.route)}
+                    type="button"
+                  >
+                    <span>词汇</span>
+                    <strong>{chatResult.vocabulary.title}</strong>
+                    <small>{chatResult.vocabulary.reason}</small>
+                  </button>
+                </div>
+              ) : null}
+            </div>
 
             <Button type="text" block className="floating-pet__plan-link" onClick={openPlan}>
               查看今日计划
