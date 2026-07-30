@@ -412,7 +412,6 @@ export function FloatingPetCompanion() {
 
               {chatResult ? (
                 <div className="floating-pet__recommendations">
-                  <Text type="secondary">{chatResult.reply}</Text>
                   {chatResult.speaking ? (
                     <button
                       className="floating-pet__recommendation"
@@ -421,7 +420,6 @@ export function FloatingPetCompanion() {
                     >
                       <span>口语</span>
                       <strong>{chatResult.speaking.title}</strong>
-                      <small>{chatResult.speaking.reason}</small>
                     </button>
                   ) : null}
                   <button
@@ -431,7 +429,6 @@ export function FloatingPetCompanion() {
                   >
                     <span>词汇</span>
                     <strong>{chatResult.vocabulary.title}</strong>
-                    <small>{chatResult.vocabulary.reason}</small>
                   </button>
                 </div>
               ) : null}
