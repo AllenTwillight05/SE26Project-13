@@ -1,0 +1,287 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CheckCircleOutlined, CloseCircleOutlined, StopOutlined } from "@ant-design/icons";
+import { Button, Flex, Space, Tag, Typography } from "antd";
+import { useNavigate, useParams } from "react-router-dom";
+import { GrammarExplanationCard } from "../components/Grammar/GrammarExplanationCard";
+import { GrammarQuestionCard } from "../components/Grammar/GrammarQuestionCard";
+import { GrammarTutorChat } from "../components/Grammar/GrammarTutorChat";
+import { AsyncPage } from "../components/common/AsyncPage";
+import { useAsyncData } from "../hooks/useAsyncData";
+import { useAppServices } from "../services/ServiceContext";
+
+const { Title, Text } = Typography;
+
+const ratingShortcuts = {
+  1: "重来",
+  2: "困难",
+  3: "良好",
+  4: "简单"
+};
+
+const emptyRatingSummary = {
+  重来: 0,
+  困难: 0,
+  良好: 0,
+  简单: 0
+};
+
+const ratingScores = Object.fromEntries(
+  Object.entries(ratingShortcuts).map(([score, label]) => [label, Number(score)])
+);
+
+function getAnswerText(question) {
+  const answerIndex = question.answer.charCodeAt(0) - "A".charCodeAt(0);
+  return question.options[answerIndex] ?? "";
+}
+
+export function GrammarPracticePage() {
+  const navigate = useNavigate();
+  const { category = "" } = useParams();
+  const decodedCategory = decodeURIComponent(category);
+  const isReview = decodedCategory === "review";
+  const { grammar } = useAppServices();
+  const loader = useCallback(
+    () =>
+      isReview
+        ? grammar.getReviewGrammar()
+        : grammar.getPracticeQuestions({ category: decodedCategory }),
+    [decodedCategory, grammar, isReview]
+  );
+  const { data: questions, loading, error } = useAsyncData(loader, [loader]);
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [answerRecords, setAnswerRecords] = useState([]);
+  const practiceResultSubmissionRef = useRef(Promise.resolve());
+
+  const currentQuestion = questions?.[questionIndex];
+  const answered = selectedAnswer !== null;
+  const isCorrect = answered && selectedAnswer === currentQuestion?.answer;
+  const correctAnswer = useMemo(
+    () => ({
+      letter: currentQuestion?.answer ?? "",
+      text: currentQuestion ? getAnswerText(currentQuestion) : ""
+    }),
+    [currentQuestion]
+  );
+
+  useEffect(() => {
+    setQuestionIndex(0);
+    setSelectedAnswer(null);
+    setAnswerRecords([]);
+  }, [decodedCategory]);
+
+  useEffect(() => {
+    function handleRatingShortcut(event) {
+      const rating = ratingShortcuts[event.key];
+
+      if (
+        event.target instanceof HTMLElement
+        && (event.target.matches("input, textarea, select") || event.target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (!answered || !rating) {
+        return;
+      }
+
+      event.preventDefault();
+      handleRateCurrentQuestion(rating);
+    }
+
+    window.addEventListener("keydown", handleRatingShortcut);
+
+    return () => {
+      window.removeEventListener("keydown", handleRatingShortcut);
+    };
+  }, [answered, selectedAnswer, currentQuestion, questions]);
+
+  function resetAnswerState() {
+    setSelectedAnswer(null);
+  }
+
+  function handleAnswer(answer) {
+    if (!currentQuestion) {
+      return;
+    }
+
+    setSelectedAnswer(answer);
+    const submission = grammar.submitGrammarPracticeResult({
+      grammarQuestionId: currentQuestion.id,
+      incorrect: answer !== currentQuestion.answer
+    });
+    practiceResultSubmissionRef.current = submission;
+    submission.catch((error) => {
+      console.error("Failed to submit grammar practice result.", error);
+    });
+  }
+
+  function handleToggleFavorite(grammarQuestionId) {
+    return practiceResultSubmissionRef.current.then(() =>
+      grammar.toggleGrammarFavorite({ grammarQuestionId })
+    );
+  }
+
+  function buildCurrentRecord(rating = null) {
+    if (!answered || !currentQuestion) {
+      return null;
+    }
+
+    return {
+      correct: isCorrect,
+      grammarCategory: currentQuestion.grammar_category,
+      questionId: currentQuestion.id,
+      rating,
+      selectedAnswer
+    };
+  }
+
+  function handleRateCurrentQuestion(rating) {
+    if (currentQuestion) {
+      grammar.submitGrammarRating({
+        grammarQuestionId: currentQuestion.id,
+        score: ratingScores[rating]
+      }).catch((error) => {
+        console.error("Failed to submit grammar rating.", error);
+      });
+    }
+
+    const record = buildCurrentRecord(rating);
+
+    if (!record) {
+      return;
+    }
+
+    const finalRecords = [...answerRecords, record];
+
+    if (questionIndex === questions.length - 1) {
+      navigateToResult(finalRecords);
+      return;
+    }
+
+    setAnswerRecords(finalRecords);
+    setQuestionIndex((current) => current + 1);
+    resetAnswerState();
+  }
+
+  function buildSummary(records) {
+    return records.reduce(
+      (summary, record) => {
+        summary.total += 1;
+
+        if (record.correct) {
+          summary.correct += 1;
+        } else {
+          summary.wrong += 1;
+        }
+
+        if (record.rating) {
+          summary.ratings[record.rating] = (summary.ratings[record.rating] ?? 0) + 1;
+        }
+
+        return summary;
+      },
+      {
+        total: 0,
+        correct: 0,
+        wrong: 0,
+        ratings: { ...emptyRatingSummary }
+      }
+    );
+  }
+
+  function navigateToResult(records) {
+    navigate("/grammar/result", {
+      state: {
+        category: decodedCategory,
+        summary: buildSummary(records)
+      }
+    });
+  }
+
+  function handleFinishPractice() {
+    const currentRecord = buildCurrentRecord();
+    const finalRecords = currentRecord ? [...answerRecords, currentRecord] : answerRecords;
+    navigateToResult(finalRecords);
+  }
+
+  return (
+    <AsyncPage loading={loading} error={error}>
+      {questions?.length ? (
+        <div className="page-stack">
+          <section className="practice-shell glass-panel">
+            <Flex justify="space-between" align="start" gap={16} wrap>
+              <div>
+                <Space align="center" wrap>
+                  <Tag bordered={false} className="soft-tag soft-tag--dark">
+                    {isReview ? "Review" : decodedCategory}
+                  </Tag>
+                  <Tag bordered={false} className="soft-tag">
+                    {questionIndex + 1} / {questions.length}
+                  </Tag>
+                </Space>
+                <Title level={2}>{isReview ? "语法复习" : "语法练习"}</Title>
+              </div>
+            </Flex>
+
+            <GrammarQuestionCard
+              answered={answered}
+              onAnswer={handleAnswer}
+              question={currentQuestion}
+              selectedAnswer={selectedAnswer}
+            />
+
+            {answered ? (
+              <div className={isCorrect ? "answer-feedback answer-feedback--correct" : "answer-feedback answer-feedback--wrong"}>
+                {isCorrect ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                <Text strong>
+                  {isCorrect ? "回答正确" : `回答错误，正确答案是：${correctAnswer.letter}`}
+                </Text>
+              </div>
+            ) : null}
+          </section>
+
+          {answered ? (
+            <>
+              <GrammarExplanationCard
+                correctAnswer={correctAnswer}
+                explanation={currentQuestion.explanation}
+                favorited={currentQuestion.favorited}
+                isCorrect={isCorrect}
+                onRate={handleRateCurrentQuestion}
+                onToggleFavorite={handleToggleFavorite}
+                questionId={currentQuestion.id}
+              />
+              <GrammarTutorChat
+                key={currentQuestion.id}
+                onSend={grammar.askGrammarTutor}
+                questionId={currentQuestion.id}
+                selectedAnswer={selectedAnswer}
+              />
+            </>
+          ) : null}
+
+          <Flex justify="end" gap={12} wrap>
+            <Button
+              htmlType="button"
+              icon={<StopOutlined />}
+              onClick={handleFinishPractice}
+              size="large"
+            >
+              结束练习
+            </Button>
+          </Flex>
+        </div>
+      ) : (
+        <div className="page-stack">
+          <section className="glass-panel">
+            <Title level={3}>暂无可练习题目</Title>
+            <Button htmlType="button" onClick={() => navigate("/grammar")}>
+              返回语法主页
+            </Button>
+          </section>
+        </div>
+      )}
+    </AsyncPage>
+  );
+}

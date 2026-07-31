@@ -46,7 +46,10 @@ class SpeakingControllerTest {
         LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
         validator.afterPropertiesSet();
 
-        mockMvc = MockMvcBuilders.standaloneSetup(new SpeakingController(speakingService))
+        mockMvc = MockMvcBuilders.standaloneSetup(
+                        new SpeakingController(speakingService),
+                        new InlineSpeakingMessageController(speakingService)
+                )
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setValidator(validator)
                 .build();

@@ -1,15 +1,21 @@
 package com.englishlearningcopilot.backend.repository;
 
 import com.englishlearningcopilot.backend.entity.SpeakingSession;
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.repository.query.Param;
 
 public interface SpeakingSessionRepository extends JpaRepository<SpeakingSession, Long> {
 
     List<SpeakingSession> findByUserUsernameOrderByStartedAtDesc(String username);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT speakingSession FROM SpeakingSession speakingSession WHERE speakingSession.id = :sessionId")
+    java.util.Optional<SpeakingSession> findByIdForUpdate(@Param("sessionId") Long sessionId);
 
     @Query("""
             SELECT session.scenario.id AS scenarioId,
