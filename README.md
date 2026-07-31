@@ -1,64 +1,75 @@
 # English Learning Copilot
 
-## A6 英语口语学习助手
+English Learning Copilot（英语学习协同助手）是一个面向英语学习者的 Web 应用。系统将场景化口语对话、词汇与语法练习、FSRS-6 间隔复习、每日学习计划和学习统计组织为一个可持续的学习闭环。
 
-这是一款智能应用，通过实时对话模拟、个性化练习和实时反馈，帮助用户提升英语口语水平并流利表达。可参考学长创业的“可栗口语”APP。
+## 当前功能
+
+- 场景化口语：旅行、日常、职场、自由对话和 IELTS Speaking Part 1/2/3/完整模拟等 22 个已配置场景；支持会话创建、浏览器录音、转写、逐轮 Agent 回复、历史回顾和综合反馈。
+- 语音与智能能力：后端支持讯飞 ASR、ISE、TTS 与 OpenAI-compatible 对话模型的配置化接入；在没有外部服务凭证时，可使用 Mock 实现演示基础流程。
+- 词汇学习：分级词卡、主动回忆题、收藏与个人单词本；用户以 Again、Hard、Good、Easy 四级自评后由 FSRS-6 计算后续复习时间。
+- 语法学习：按主题练习、即时解析、错题本、收藏、FSRS-6 复习和基于可信题目上下文的语法 Tutor 问答。
+- 学习计划与统计：每日词汇/语法目标、连续学习、推荐任务、周度概览和本地检索式学习内容推荐。
 
 ## 技术栈
 
-- 后端：Spring Boot 3.4 + Spring Data JPA + Spring Security + JWT + MySQL
-- 前端：React + JavaScript + Vite
-- UI 组件库：Ant Design
-- 设计风格：Apple 风格、轻拟物质感、高级感仪表盘界面
+| 层次 | 技术 |
+| --- | --- |
+| 前端 | React 18、JavaScript、Vite、React Router、Ant Design |
+| 后端 | Java 21、Spring Boot 3.4.5、Spring Data JPA、Spring Security、JWT |
+| 数据 | MySQL（运行环境）、H2（自动化测试）、词汇/语法数据集 |
+| 语音与 Agent | 可配置的讯飞 ASR/ISE/TTS 与 OpenAI-compatible 模型服务；支持 Mock 模式 |
+| 测试 | JUnit/Spring Boot Test、Vitest、Testing Library、Playwright、k6 |
 
-## 前端基础框架
-
-- 前端工程位于 `frontend/` 目录，Spring Boot 后端位于 `backend/` 目录。
-- 基于 Vite + React + JavaScript 搭建前端工程。
-- 使用 Ant Design 作为基础组件库，并通过主题 token 与自定义样式统一视觉风格。
-- 已完成路由拆分、布局解耦、服务层抽象、mock 数据和 HTTP 接口预留。
-- 页面独有组件放在 `frontend/src/components/<PageName>/`，公共组件放在 `frontend/src/components/common/`。
-- 当前首页只保留基础入口面板，覆盖：
-  - 顶部导航
-  - 项目简介
-  - 口语、词汇、语法、个人四个入口
-  - 今日概览
-  - 个人进度
-
-## 页面路由
-
-- `/`：首页
-- `/speaking`：口语页
-- `/vocabulary`：词汇页
-- `/grammar`：语法页
-- `/profile`：个人页（未登录显示登录提示，登录后显示个人数据）
-
-## 接口切换
-
-- 默认使用 mock 服务。
-- 并行联调推荐使用 `VITE_API_MODE=mixed` 和 `VITE_API_BASE_URL=http://localhost:8080`：按模块决定走真实后端还是 mock，默认认证走真实后端，业务页面继续走 mock。
-- 等后端业务接口都实现后，再通过 `VITE_API_MODE=http` 切换到全量真实接口。
-
-## 交付文档
-
-- 前端交付说明：[docs/frontend-handoff.md](docs/frontend-handoff.md)
-- 接口契约说明：[docs/api-contracts.md](docs/api-contracts.md)
-- 认证前端规约：[docs/auth-frontend-spec.md](docs/auth-frontend-spec.md)
-- 服务器一键发布：[docs/server-deploy.md](docs/server-deploy.md)
-
-## 推荐仓库结构
+## 目录
 
 ```text
-english-learning-copilot/
-├── frontend/   # React + Vite 前端
-├── backend/    # Spring Boot 后端
-├── docs/       # 交付与接口文档
-└── README.md
+SE26Project-13/
+├── frontend/           # React 前端、单元测试和 Playwright 测试
+├── backend/            # Spring Boot 后端、JUnit 集成/单元测试
+├── data/               # 词汇、语法与词典导入数据
+├── docs/               # 设计、接口、FSRS、部署和性能说明
+├── llm-prompt-lab/     # 口语场景与 Agent 提示词实验
+├── performance/        # k6 性能测试脚本
+├── scripts/            # 构建、启动与部署脚本
+├── PPT/                # 评审答辩材料
+├── TechPrototype/      # 架构、迭代和 UML 相关已有文档
+└── FinalRelease/       # 最终提交物整理目录
 ```
 
-## 启动方式
+## 快速启动
 
-前端：
+### 1. 启动数据库
+
+运行环境默认使用 MySQL。创建数据库后，通过环境变量或未提交的本地配置设置连接信息：
+
+```sql
+CREATE DATABASE english_learning_copilot
+  DEFAULT CHARACTER SET utf8mb4
+  DEFAULT COLLATE utf8mb4_unicode_ci;
+```
+
+```bash
+export SPRING_DATASOURCE_USERNAME=root
+export SPRING_DATASOURCE_PASSWORD='your-local-password'
+export APP_JWT_SECRET='replace-with-a-local-random-secret-of-at-least-32-characters'
+```
+
+### 2. 启动后端
+
+```bash
+cd backend
+mvn spring-boot:run
+```
+
+项目使用 Java 21。也可使用已有脚本：
+
+```bash
+bash scripts/start-backend.sh
+```
+
+后端的数据库、认证、管理员种子和测试说明见 [backend/README.md](backend/README.md)。
+
+### 3. 启动前端
 
 ```bash
 cd frontend
@@ -66,45 +77,60 @@ npm install
 npm run dev
 ```
 
-后端：
+默认访问地址由 Vite 输出。联调时，前端可通过 `VITE_API_MODE` 选择数据源：
+
+```text
+mock   # 全部使用前端本地 mock 数据
+mixed  # 按模块混用 mock 与 Spring Boot 接口
+http   # 全部使用 Spring Boot 接口
+```
+
+`frontend/.env.example` 给出了 mixed 模式的模块开关示例。
+
+## 无外部 Key 的演示模式
+
+完整语音/模型能力依赖外部服务，但项目可以在没有真实 API Key 时完成基础演示。提交物中的 [FinalRelease/SourceCode/backend/.env.example](FinalRelease/SourceCode/backend/.env.example) 默认配置为：
+
+```text
+SPEAKING_AGENT_PROVIDER=mock
+XFYUN_ASR_ENABLED=false
+XFYUN_ISE_ENABLED=false
+SUPERSMART_TTS_ENABLED=false
+```
+
+真实服务仅应在本机或部署服务器的私有环境配置中设置，例如 `SJTU_AI_API_KEY`、`XFYUN_APP_ID`、`XFYUN_API_KEY`、`XFYUN_API_SECRET`。不要将有效凭证写入 `.env.example`、前端代码或 Git 提交。
+
+## 测试
+
+后端测试：
 
 ```bash
 cd backend
-mvn spring-boot:run
+mvn test
 ```
 
-后端认证、MySQL、JWT、管理员种子、接口与测试说明见：[backend/README.md](backend/README.md)
+前端单元测试：
 
-## 基本需求
+```bash
+cd frontend
+npm run test:run
+```
 
-### 功能性需求
+口语端到端测试：
 
-以下功能选 3 项：
+```bash
+cd frontend
+npm run test:e2e
+```
 
-1. 口语练习
-   - 提供不同情境（餐厅订餐、商务谈判、旅行问路等）和不同形式（问答、对话、演讲等）的口语练习题目。
-   - 支持录音功能，允许用户录制自己的回答并进行评估和反馈。
+性能测试脚本位于 `performance/k6/`，使用方式见 [performance/README.md](performance/README.md)。
 
-2. 词汇与语法练习
-   - 提供词汇和语法练习题目，帮助用户扩展词汇量和提高语法水平。
-   - 结合语音播放和文字提示，让用户能够更好地理解和掌握英语词汇和语法规则。
+## 主要文档
 
-3. 实时反馈与评估
-   - 提供实时反馈，包括发音准确性、语速、流利度等方面的评估。
-   - 根据用户的表现，给出相应的建议和改进措施，帮助用户不断提升口语能力。
-
-4. 个性化学习计划
-   - 用户根据学习目标和水平，制定个性化的学习计划和练习内容。
-   - 跟踪用户的学习进度，并进行相应的鼓励。
-
-### 非功能性需求
-
-- 客户端为 APP 或 Web 浏览器。
-- 兼容性：适应用于客户端不同的分辨率/尺寸。
-- 性能：数据量不少于 10k，在 100 并发的场景下，响应时间 < 3s。
-
-## 进阶需求
-
-- 虚拟对话伙伴：引入虚拟人工智能角色作为语言交流伙伴，能够进行自然语言对话，帮助用户更好地适应真实语境的交流。
-- 个性化学习计划的智能规划：根据用户的口语水平、学习目标和学习偏好，自动生成个性化的学习路径，包括逐步提升口语流利度、拓展词汇量、改善发音准确性等方面，帮助用户有效地规划学习路线并达到目标。
-- 其他创意的功能。
+- [接口契约](docs/api-contracts.md)
+- [口语 Agent 与语音能力设计](docs/oral-agent-design.md)
+- [FSRS-6 算法说明](docs/FSRS-algorithm-view.md)
+- [词汇 FSRS 实现说明](docs/FSRS-vocabulary-review-implementation.md)
+- [语法 FSRS 实现说明](docs/FSRS-grammar-review-implementation.md)
+- [部署说明](docs/server-deploy.md)
+- [FinalRelease 源码副本](FinalRelease/SourceCode/)

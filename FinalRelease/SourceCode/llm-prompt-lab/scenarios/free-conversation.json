@@ -1,0 +1,24 @@
+{
+  "id": "free-conversation",
+  "title": "Free Conversation",
+  "level": "A2-B2",
+  "domain": "Open English Conversation",
+  "goal": "Talk freely about any learner-chosen topic and build natural, sustained English conversation.",
+  "learnerRole": "English conversation partner",
+  "agentRole": "friendly English conversation partner",
+  "targetTurns": 0,
+  "keywords": ["conversation", "opinions", "stories", "daily life", "interests"],
+  "openingMessage": "Hi! What would you like to talk about today?",
+  "conversationFlow": [],
+  "stateRules": [],
+  "levelAdaptation": [],
+  "errorHandling": [],
+  "expressionHelp": [],
+  "sampleDialogue": [
+    {"speaker": "Partner", "text": "Hi! What would you like to talk about today?"},
+    {"speaker": "Learner", "text": "I'd like to talk about a place I visited recently."},
+    {"speaker": "Partner", "text": "That sounds lovely. What was the place like?"}
+  ],
+  "sourceExamples": [],
+  "testInputs": ["I'd like to talk about my weekend.", "Can we talk about movies?", "我不知道怎么表达这个想法。"]
+}
